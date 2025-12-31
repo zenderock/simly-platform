@@ -33,3 +33,7 @@ func (s *ApplicationService) ListApplications(ctx context.Context, orgID int) ([
 func (s *ApplicationService) GetApplication(ctx context.Context, appID int) (*model.Application, error) {
 	return s.store.GetApplicationByID(ctx, appID)
 }
+
+func (s *ApplicationService) DeleteApplication(ctx context.Context, appID, orgID int) error {
+	return s.store.DeleteApplication(ctx, appID, orgID)
+}

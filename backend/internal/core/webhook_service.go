@@ -113,3 +113,7 @@ func (s *WebhookService) sendWebhook(wh model.Webhook, eventType string, payload
 		fmt.Printf("Webhook failed with status: %d\n", resp.StatusCode)
 	}
 }
+
+func (s *WebhookService) DeleteWebhook(ctx context.Context, webhookID, orgID int) error {
+	return s.store.DeleteWebhook(ctx, webhookID, orgID)
+}

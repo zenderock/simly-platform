@@ -38,3 +38,16 @@ func (s *Store) GetWebhooksByOrganizationID(ctx context.Context, orgID int) ([]m
 	}
 	return webhooks, nil
 }
+
+func (s *Store) DeleteWebhook(ctx context.Context, webhookID, orgID int) error {
+	query := `DELETE FROM webhooks WHERE id = $1 AND organization_id = $2`
+	result, err := s.db.Exec(ctx, query, webhookID, orgID)
+	if err != nil {
+		return fmt.Errorf("failed to delete webhook: %w", err)
+	}
+	rowsAffected := result.RowsAffected()
+	if rowsAffected == 0 {
+		return fmt.Errorf("webhook not found")
+	}
+	return nil
+}

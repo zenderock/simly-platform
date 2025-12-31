@@ -77,3 +77,16 @@ func (s *Store) UpdateDeviceStatus(ctx context.Context, deviceID, orgID int, sta
 	_, err := s.db.Exec(ctx, query, status, deviceID, orgID)
 	return err
 }
+
+func (s *Store) DeleteDevice(ctx context.Context, deviceID, orgID int) error {
+	query := `DELETE FROM devices WHERE id = $1 AND organization_id = $2`
+	result, err := s.db.Exec(ctx, query, deviceID, orgID)
+	if err != nil {
+		return fmt.Errorf("failed to delete device: %w", err)
+	}
+	rowsAffected := result.RowsAffected()
+	if rowsAffected == 0 {
+		return fmt.Errorf("device not found")
+	}
+	return nil
+}

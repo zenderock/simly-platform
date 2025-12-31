@@ -53,3 +53,16 @@ func (s *Store) GetApplicationByID(ctx context.Context, id int) (*model.Applicat
 	}
 	return &app, nil
 }
+
+func (s *Store) DeleteApplication(ctx context.Context, appID, orgID int) error {
+	query := `DELETE FROM applications WHERE id = $1 AND organization_id = $2`
+	result, err := s.db.Exec(ctx, query, appID, orgID)
+	if err != nil {
+		return fmt.Errorf("failed to delete application: %w", err)
+	}
+	rowsAffected := result.RowsAffected()
+	if rowsAffected == 0 {
+		return fmt.Errorf("application not found")
+	}
+	return nil
+}

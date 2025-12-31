@@ -123,16 +123,9 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 		// SANDBOX CHECK
 		app, err := s.appService.GetApplication(ctx, *req.ApplicationID)
 		if err == nil && app.IsSandbox {
-			// ** SANDBOX MODE **
-			// Simulate success or failure based on number
 			fakeStatus := "delivered"
 			if req.To == s.sandboxFailureNumber {
 				fakeStatus = "failed"
-			} else if req.To != s.sandboxSuccessNumber {
-				// Optional: What if it's neither? Default to success or maybe "queued"?
-				// For now let's say any other number is also delivered unless specific failure number used.
-				// Or enforce usage of success number.
-				// Let's stick to "Default Success" behavior as per original logic.
 			}
 
 			// Capture a fake message ID from DB for logs

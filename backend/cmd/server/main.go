@@ -44,16 +44,17 @@ func main() {
 	userService := core.NewUserService(db, orgService, string(jwtSecret))
 	deviceService := core.NewDeviceService(db)
 	rateLimitService := core.NewRateLimitService(db)
-	auditService := core.NewAuditService(db) // Used later if we want to inject audit
+	auditService := core.NewAuditService(db)
 	messageService := core.NewMessageService(db, webhookService, notificationProvider, rateLimitService, appService, cfg.SandboxSuccessNumber, cfg.SandboxFailureNumber)
 
 	// Handlers
 	authHandler := api.NewAuthHandler(userService)
-	appHandler := api.NewApplicationHandler(appService, orgService)
+	appHandler := api.NewApplicationHandler(appService, orgService, auditService)
 	apiKeyHandler := api.NewAPIKeyHandler(apiKeyService, appService, orgService, auditService)
-	deviceHandler := api.NewDeviceHandler(deviceService, orgService)
+	deviceHandler := api.NewDeviceHandler(deviceService, orgService, auditService)
 	messageHandler := api.NewMessageHandler(messageService, orgService)
-	webhookHandler := api.NewWebhookHandler(webhookService, orgService)
+	webhookHandler := api.NewWebhookHandler(webhookService, orgService, auditService)
+	orgHandler := api.NewOrganizationHandler(orgService, auditService)
 
 	// 4. Routing (Chi)
 	r := chi.NewRouter()
@@ -82,6 +83,7 @@ func main() {
 		r.Route("/api/applications", func(r chi.Router) {
 			r.Get("/", appHandler.ListApplications)
 			r.Post("/", appHandler.CreateApplication)
+			r.Delete("/{appID}", appHandler.DeleteApplication)
 		})
 
 		// API Keys
@@ -95,6 +97,7 @@ func main() {
 		r.Route("/api/devices", func(r chi.Router) {
 			r.Get("/", deviceHandler.ListDevices)
 			r.Post("/", deviceHandler.RegisterDevice)
+			r.Delete("/{deviceID}", deviceHandler.DeleteDevice)
 			r.Post("/{deviceID}/heartbeat", deviceHandler.Heartbeat)
 		})
 
@@ -109,6 +112,13 @@ func main() {
 		r.Route("/api/webhooks", func(r chi.Router) {
 			r.Get("/", webhookHandler.ListWebhooks)
 			r.Post("/", webhookHandler.RegisterWebhook)
+			r.Delete("/{webhookID}", webhookHandler.DeleteWebhook)
+		})
+
+		// Organization Management
+		r.Route("/api/organization", func(r chi.Router) {
+			r.Post("/members", orgHandler.AddMember)
+			r.Delete("/members/{userID}", orgHandler.RemoveMember)
 		})
 	})
 

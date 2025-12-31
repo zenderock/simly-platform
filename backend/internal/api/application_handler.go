@@ -3,18 +3,21 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/zenderock/simly-backend/internal/core"
 	"github.com/zenderock/simly-backend/internal/model"
 )
 
 type ApplicationHandler struct {
-	service    *core.ApplicationService
-	orgService *core.OrganizationService
+	service      *core.ApplicationService
+	orgService   *core.OrganizationService
+	auditService *core.AuditService
 }
 
-func NewApplicationHandler(service *core.ApplicationService, orgService *core.OrganizationService) *ApplicationHandler {
-	return &ApplicationHandler{service: service, orgService: orgService}
+func NewApplicationHandler(service *core.ApplicationService, orgService *core.OrganizationService, auditService *core.AuditService) *ApplicationHandler {
+	return &ApplicationHandler{service: service, orgService: orgService, auditService: auditService}
 }
 
 func (h *ApplicationHandler) getActiveOrgID(r *http.Request) (int, error) {
@@ -48,6 +51,10 @@ func (h *ApplicationHandler) CreateApplication(w http.ResponseWriter, r *http.Re
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(app)
+
+	// Audit
+	userID := GetUserID(r.Context())
+	h.auditService.Log(r.Context(), orgID, &userID, "application.created", "application", strconv.Itoa(app.ID), map[string]string{"name": app.Name}, r.RemoteAddr)
 }
 
 func (h *ApplicationHandler) ListApplications(w http.ResponseWriter, r *http.Request) {
@@ -65,4 +72,30 @@ func (h *ApplicationHandler) ListApplications(w http.ResponseWriter, r *http.Req
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(apps)
+}
+
+func (h *ApplicationHandler) DeleteApplication(w http.ResponseWriter, r *http.Request) {
+	appIDStr := chi.URLParam(r, "appID")
+	appID, err := strconv.Atoi(appIDStr)
+	if err != nil {
+		http.Error(w, "Invalid App ID", http.StatusBadRequest)
+		return
+	}
+
+	orgID, err := h.getActiveOrgID(r)
+	if err != nil {
+		http.Error(w, "Organization required", http.StatusForbidden)
+		return
+	}
+
+	if err := h.service.DeleteApplication(r.Context(), appID, orgID); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Audit
+	userID := GetUserID(r.Context())
+	h.auditService.Log(r.Context(), orgID, &userID, "application.deleted", "application", appIDStr, nil, r.RemoteAddr)
+
+	w.WriteHeader(http.StatusNoContent)
 }

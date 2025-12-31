@@ -41,3 +41,7 @@ func (s *DeviceService) ListDevices(ctx context.Context, orgID int) ([]model.Dev
 func (s *DeviceService) Heartbeat(ctx context.Context, deviceID int, orgID int) error {
 	return s.store.UpdateDeviceStatus(ctx, deviceID, orgID, "online")
 }
+
+func (s *DeviceService) DeleteDevice(ctx context.Context, deviceID, orgID int) error {
+	return s.store.DeleteDevice(ctx, deviceID, orgID)
+}

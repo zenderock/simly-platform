@@ -39,6 +39,14 @@ func (s *OrganizationService) AddMember(ctx context.Context, orgID, userID int, 
 	return s.store.AddOrganizationMember(ctx, member)
 }
 
+func (s *OrganizationService) GetMemberRole(ctx context.Context, orgID, userID int) (string, error) {
+	return s.store.GetMemberRole(ctx, orgID, userID)
+}
+
 func (s *OrganizationService) GetUserOrganizations(ctx context.Context, userID int) ([]model.Organization, error) {
 	return s.store.GetUserOrganizations(ctx, userID)
+}
+
+func (s *OrganizationService) RemoveMember(ctx context.Context, orgID, userID int) error {
+	return s.store.RemoveOrganizationMember(ctx, orgID, userID)
 }
