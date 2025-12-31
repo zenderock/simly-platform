@@ -25,9 +25,11 @@ import {
 import { useAuth } from "@/lib/auth";
 import api from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { CreateOrgDialog } from "@/components/dashboard/create-org-dialog";
 
 export function DashboardHeader() {
   const { organizationId, organizations, setOrganizations, setOrganizationId } = useAuth();
+  const [createOrgOpen, setCreateOrgOpen] = React.useState(false);
 
   useEffect(() => {
     const fetchOrgs = async () => {
@@ -83,7 +85,10 @@ export function DashboardHeader() {
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer py-2.5 px-3 text-primary font-medium">
+            <DropdownMenuItem 
+              className="cursor-pointer py-2.5 px-3 text-primary font-medium"
+              onSelect={() => setCreateOrgOpen(true)}
+            >
               <PlusCircle className="size-4 mr-2" />
               <span className="text-sm">Create an organization</span>
             </DropdownMenuItem>
@@ -114,6 +119,8 @@ export function DashboardHeader() {
         <div className="h-4 w-px bg-border mx-1" />
         <ThemeToggle />
       </div>
+
+      <CreateOrgDialog open={createOrgOpen} onOpenChange={setCreateOrgOpen} />
     </header>
   );
 }

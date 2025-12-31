@@ -31,3 +31,27 @@ export interface Device {
   battery_level: number;
   signal_strength: string;
 }
+
+export interface Message {
+  id: number;
+  organization_id: number;
+  application_id?: number;
+  device_id?: number;
+  to: string;
+  body: string;
+  status: string;
+  direction: string;
+  priority: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DashboardStats {
+  total_messages: number;
+  sent_messages: number;
+  delivered_messages: number;
+  failed_messages: number;
+  pending_messages: number;
+  active_devices: number;
+  total_devices: number;
+}

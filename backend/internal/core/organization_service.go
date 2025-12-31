@@ -18,7 +18,7 @@ func NewOrganizationService(store *store.Store) *OrganizationService {
 	return &OrganizationService{store: store}
 }
 
-func (s *OrganizationService) CreateOrganization(ctx context.Context, name, slug string) (*model.Organization, error) {
+func (s *OrganizationService) CreateOrganization(ctx context.Context, userID int, name, slug string, role string) (*model.Organization, error) {
 	org := &model.Organization{
 		Name: name,
 		Slug: slug,
@@ -27,6 +27,13 @@ func (s *OrganizationService) CreateOrganization(ctx context.Context, name, slug
 	if err := s.store.CreateOrganization(ctx, org); err != nil {
 		return nil, err
 	}
+
+	// Add Creator
+	if err := s.AddMember(ctx, org.ID, userID, role); err != nil {
+		// Ideally rollback, but for now just return error (orphan org risk)
+		return nil, err
+	}
+
 	return org, nil
 }
 

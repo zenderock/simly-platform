@@ -48,11 +48,12 @@ import {
   Clock,
 } from "lucide-react";
 import { useDashboardStore } from "@/store/dashboard-store";
-import { messages } from "@/mock-data/messages";
+import { Message } from "@/types";
+import api from "@/lib/api";
 
-const statuses = ["Sent", "Delivered", "Failed", "Pending"];
-const apps = ["Production Auth", "Sandbox Test", "E-commerce Bot", "Marketing Alert"];
-const devices = ["Pixel 7 Pro #1", "Pixel 7 Pro #2", "Galaxy S21 #1", "Nokia Gateway"];
+const statuses = ["sent", "delivered", "failed", "pending"]; // Lowercase to match backend
+const apps = ["Production Auth", "Sandbox Test"]; // We'll mock map these for now or just filter by ID if possible
+const devices = ["Pixel 7 Pro", "Galaxy S21"]; // Same
 
 const PAGE_SIZE_OPTIONS = [10, 20, 30, 50];
 
@@ -68,8 +69,27 @@ export function MessagesTable() {
   const setDeviceFilter = useDashboardStore((state) => state.setDeviceFilter);
   const clearFilters = useDashboardStore((state) => state.clearFilters);
 
+  const [messages, setMessages] = React.useState<Message[]>([]);
+  const [loading, setLoading] = React.useState(true);
   const [currentPage, setCurrentPage] = React.useState(1);
   const [pageSize, setPageSize] = React.useState(10);
+
+  // Fetch messages from API
+  React.useEffect(() => {
+    const fetchMessages = async () => {
+      try {
+        setLoading(true);
+        const response = await api.get<Message[]>("/messages");
+        setMessages(response.data || []);
+      } catch (error) {
+        console.error("Failed to fetch messages:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMessages();
+  }, []);
 
   const hasActiveFilters =
     statusFilter !== "all" || appFilter !== "all" || deviceFilter !== "all";
@@ -77,22 +97,20 @@ export function MessagesTable() {
   const filteredMessages = React.useMemo(() => {
     return messages.filter((msg) => {
       const matchesSearch =
-        msg.recipient.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        msg.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        msg.app.toLowerCase().includes(searchQuery.toLowerCase());
+        msg.to.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        msg.body.toLowerCase().includes(searchQuery.toLowerCase());
+        // || msg.app.toLowerCase().includes(searchQuery.toLowerCase()); // App name not avail yet
 
       const matchesStatus =
-        statusFilter === "all" || msg.status === statusFilter;
+        statusFilter === "all" || msg.status.toLowerCase() === statusFilter.toLowerCase();
 
-      const matchesApp =
-        appFilter === "all" || msg.app === appFilter;
+      // Placeholder filtering for App/Device until we map IDs to Names
+      // const matchesApp = appFilter === "all" || msg.app === appFilter;
+      // const matchesDevice = deviceFilter === "all" || msg.device === deviceFilter;
 
-      const matchesDevice =
-        deviceFilter === "all" || msg.device === deviceFilter;
-
-      return matchesSearch && matchesStatus && matchesApp && matchesDevice;
+      return matchesSearch && matchesStatus;
     });
-  }, [searchQuery, statusFilter, appFilter, deviceFilter]);
+  }, [messages, searchQuery, statusFilter, appFilter, deviceFilter]);
 
   const totalPages = Math.ceil(filteredMessages.length / pageSize);
 
@@ -296,14 +314,14 @@ export function MessagesTable() {
                     {(currentPage - 1) * pageSize + index + 1}
                   </TableCell>
                   <TableCell className="font-bold text-xs tabular-nums">
-                    {msg.recipient}
+                    {msg.to}
                   </TableCell>
                   <TableCell className="max-w-[200px] truncate text-xs text-muted-foreground italic">
-                    {msg.content}
+                    {msg.body}
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className="text-[10px] font-semibold bg-muted/30 border-none">
-                      {msg.app}
+                      App #{msg.application_id || "?"}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -315,10 +333,10 @@ export function MessagesTable() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-xs font-medium text-muted-foreground">
-                    {msg.device}
+                    Device #{msg.device_id || "?"}
                   </TableCell>
                   <TableCell className="text-right text-[10px] text-muted-foreground italic">
-                    {new Date(msg.createdAt).toLocaleDateString('en-US', {
+                    {new Date(msg.created_at).toLocaleDateString('en-US', {
                       day: '2-digit',
                       month: '2-digit',
                       year: '2-digit',

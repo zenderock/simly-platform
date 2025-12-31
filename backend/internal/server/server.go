@@ -141,9 +141,18 @@ func (s *Server) setupRoutes() {
 			r.Delete("/{webhookID}", webhookHandler.DeleteWebhook)
 		})
 
+		// Dashboard
+		dashboardService := core.NewDashboardService(s.DB)
+		dashboardHandler := api.NewDashboardHandler(dashboardService, orgService)
+
+		r.Route("/api/dashboard", func(r chi.Router) {
+			r.Get("/stats", dashboardHandler.GetStats)
+		})
+
 		// Organization Management
 		r.Route("/api/organizations", func(r chi.Router) {
 			r.Get("/", orgHandler.ListOrganizations)
+			r.Post("/", orgHandler.CreateOrganization)
 			r.Post("/members", orgHandler.AddMember)
 			r.Delete("/members/{userID}", orgHandler.RemoveMember)
 		})

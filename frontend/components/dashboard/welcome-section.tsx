@@ -8,6 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ChevronDown, Plus, Download, Upload, FileText } from "lucide-react";
+import { NewMessageDialog } from "@/components/dashboard/new-message-dialog";
 
 import { useAuth } from "@/lib/auth";
 
@@ -49,11 +50,7 @@ export function WelcomeSection() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <Button size="sm" className="gap-2 sm:gap-3 h-8 sm:h-9 text-xs sm:text-sm bg-foreground text-background shadow-none font-bold">
-          <Plus className="size-3 sm:size-4" />
-          <span className="hidden xs:inline">New Message</span>
-          <span className="xs:hidden">New</span>
-        </Button>
+        <NewMessageDialog />
       </div>
     </div>
   );

@@ -47,6 +47,7 @@ import {
   Globe,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import Image from "next/image";
 
 const menuItems = [
   {
@@ -82,10 +83,8 @@ export function DashboardSidebar({
     <Sidebar collapsible="offcanvas" className="lg:border-r-0!" {...props}>
       <SidebarHeader className="p-3 sm:p-4 lg:p-5 pb-0">
         <div className="flex items-center gap-2">
-          <div className="flex size-5 items-center justify-center rounded bg-primary text-primary-foreground">
-            <Atom className="size-3" />
-          </div>
-          <span className="font-semibold text-base sm:text-lg">Simly</span>
+          <Image src="/logo-dark.png" alt="Simly" width={100} height={100} className="dark:hidden" />
+          <Image src="/logo-light.png" alt="Simly" width={100} height={100} className="hidden dark:block" />
         </div>
       </SidebarHeader>
 

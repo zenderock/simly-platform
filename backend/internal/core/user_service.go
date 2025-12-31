@@ -59,16 +59,11 @@ func (s *UserService) Register(ctx context.Context, req model.CreateUserRequest)
 	}
 	orgSlug := fmt.Sprintf("org-%d", user.ID) // Simple slug strategy for now
 
-	org, err := s.orgService.CreateOrganization(ctx, orgName, orgSlug)
+	_, err = s.orgService.CreateOrganization(ctx, user.ID, orgName, orgSlug, "owner")
 	if err != nil {
 		// Cleanup user? Or just fail?
 		// For MVP, we log error and return. User exists but has no org.
 		return nil, fmt.Errorf("failed to create default organization: %w", err)
-	}
-
-	// Add User as Owner
-	if err := s.orgService.AddMember(ctx, org.ID, user.ID, "owner"); err != nil {
-		return nil, fmt.Errorf("failed to add user to organization: %w", err)
 	}
 
 	return user, nil

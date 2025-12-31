@@ -58,6 +58,34 @@ func (h *OrganizationHandler) AddMember(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(http.StatusCreated)
 }
 
+func (h *OrganizationHandler) CreateOrganization(w http.ResponseWriter, r *http.Request) {
+	userID := GetUserID(r.Context())
+
+	type CreateOrgRequest struct {
+		Name string `json:"name"`
+		Slug string `json:"slug"`
+	}
+	var req CreateOrgRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+
+	if req.Slug == "" {
+		req.Slug = "org-" + strconv.Itoa(userID) + "-" + req.Name // naive slug
+	}
+
+	org, err := h.service.CreateOrganization(r.Context(), userID, req.Name, req.Slug, "owner")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(org)
+}
+
 func (h *OrganizationHandler) RemoveMember(w http.ResponseWriter, r *http.Request) {
 	userIDStr := chi.URLParam(r, "userID")
 	targetUserID, err := strconv.Atoi(userIDStr)
