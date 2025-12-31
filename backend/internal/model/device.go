@@ -5,16 +5,28 @@ import (
 )
 
 type Device struct {
-	ID             int       `json:"id"`
-	OrganizationID int       `json:"organization_id"`
-	Name           string    `json:"name"`
-	PhoneNumber    string    `json:"phone_number"` // Populated after initial sync
-	FCMToken       string    `json:"fcm_token"`
-	Status         string    `json:"status"` // online, offline
-	Tags           []string  `json:"tags"`   // e.g. ["marketing", "otp", "uk-sim"]
-	LastSeenAt     time.Time `json:"last_seen_at"`
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
+	ID             int        `json:"id"`
+	OrganizationID int        `json:"organization_id"`
+	Name           string     `json:"name"`
+	Model          string     `json:"model"`
+	FCMToken       string     `json:"fcm_token"`
+	Status         string     `json:"status"` // online, offline
+	BatteryLevel   int        `json:"battery_level"`
+	SignalStrength int        `json:"signal_strength"`
+	Tags           []string   `json:"tags"` // e.g. ["marketing", "otp", "uk-sim"]
+	SimCards       []SimCard  `json:"sim_cards"`
+	LastSeenAt     *time.Time `json:"last_seen_at"`
+	CreatedAt      time.Time  `json:"created_at"`
+	UpdatedAt      time.Time  `json:"updated_at"`
+}
+
+type SimCard struct {
+	ID          int    `json:"id"`
+	DeviceID    int    `json:"device_id"`
+	SlotIndex   int    `json:"slot_index"` // 0 or 1
+	PhoneNumber string `json:"phone_number"`
+	Operator    string `json:"operator"`
+	IsActive    bool   `json:"is_active"`
 }
 
 type RegisterDeviceRequest struct {
@@ -25,8 +37,9 @@ type RegisterDeviceRequest struct {
 }
 
 type UpdateDeviceStatusRequest struct {
-	Status       string `json:"status"`
-	BatteryLevel int    `json:"battery_level,omitempty"` // Example extra field
+	Status         string `json:"status"`
+	BatteryLevel   int    `json:"battery_level,omitempty"`
+	SignalStrength int    `json:"signal_strength,omitempty"`
 }
 
 // Token used for QR Code linking flow (optional, but good practice)

@@ -3,14 +3,16 @@ package model
 import "time"
 
 type Organization struct {
-	ID              int       `json:"id"`
-	Name            string    `json:"name"`
-	Slug            string    `json:"slug"`
-	Plan            string    `json:"plan"`
-	SMSMonthlyLimit int       `json:"sms_monthly_limit"` // New
-	SMSBurstLimit   int       `json:"sms_burst_limit"`   // New
-	CreatedAt       time.Time `json:"created_at"`
-	UpdatedAt       time.Time `json:"updated_at"`
+	ID               int       `json:"id"`
+	Name             string    `json:"name"`
+	Slug             string    `json:"slug"`
+	Plan             string    `json:"plan"`
+	SMSMonthlyLimit  int       `json:"sms_monthly_limit"`
+	SMSBurstLimit    int       `json:"sms_burst_limit"`
+	MaxDevices       int       `json:"max_devices"`
+	MaxSimsPerDevice int       `json:"max_sims_per_device"`
+	CreatedAt        time.Time `json:"created_at"`
+	UpdatedAt        time.Time `json:"updated_at"`
 }
 
 type OrganizationMember struct {

@@ -9,11 +9,11 @@ import (
 
 func (s *Store) CreateApplication(ctx context.Context, app *model.Application) error {
 	query := `
-		INSERT INTO applications (organization_id, name, created_at, updated_at)
-		VALUES ($1, $2, NOW(), NOW())
+		INSERT INTO applications (organization_id, name, is_sandbox, created_at, updated_at)
+		VALUES ($1, $2, $3, NOW(), NOW())
 		RETURNING id, created_at, updated_at
 	`
-	err := s.db.QueryRow(ctx, query, app.OrganizationID, app.Name).Scan(&app.ID, &app.CreatedAt, &app.UpdatedAt)
+	err := s.db.QueryRow(ctx, query, app.OrganizationID, app.Name, app.IsSandbox).Scan(&app.ID, &app.CreatedAt, &app.UpdatedAt)
 	if err != nil {
 		return fmt.Errorf("failed to create application: %w", err)
 	}

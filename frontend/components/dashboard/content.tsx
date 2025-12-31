@@ -3,7 +3,7 @@
 import { WelcomeSection } from "./welcome-section";
 import { StatsCards } from "./stats-cards";
 import { LeadSourcesChart as MessageStatusChart } from "./lead-sources-chart";
-import { RevenueFlowChart as MessageTrafficChart } from "./revenue-flow-chart";
+import { MessageTrafficChart } from "@/components/dashboard/message-traffic-chart";
 import { MessagesTable } from "./messages-table";
 
 export function DashboardContent() {

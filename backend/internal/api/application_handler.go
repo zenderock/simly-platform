@@ -33,7 +33,7 @@ func (h *ApplicationHandler) CreateApplication(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	app, err := h.service.CreateApplication(r.Context(), orgID, req.Name)
+	app, err := h.service.CreateApplication(r.Context(), orgID, req.Name, req.IsSandbox)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

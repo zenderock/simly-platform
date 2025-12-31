@@ -4,8 +4,12 @@ import { Smartphone, MessageSquare, CheckCircle2, ListOrdered } from "lucide-rea
 import React, { useEffect, useState } from "react";
 import api from "@/lib/api";
 import { DashboardStats } from "@/types";
+import { useDashboardStore } from "@/store/dashboard-store";
+import { useApplicationStore } from "@/store/application-store";
 
 export function StatsCards() {
+  const refreshKey = useDashboardStore((state) => state.refreshKey);
+  const activeAppId = useApplicationStore((state) => state.activeAppId);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -13,7 +17,8 @@ export function StatsCards() {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        const res = await api.get<DashboardStats>("/dashboard/stats");
+        const params = activeAppId ? { application_id: activeAppId } : {};
+        const res = await api.get<DashboardStats>("/dashboard/stats", { params });
         setStats(res.data);
       } catch (error) {
         console.error("Failed to fetch dashboard stats", error);
@@ -22,7 +27,7 @@ export function StatsCards() {
       }
     };
     fetchStats();
-  }, []);
+  }, [refreshKey, activeAppId]);
 
   const totalMessages = stats?.total_messages || 0;
   const delivered = stats?.delivered_messages || 0;

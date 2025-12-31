@@ -75,14 +75,13 @@ func (h *DeviceHandler) Heartbeat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orgID, err := GetActiveOrgID(r, h.orgService)
-	if err != nil {
-		http.Error(w, "Organization required", http.StatusForbidden)
-		return
+	var req model.UpdateDeviceStatusRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		// If body is empty, we just treat it as a presence heartbeat
 	}
 
-	if err := h.service.Heartbeat(r.Context(), deviceID, orgID); err != nil {
-		http.Error(w, "Heartbeat failed: "+err.Error(), http.StatusForbidden)
+	if err := h.service.Heartbeat(r.Context(), deviceID, req.BatteryLevel, req.SignalStrength); err != nil {
+		http.Error(w, "Heartbeat failed: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 

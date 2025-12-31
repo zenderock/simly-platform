@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -14,7 +14,6 @@ import {
 import {
   ChartLine,
   MoreHorizontal,
-  ArrowRight,
   Download,
   Share2,
   Maximize2,
@@ -22,42 +21,41 @@ import {
   Settings2,
 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Sector } from "recharts";
-
-const allData = {
-  "7days": [
-    { name: "Sent", value: 3820, color: "#35b9e9" },
-    { name: "Delivered", value: 3750, color: "#6e3ff3" },
-    { name: "Failed", value: 45, color: "#e255f2" },
-    { name: "Pending", value: 25, color: "#375dfb" },
-  ],
-  "30days": [
-    { name: "Sent", value: 14285, color: "#35b9e9" },
-    { name: "Delivered", value: 14102, color: "#6e3ff3" },
-    { name: "Failed", value: 138, color: "#e255f2" },
-    { name: "Pending", value: 45, color: "#375dfb" },
-  ],
-  "90days": [
-    { name: "Sent", value: 42350, color: "#35b9e9" },
-    { name: "Delivered", value: 41900, color: "#6e3ff3" },
-    { name: "Failed", value: 350, color: "#e255f2" },
-    { name: "Pending", value: 100, color: "#375dfb" },
-  ],
-};
-
-type TimeRange = "7days" | "30days" | "90days";
-
-const timeRangeLabels: Record<TimeRange, string> = {
-  "7days": "Last 7 days",
-  "30days": "Last 30 days",
-  "90days": "Last 90 days",
-};
+import api from "@/lib/api";
+import { DashboardStats } from "@/types";
+import { useDashboardStore } from "@/store/dashboard-store";
 
 export function LeadSourcesChart() {
-  const [timeRange, setTimeRange] = useState<TimeRange>("30days");
+  const refreshKey = useDashboardStore((state) => state.refreshKey);
+  const triggerRefresh = useDashboardStore((state) => state.triggerRefresh);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [showLabels, setShowLabels] = useState(true);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
 
-  const data = allData[timeRange];
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await api.get<DashboardStats>("/dashboard/stats");
+        setStats(res.data);
+      } catch (error) {
+        console.error("Failed to fetch dashboard stats", error);
+      }
+    };
+    fetchStats();
+  }, [refreshKey]);
+
+  const sent = stats?.sent_messages || 0;
+  const delivered = stats?.delivered_messages || 0;
+  const failed = stats?.failed_messages || 0;
+  const pending = stats?.pending_messages || 0;
+
+  const data = [
+    { name: "Sent", value: sent, color: "#35b9e9" },
+    { name: "Delivered", value: delivered, color: "#6e3ff3" },
+    { name: "Failed", value: failed, color: "#e255f2" },
+    { name: "Pending", value: pending, color: "#375dfb" },
+  ];
+
   const totalLeads = data.reduce((acc, item) => acc + item.value, 0);
 
   const onPieEnter = (_: unknown, index: number) => {
@@ -111,17 +109,6 @@ export function LeadSourcesChart() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-[180px]">
-            <DropdownMenuLabel>Time Range</DropdownMenuLabel>
-            {(Object.keys(timeRangeLabels) as TimeRange[]).map((range) => (
-              <DropdownMenuCheckboxItem
-                key={range}
-                checked={timeRange === range}
-                onCheckedChange={() => setTimeRange(range)}
-              >
-                {timeRangeLabels[range]}
-              </DropdownMenuCheckboxItem>
-            ))}
-            <DropdownMenuSeparator />
             <DropdownMenuLabel>Display Options</DropdownMenuLabel>
             <DropdownMenuCheckboxItem
               checked={showLabels}
@@ -142,7 +129,7 @@ export function LeadSourcesChart() {
               <Maximize2 className="size-4 mr-2" />
               Full Screen
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={triggerRefresh}>
               <RefreshCw className="size-4 mr-2" />
               Refresh Data
             </DropdownMenuItem>
@@ -215,7 +202,7 @@ export function LeadSourcesChart() {
 
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <Settings2 className="size-3" />
-        <span>{timeRangeLabels[timeRange]}</span>
+        <span>Live Data</span>
       </div>
     </div>
   );

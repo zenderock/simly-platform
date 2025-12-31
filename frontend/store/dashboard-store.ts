@@ -5,6 +5,8 @@ interface DashboardState {
   statusFilter: string;
   appFilter: string;
   deviceFilter: string;
+  refreshKey: number;
+  triggerRefresh: () => void;
   setSearchQuery: (query: string) => void;
   setStatusFilter: (filter: string) => void;
   setAppFilter: (filter: string) => void;
@@ -17,6 +19,8 @@ export const useDashboardStore = create<DashboardState>((set) => ({
   statusFilter: "all",
   appFilter: "all",
   deviceFilter: "all",
+  refreshKey: 0,
+  triggerRefresh: () => set((state) => ({ refreshKey: state.refreshKey + 1 })),
   setSearchQuery: (query) => set({ searchQuery: query }),
   setStatusFilter: (filter) => set({ statusFilter: filter }),
   setAppFilter: (filter) => set({ appFilter: filter }),

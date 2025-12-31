@@ -45,8 +45,12 @@ import {
   MoreHorizontal,
   HelpCircle,
   Globe,
+  ShieldAlert,
+  ShieldCheck,
+  Plus,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
+import { useApplicationStore } from "@/store/application-store";
 import Image from "next/image";
 
 const menuItems = [
@@ -77,7 +81,9 @@ export function DashboardSidebar({
 }: React.ComponentProps<typeof Sidebar>) {
   const [appsOpen, setAppsOpen] = React.useState(true);
   const pathname = usePathname();
-  const { user, organizations, logout } = useAuth();
+  const { user, logout } = useAuth();
+  const { applications, activeAppId, setActiveAppId, getActiveApp } = useApplicationStore();
+  const activeApp = getActiveApp();
 
   return (
     <Sidebar collapsible="offcanvas" className="lg:border-r-0!" {...props}>
@@ -89,16 +95,25 @@ export function DashboardSidebar({
       </SidebarHeader>
 
       <SidebarContent className="px-3 sm:px-4 lg:px-5">
-        {/* Active Application Context - Reusing Template Style */}
+        {/* Active Application Context */}
         <div className="flex items-center gap-2 sm:gap-3 rounded-lg border bg-card p-2 sm:p-3 mb-3 sm:mb-4 mt-4">
-          <div className="flex size-8 sm:size-[34px] items-center justify-center rounded-lg bg-primary text-primary-foreground shrink-0">
-            <Folder className="size-4 sm:size-5" />
+          <div className={`flex size-8 sm:size-[34px] items-center justify-center rounded-lg shrink-0 ${activeApp?.is_sandbox ? "bg-orange-500 text-white" : "bg-primary text-primary-foreground"}`}>
+            {activeApp?.is_sandbox ? <ShieldAlert className="size-4 sm:size-5" /> : <Folder className="size-4 sm:size-5" />}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-xs sm:text-sm">Default Project</p>
+            <p className="font-semibold text-xs sm:text-sm truncate">{activeApp?.name || "No App Selected"}</p>
             <div className="flex items-center gap-1 text-muted-foreground">
-              <Key className="size-3 sm:size-3.5" />
-              <span className="text-[10px] sm:text-xs">API Active</span>
+              {activeApp?.is_sandbox ? (
+                <>
+                  <ShieldAlert className="size-3 text-orange-500" />
+                  <span className="text-[10px] sm:text-xs font-bold text-orange-500">Sandbox</span>
+                </>
+              ) : (
+                <>
+                  <ShieldCheck className="size-3 text-emerald-500" />
+                  <span className="text-[10px] sm:text-xs font-bold text-emerald-500">Production</span>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -137,34 +152,43 @@ export function DashboardSidebar({
                       appsOpen ? "" : "-rotate-90"
                     }`}
                   />
-                  PROJECTS
+                  APPLICATIONS
                 </div>
               </CollapsibleTrigger>
-              <MoreHorizontal className="size-4 cursor-pointer hover:text-foreground transition-colors" />
+              <Link href="/applications" className="hover:text-foreground">
+                <MoreHorizontal className="size-4 cursor-pointer" />
+              </Link>
             </SidebarGroupLabel>
             <CollapsibleContent>
               <SidebarGroupContent>
                 <SidebarMenu className="mt-2">
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild className="h-9 sm:h-[38px]">
-                      <Link href="/applications">
-                        <Folder className="size-4 sm:size-5 text-muted-foreground" />
-                        <span className="flex-1 text-muted-foreground text-sm truncate">
-                          Production Gateway
+                  {applications.map((app) => (
+                    <SidebarMenuItem key={app.id}>
+                      <SidebarMenuButton 
+                        isActive={activeAppId === app.id} 
+                        className="h-9 sm:h-[38px]"
+                        onClick={() => setActiveAppId(app.id)}
+                      >
+                        <Folder className={`size-4 sm:size-5 ${activeAppId === app.id ? "text-primary" : "text-muted-foreground"}`} />
+                        <span className={`flex-1 text-sm truncate ${activeAppId === app.id ? "font-bold" : "text-muted-foreground"}`}>
+                          {app.name}
                         </span>
-                        <div className="size-1.5 rounded-full bg-primary shrink-0" />
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                        {app.is_sandbox && (
+                          <div className="size-1.5 rounded-full bg-orange-500 shrink-0" />
+                        )}
+                        {!app.is_sandbox && activeAppId === app.id && (
+                          <div className="size-1.5 rounded-full bg-primary shrink-0" />
+                        )}
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
                   <SidebarMenuItem>
-                    <SidebarMenuButton asChild className="h-9 sm:h-[38px]">
-                      <Link href="/applications">
-                        <Folder className="size-4 sm:size-5 text-muted-foreground" />
-                        <span className="flex-1 text-muted-foreground text-sm truncate">
-                          Test Sandbox
-                        </span>
-                      </Link>
-                    </SidebarMenuButton>
+                     <SidebarMenuButton asChild className="h-9 sm:h-[38px] border-zinc-200/50">
+                        <Link href="/applications" className="text-primary font-medium hover:text-primary/80">
+                           <Plus className="size-4" />
+                           <span className="text-xs">Manage Apps</span>
+                        </Link>
+                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>
               </SidebarGroupContent>

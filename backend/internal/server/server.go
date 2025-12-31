@@ -147,6 +147,7 @@ func (s *Server) setupRoutes() {
 
 		r.Route("/api/dashboard", func(r chi.Router) {
 			r.Get("/stats", dashboardHandler.GetStats)
+			r.Get("/traffic", dashboardHandler.GetTrafficStats)
 		})
 
 		// Organization Management

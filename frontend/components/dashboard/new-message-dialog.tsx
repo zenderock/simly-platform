@@ -25,8 +25,10 @@ import {
 import api from "@/lib/api";
 import { Device } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
+import { useDashboardStore } from "@/store/dashboard-store";
 
 export function NewMessageDialog() {
+  const triggerRefresh = useDashboardStore((state) => state.triggerRefresh);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [devices, setDevices] = useState<Device[]>([]);
@@ -75,6 +77,7 @@ export function NewMessageDialog() {
         variant: "default",
       });
 
+      triggerRefresh();
       setOpen(false);
       setFormData({ to: "", body: "", device_id: "auto" });
       

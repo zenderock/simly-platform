@@ -6,6 +6,9 @@ import { SidebarProvider } from "@/components/ui/sidebar"
 import { DashboardSidebar } from "@/components/dashboard/sidebar"
 import { DashboardHeader } from "@/components/dashboard/header"
 import { useAuth } from "@/lib/auth";
+import { useApplicationStore } from "@/store/application-store";
+import api from "@/lib/api";
+import { Application } from "@/types";
 
 export default function ProtectedLayout({
   children,
@@ -15,13 +18,25 @@ export default function ProtectedLayout({
   const { token } = useAuth();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const setApplications = useApplicationStore((state) => state.setApplications);
 
   useEffect(() => {
     setMounted(true);
     if (!token) {
       router.push("/login");
+    } else {
+      // Fetch apps once authenticated
+      const fetchApps = async () => {
+        try {
+          const res = await api.get<Application[]>("/applications");
+          setApplications(res.data || []);
+        } catch (error) {
+          console.error("Failed to fetch applications", error);
+        }
+      };
+      fetchApps();
     }
-  }, [token, router]);
+  }, [token, router, setApplications]);
 
   if (!mounted || !token) {
     return null; // Or a loading spinner

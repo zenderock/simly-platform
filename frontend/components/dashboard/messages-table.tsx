@@ -51,13 +51,10 @@ import { useDashboardStore } from "@/store/dashboard-store";
 import { Message } from "@/types";
 import api from "@/lib/api";
 
-const statuses = ["sent", "delivered", "failed", "pending"]; // Lowercase to match backend
-const apps = ["Production Auth", "Sandbox Test"]; // We'll mock map these for now or just filter by ID if possible
-const devices = ["Pixel 7 Pro", "Galaxy S21"]; // Same
-
 const PAGE_SIZE_OPTIONS = [10, 20, 30, 50];
 
 export function MessagesTable() {
+  const refreshKey = useDashboardStore((state) => state.refreshKey);
   const searchQuery = useDashboardStore((state) => state.searchQuery);
   const statusFilter = useDashboardStore((state) => state.statusFilter);
   const appFilter = useDashboardStore((state) => state.appFilter);
@@ -89,26 +86,44 @@ export function MessagesTable() {
     };
 
     fetchMessages();
-  }, []);
+  }, [refreshKey]);
 
   const hasActiveFilters =
     statusFilter !== "all" || appFilter !== "all" || deviceFilter !== "all";
+
+  const uniqueApps = React.useMemo(() => {
+    const names = messages.map(m => m.application_name || "Direct API");
+    return Array.from(new Set(names)).sort();
+  }, [messages]);
+
+  const uniqueDevices = React.useMemo(() => {
+    const names = messages.map(m => m.device_name || "Unknown");
+    return Array.from(new Set(names)).sort();
+  }, [messages]);
+
+  const uniqueStatuses = React.useMemo(() => {
+    const s = messages.map(m => m.status.toLowerCase());
+    return Array.from(new Set(s)).sort();
+  }, [messages]);
 
   const filteredMessages = React.useMemo(() => {
     return messages.filter((msg) => {
       const matchesSearch =
         msg.to.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        msg.body.toLowerCase().includes(searchQuery.toLowerCase());
-        // || msg.app.toLowerCase().includes(searchQuery.toLowerCase()); // App name not avail yet
+        msg.body.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (msg.application_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (msg.device_name || "").toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesStatus =
         statusFilter === "all" || msg.status.toLowerCase() === statusFilter.toLowerCase();
 
-      // Placeholder filtering for App/Device until we map IDs to Names
-      // const matchesApp = appFilter === "all" || msg.app === appFilter;
-      // const matchesDevice = deviceFilter === "all" || msg.device === deviceFilter;
+      const matchesApp =
+        appFilter === "all" || msg.application_name === appFilter;
 
-      return matchesSearch && matchesStatus;
+      const matchesDevice =
+        deviceFilter === "all" || msg.device_name === deviceFilter;
+
+      return matchesSearch && matchesStatus && matchesApp && matchesDevice;
     });
   }, [messages, searchQuery, statusFilter, appFilter, deviceFilter]);
 
@@ -183,11 +198,12 @@ export function MessagesTable() {
               >
                 All statuses
               </DropdownMenuCheckboxItem>
-              {statuses.map((status) => (
+              {uniqueStatuses.map((status) => (
                 <DropdownMenuCheckboxItem
                   key={status}
                   checked={statusFilter === status}
                   onCheckedChange={() => setStatusFilter(status)}
+                  className="capitalize"
                 >
                   {status}
                 </DropdownMenuCheckboxItem>
@@ -202,7 +218,7 @@ export function MessagesTable() {
               >
                 All apps
               </DropdownMenuCheckboxItem>
-              {apps.map((app) => (
+              {uniqueApps.map((app) => (
                 <DropdownMenuCheckboxItem
                   key={app}
                   checked={appFilter === app}
@@ -221,7 +237,7 @@ export function MessagesTable() {
               >
                 All devices
               </DropdownMenuCheckboxItem>
-              {devices.map((device) => (
+              {uniqueDevices.map((device) => (
                 <DropdownMenuCheckboxItem
                   key={device}
                   checked={deviceFilter === device}
@@ -321,7 +337,7 @@ export function MessagesTable() {
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className="text-[10px] font-semibold bg-muted/30 border-none">
-                      App #{msg.application_id || "?"}
+                      {msg.application_name || "Direct API"}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -333,7 +349,7 @@ export function MessagesTable() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-xs font-medium text-muted-foreground">
-                    Device #{msg.device_id || "?"}
+                    {msg.device_name || "Unknown"}
                   </TableCell>
                   <TableCell className="text-right text-[10px] text-muted-foreground italic">
                     {new Date(msg.created_at).toLocaleDateString('en-US', {

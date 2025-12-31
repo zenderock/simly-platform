@@ -1,48 +1,196 @@
 "use client";
 
-import { Smartphone, Plus, Power } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useEffect, useState } from "react";
+import { Smartphone, Search, Filter, Terminal, ShieldAlert } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import api from "@/lib/api";
+import { Device, Organization } from "@/types";
+import { DeviceCard } from "@/components/devices/device-card";
+import { ConnectDeviceDialog } from "@/components/devices/connect-device-dialog";
+import { useAuth } from "@/lib/auth";
+import { AnimatePresence, motion } from "framer-motion";
+import { useDashboardStore } from "@/store/dashboard-store";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 export default function DevicesPage() {
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [org, setOrg] = useState<Organization | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const refreshKey = useDashboardStore((state) => state.refreshKey);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const [devicesRes, orgsRes] = await Promise.all([
+          api.get<Device[]>("/devices"),
+          api.get<Organization[]>("/organizations") 
+        ]);
+        
+        setDevices(devicesRes.data || []);
+        
+        // Find active org (simple for now)
+        if (orgsRes.data.length > 0) {
+          setOrg(orgsRes.data[0]);
+        }
+      } catch (error) {
+        console.error("Failed to fetch devices", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [refreshKey]);
+
+  const filteredDevices = devices.filter(d => 
+    d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (d.model || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    d.sim_cards.some(s => s.phone_number?.includes(searchQuery))
+  );
+
+  const activeCount = devices.filter(d => d.status === "online").length;
+  const limitReached = org ? devices.length >= org.max_devices : false;
+
   return (
-    <div className="p-4 sm:p-6 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Devices</h1>
-          <p className="text-muted-foreground">Your Android phones connected as gateways.</p>
+    <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 space-y-8 bg-background">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-[#6e3ff3]">
+            <Smartphone className="size-5" />
+            <span className="text-sm font-bold uppercase tracking-widest">Device Fleet</span>
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">Gateways</h1>
+          <p className="text-muted-foreground text-sm sm:text-base max-w-lg">
+            Manage your Android phones connected as SMS gateways. 
+            Currently using <span className="text-foreground font-semibold">{activeCount} online</span> out of {devices.length} total.
+          </p>
         </div>
-        <Button className="shrink-0 gap-2">
-          <Plus className="size-4" />
-          Add a Device
-        </Button>
+        
+        <ConnectDeviceDialog />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="border shadow-none">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 gap-1 px-1.5 py-0">
-                <div className="size-1 bg-emerald-500 rounded-full" />
-                Online
-              </Badge>
-              <Smartphone className="size-4 text-muted-foreground" />
+      {/* Stats / Limit info */}
+      {org && (
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col sm:flex-row items-center justify-between p-4 rounded-xl border bg-secondary/20 gap-4"
+        >
+          <div className="flex items-center gap-4">
+            <div className="p-2.5 bg-background rounded-lg border shadow-sm">
+              <Terminal className="size-5 text-muted-foreground" />
             </div>
-            <CardTitle className="text-lg mt-2">Pixel 7 Pro</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold">Details</p>
-              <p className="text-sm font-medium">Battery: 85%</p>
-              <p className="text-sm font-medium">Operator: Orange FR</p>
+            <div>
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-tight">Current Plan</p>
+              <p className="text-lg font-bold flex items-center gap-2">
+                {org.plan.toUpperCase()}
+                <Badge variant="outline" className="text-[10px] h-4 px-1 border-[#6e3ff3]/20 text-[#6e3ff3]">Active</Badge>
+              </p>
             </div>
-            <div className="pt-2 border-t flex gap-2">
-              <Button size="sm" variant="outline" className="flex-1 text-xs">Logs</Button>
-              <Button size="sm" variant="outline" className="flex-1 text-xs">Settings</Button>
+          </div>
+
+          <div className="flex gap-4 sm:gap-8 w-full sm:w-auto">
+            <div className="space-y-1 sm:text-right flex-1 sm:flex-none">
+              <p className="text-xs text-muted-foreground font-medium tracking-tight">Devices Usage</p>
+              <p className="font-bold tabular-nums">
+                {devices.length} <span className="text-muted-foreground font-normal">/ {org.max_devices === 100 ? "∞" : org.max_devices}</span>
+              </p>
             </div>
-          </CardContent>
-        </Card>
+            <div className="space-y-1 sm:text-right flex-1 sm:flex-none">
+              <p className="text-xs text-muted-foreground font-medium tracking-tight">SIMs per device</p>
+              <p className="font-bold">
+                Up to {org.max_sims_per_device}
+              </p>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Warning if limit reached */}
+      {limitReached && (
+        <div className="flex items-center gap-3 p-3 text-sm bg-orange-50 border border-orange-100 dark:bg-orange-950/20 dark:border-orange-900/30 text-orange-600 rounded-lg">
+          <ShieldAlert className="size-4 shrink-0" />
+          <p>You've reached your device limit of {org?.max_devices}. Upgrade to a Pro plan to add more devices.</p>
+        </div>
+      )}
+
+      {/* Filter & List */}
+      <div className="space-y-4">
+        <div className="flex items-center gap-4">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <Input 
+              placeholder="Search by name, model or number..." 
+              className="pl-10 h-10 shadow-none border-zinc-200 focus-visible:ring-[#6e3ff3]"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <Button variant="outline" size="icon" className="h-10 w-10 shrink-0">
+            <Filter className="size-4" />
+          </Button>
+        </div>
+
+        {loading ? (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3].map(i => (
+              <Card key={i} className="border shadow-none h-[280px]">
+                <div className="p-6 space-y-4">
+                  <div className="flex justify-between">
+                    <Skeleton className="h-5 w-20" />
+                    <Skeleton className="h-5 w-5" />
+                  </div>
+                  <Skeleton className="h-8 w-1/2" />
+                  <div className="space-y-2 pt-4">
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-2/3" />
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        ) : filteredDevices.length > 0 ? (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <AnimatePresence mode="popLayout">
+              {filteredDevices.map((device) => (
+                <DeviceCard 
+                  key={device.id} 
+                  device={device} 
+                  onDelete={async (id) => {
+                    if (confirm("Are you sure you want to remove this device?")) {
+                      try {
+                        await api.delete(`/devices/${id}`);
+                        setDevices(prev => prev.filter(d => d.id !== id));
+                        // trigger global refresh too
+                      } catch (e) {
+                        alert("Failed to delete device");
+                      }
+                    }
+                  }}
+                />
+              ))}
+            </AnimatePresence>
+          </div>
+        ) : (
+          <div className="py-20 flex flex-col items-center justify-center text-center border rounded-2xl bg-zinc-50/50 dark:bg-zinc-900/20 border-dashed">
+            <div className="size-16 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-4">
+              <Smartphone className="size-8 text-zinc-400" />
+            </div>
+            <h3 className="text-lg font-semibold">No devices found</h3>
+            <p className="text-muted-foreground text-sm max-w-[250px] mt-1">
+              Start by connecting an Android phone to send SMS from your local SIM cards.
+            </p>
+            <div className="mt-6">
+              <ConnectDeviceDialog />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
