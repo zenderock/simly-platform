@@ -1,5 +1,5 @@
 
-import { Atom } from "lucide-react"
+import { CheckCircle, Star } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 
@@ -18,20 +18,72 @@ export default function AuthLayout({
           </Link>
         </div>
         <div className="flex flex-1 items-center justify-center">
-          <div className="w-full max-w-xs">
+          <div className="w-full max-w-sm">
             {children}
           </div>
         </div>
       </div>
-      <div className="relative hidden bg-muted lg:block">
-        <div className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale bg-zinc-900" />
-        <div className="absolute bottom-10 left-10 right-10 z-20 text-white">
-           <blockquote className="space-y-2">
-            <p className="text-lg">
-              &ldquo;Transform your Android phone into a professional SMS gateway. Simly is the game changer we needed for our notification infrastructure.&rdquo;
-            </p>
-            <footer className="text-sm">Sofia Davis, CTO at TechCorp</footer>
-          </blockquote>
+      <div className="relative hidden bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 lg:block">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-20">
+          <div className="h-full w-full bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.15)_1px,transparent_0)] bg-[length:20px_20px]" />
+        </div>
+        
+        {/* Content */}
+        <div className="relative z-10 flex h-full flex-col justify-between p-10 text-white">
+          {/* Main Message */}
+          <div className="flex-1 flex flex-col justify-center space-y-8">
+            <div className="space-y-4">
+              <h2 className="text-4xl font-bold leading-tight">
+                Turn your phone into a professional SMS gateway
+              </h2>
+              <p className="text-xl text-blue-100 leading-relaxed">
+                Enterprise-grade SMS API with real-time monitoring and complete control over your messaging infrastructure.
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-8 text-blue-100">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5" />
+                <span>99.9% Uptime</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5" />
+                <span>Real-time alerts</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5" />
+                <span>Enterprise security</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Testimonial */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <div className="flex">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                ))}
+              </div>
+              <span className="text-sm text-blue-100">Trusted by 500+ developers</span>
+            </div>
+            
+            <blockquote className="space-y-3">
+              <p className="text-lg leading-relaxed">
+                "Simly transformed our notification infrastructure. What used to take weeks now works in minutes."
+              </p>
+              <footer className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center">
+                  <span className="text-sm font-semibold">SD</span>
+                </div>
+                <div>
+                  <div className="font-medium">Sofia Davis</div>
+                  <div className="text-sm text-blue-100">CTO at TechCorp</div>
+                </div>
+              </footer>
+            </blockquote>
+          </div>
         </div>
       </div>
     </div>

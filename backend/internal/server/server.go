@@ -156,6 +156,11 @@ func (s *Server) setupRoutes() {
 		// Organization Management
 		r.Route("/api/organizations", func(r chi.Router) {
 			r.Get("/", orgHandler.ListOrganizations)
+			r.Get("/current", orgHandler.GetOrganization)
+			r.Put("/current", orgHandler.UpdateOrganization)
+			r.Put("/current/plan", orgHandler.UpdatePlan)
+			r.Get("/current/stats", orgHandler.GetOrganizationStats)
+			r.Get("/plans", orgHandler.ListPlans)
 			r.Post("/", orgHandler.CreateOrganization)
 			r.Post("/members", orgHandler.AddMember)
 			r.Delete("/members/{userID}", orgHandler.RemoveMember)
@@ -165,6 +170,7 @@ func (s *Server) setupRoutes() {
 		r.Route("/api/alerts", func(r chi.Router) {
 			r.Get("/", alertHandler.ListAlerts)
 			r.Post("/{alertID}/read", alertHandler.MarkAsRead)
+			r.Post("/test", alertHandler.CreateTestAlert) // Route de test
 		})
 	})
 }

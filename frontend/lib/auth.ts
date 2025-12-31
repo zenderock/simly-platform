@@ -1,17 +1,14 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { Organization } from '@/types';
+import api from './api';
 
 interface User {
   id: number;
   email: string;
   name: string;
   avatar_url?: string;
-}
-
-interface Organization {
-  id: number;
-  name: string;
 }
 
 interface AuthState {
@@ -22,12 +19,13 @@ interface AuthState {
   setAuth: (token: string, user: User) => void;
   setOrganizations: (orgs: Organization[]) => void;
   setOrganizationId: (id: number) => void;
+  refreshOrganizations: () => Promise<void>;
   logout: () => void;
 }
 
 export const useAuth = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       token: null,
       user: null,
       organizationId: null,
@@ -36,12 +34,20 @@ export const useAuth = create<AuthState>()(
       setOrganizations: (organizations) => {
         set({ organizations });
         // Set default org if not selected and list not empty
-        const { organizationId } = useAuth.getState();
+        const { organizationId } = get();
         if (!organizationId && organizations.length > 0) {
           set({ organizationId: organizations[0].id });
         }
       },
       setOrganizationId: (id) => set({ organizationId: id }),
+      refreshOrganizations: async () => {
+        try {
+          const response = await api.get<Organization[]>('/organizations');
+          set({ organizations: response.data });
+        } catch (error) {
+          console.error('Failed to refresh organizations:', error);
+        }
+      },
       logout: () => set({ token: null, user: null, organizationId: null, organizations: [] }),
     }),
     {

@@ -22,7 +22,7 @@ func (s *OrganizationService) CreateOrganization(ctx context.Context, userID int
 	org := &model.Organization{
 		Name: name,
 		Slug: slug,
-		Plan: "free",
+		Plan: "starter",
 	}
 	if err := s.store.CreateOrganization(ctx, org); err != nil {
 		return nil, err
@@ -56,4 +56,21 @@ func (s *OrganizationService) GetUserOrganizations(ctx context.Context, userID i
 
 func (s *OrganizationService) RemoveMember(ctx context.Context, orgID, userID int) error {
 	return s.store.RemoveOrganizationMember(ctx, orgID, userID)
+}
+
+func (s *OrganizationService) GetOrganizationByID(ctx context.Context, orgID int) (*model.Organization, error) {
+	return s.store.GetOrganizationByID(ctx, orgID)
+}
+
+func (s *OrganizationService) UpdateOrganization(ctx context.Context, orgID int, name string) error {
+	return s.store.UpdateOrganization(ctx, orgID, name)
+}
+
+func (s *OrganizationService) GetOrganizationStats(ctx context.Context, orgID int) (*model.OrganizationStats, error) {
+	return s.store.GetOrganizationStats(ctx, orgID)
+}
+
+func (s *OrganizationService) UpdatePlan(ctx context.Context, orgID int, planID string) error {
+	limits := model.GetPlanLimits(planID)
+	return s.store.UpdateOrganizationPlan(ctx, orgID, planID, limits.SMSMonthly, limits.SMSBurst, limits.MaxDevices, limits.MaxSimsPerDevice)
 }

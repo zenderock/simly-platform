@@ -59,3 +59,31 @@ func (h *AlertHandler) MarkAsRead(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 }
+
+// CreateTestAlert creates a test notification for development/demo purposes
+func (h *AlertHandler) CreateTestAlert(w http.ResponseWriter, r *http.Request) {
+	orgID, err := GetActiveOrgID(r, h.orgService)
+	if err != nil {
+		http.Error(w, "Organization required", http.StatusForbidden)
+		return
+	}
+
+	// Create a test alert
+	err = h.service.NotifyOrganization(
+		r.Context(),
+		orgID,
+		"test_notification",
+		"Test Notification",
+		"This is a test notification to demonstrate the alert system. Everything is working correctly!",
+		"info",
+	)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "Test alert created successfully",
+	})
+}

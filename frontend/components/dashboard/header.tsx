@@ -12,20 +12,20 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { 
   Building2, 
   Check, 
   ChevronsUpDown, 
   PlusCircle,
-  Bell,
-  Search,
-  Command
+  Settings
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import api from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { CreateOrgDialog } from "@/components/dashboard/create-org-dialog";
+import { NotificationDropdown } from "@/components/dashboard/notifications";
+import { GlobalSearch } from "@/components/dashboard/global-search";
+import Link from "next/link";
 
 export function DashboardHeader() {
   const { organizationId, organizations, setOrganizations, setOrganizationId } = useAuth();
@@ -85,6 +85,13 @@ export function DashboardHeader() {
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href="/organization" className="cursor-pointer py-2.5 px-3 text-muted-foreground">
+                <Settings className="size-4 mr-2" />
+                <span className="text-sm">Organization Settings</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem 
               className="cursor-pointer py-2.5 px-3 text-primary font-medium"
               onSelect={() => setCreateOrgOpen(true)}
@@ -97,25 +104,12 @@ export function DashboardHeader() {
 
         <div className="h-4 w-px bg-border hidden sm:block" />
 
-        {/* Global Search - Premium Template Feature */}
-        <div className="hidden md:flex relative max-w-md flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-          <Input
-            placeholder="Search everywhere..."
-            className="pl-9 pr-12 h-9 bg-background/50 border shadow-none focus-visible:ring-1 focus-visible:ring-primary w-full"
-          />
-          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 bg-muted px-1.5 py-0.5 rounded border text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-            <Command className="size-2.5" />
-            <span>K</span>
-          </div>
-        </div>
+        {/* Global Search */}
+        <GlobalSearch />
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3">
-        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg hover:bg-accent/50 relative">
-          <Bell className="size-4" />
-          <span className="absolute top-2 right-2 size-2 bg-primary rounded-full border-2 border-card" />
-        </Button>
+        <NotificationDropdown />
         <div className="h-4 w-px bg-border mx-1" />
         <ThemeToggle />
       </div>

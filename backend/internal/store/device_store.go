@@ -146,3 +146,23 @@ func (s *Store) DeleteDevice(ctx context.Context, deviceID, orgID int) error {
 	}
 	return nil
 }
+
+func (s *Store) CountDevicesByOrganization(ctx context.Context, orgID int) (int, error) {
+	query := `SELECT COUNT(*) FROM devices WHERE organization_id = $1`
+	var count int
+	err := s.db.QueryRow(ctx, query, orgID).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count devices: %w", err)
+	}
+	return count, nil
+}
+
+func (s *Store) CountSimsByDevice(ctx context.Context, deviceID int) (int, error) {
+	query := `SELECT COUNT(*) FROM device_sims WHERE device_id = $1`
+	var count int
+	err := s.db.QueryRow(ctx, query, deviceID).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count SIMs: %w", err)
+	}
+	return count, nil
+}

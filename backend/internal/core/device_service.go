@@ -2,11 +2,17 @@ package core
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/zenderock/simly-backend/internal/model"
 	"github.com/zenderock/simly-backend/internal/store"
+)
+
+var (
+	ErrDeviceLimitReached = errors.New("device limit reached for your plan")
+	ErrSimLimitReached    = errors.New("SIM limit per device reached for your plan")
 )
 
 type DeviceService struct {
@@ -19,6 +25,22 @@ func NewDeviceService(store *store.Store, alertService *AlertService) *DeviceSer
 }
 
 func (s *DeviceService) RegisterDevice(ctx context.Context, orgID int, req model.RegisterDeviceRequest) (*model.Device, error) {
+	// Check device limit
+	org, err := s.store.GetOrganizationByID(ctx, orgID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get organization: %w", err)
+	}
+
+	if org.MaxDevices != -1 { // -1 = unlimited
+		deviceCount, err := s.store.CountDevicesByOrganization(ctx, orgID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to count devices: %w", err)
+		}
+		if deviceCount >= org.MaxDevices {
+			return nil, ErrDeviceLimitReached
+		}
+	}
+
 	now := time.Now()
 	device := &model.Device{
 		OrganizationID: orgID,
@@ -33,6 +55,23 @@ func (s *DeviceService) RegisterDevice(ctx context.Context, orgID int, req model
 		return nil, err
 	}
 	return device, nil
+}
+
+func (s *DeviceService) CheckSimLimit(ctx context.Context, orgID, deviceID int) error {
+	org, err := s.store.GetOrganizationByID(ctx, orgID)
+	if err != nil {
+		return fmt.Errorf("failed to get organization: %w", err)
+	}
+
+	simCount, err := s.store.CountSimsByDevice(ctx, deviceID)
+	if err != nil {
+		return fmt.Errorf("failed to count SIMs: %w", err)
+	}
+
+	if simCount >= org.MaxSimsPerDevice {
+		return ErrSimLimitReached
+	}
+	return nil
 }
 
 func (s *DeviceService) ListDevices(ctx context.Context, orgID int) ([]model.Device, error) {

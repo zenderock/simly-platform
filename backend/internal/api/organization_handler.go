@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/zenderock/simly-backend/internal/core"
+	"github.com/zenderock/simly-backend/internal/model"
 )
 
 type OrganizationHandler struct {
@@ -134,4 +135,127 @@ func (h *OrganizationHandler) ListOrganizations(w http.ResponseWriter, r *http.R
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(orgs)
+}
+
+func (h *OrganizationHandler) GetOrganization(w http.ResponseWriter, r *http.Request) {
+	orgID, err := GetActiveOrgID(r, h.service)
+	if err != nil {
+		http.Error(w, "Organization required", http.StatusForbidden)
+		return
+	}
+
+	org, err := h.service.GetOrganizationByID(r.Context(), orgID)
+	if err != nil {
+		http.Error(w, "Failed to fetch organization", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(org)
+}
+
+func (h *OrganizationHandler) UpdateOrganization(w http.ResponseWriter, r *http.Request) {
+	orgID, err := GetActiveOrgID(r, h.service)
+	if err != nil {
+		http.Error(w, "Organization required", http.StatusForbidden)
+		return
+	}
+
+	type UpdateOrgRequest struct {
+		Name string `json:"name"`
+	}
+	var req UpdateOrgRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+
+	// Check permissions
+	userID := GetUserID(r.Context())
+	role, err := h.service.GetMemberRole(r.Context(), orgID, userID)
+	if err != nil {
+		http.Error(w, "Failed to verify permissions", http.StatusInternalServerError)
+		return
+	}
+	if role != "owner" && role != "admin" {
+		http.Error(w, "Unauthorized: only owners and admins can update organization", http.StatusForbidden)
+		return
+	}
+
+	if err := h.service.UpdateOrganization(r.Context(), orgID, req.Name); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Audit
+	h.auditService.Log(r.Context(), orgID, &userID, "organization.updated", "organization", strconv.Itoa(orgID), map[string]string{"name": req.Name}, r.RemoteAddr)
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *OrganizationHandler) GetOrganizationStats(w http.ResponseWriter, r *http.Request) {
+	orgID, err := GetActiveOrgID(r, h.service)
+	if err != nil {
+		http.Error(w, "Organization required", http.StatusForbidden)
+		return
+	}
+
+	stats, err := h.service.GetOrganizationStats(r.Context(), orgID)
+	if err != nil {
+		http.Error(w, "Failed to fetch organization stats", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(stats)
+}
+
+func (h *OrganizationHandler) ListPlans(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(model.AvailablePlans)
+}
+
+func (h *OrganizationHandler) UpdatePlan(w http.ResponseWriter, r *http.Request) {
+	orgID, err := GetActiveOrgID(r, h.service)
+	if err != nil {
+		http.Error(w, "Organization required", http.StatusForbidden)
+		return
+	}
+
+	type UpdatePlanRequest struct {
+		Plan string `json:"plan"`
+	}
+	var req UpdatePlanRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+
+	// Validate plan using centralized definition
+	if model.GetPlanByID(req.Plan) == nil {
+		http.Error(w, "Invalid plan", http.StatusBadRequest)
+		return
+	}
+
+	// Check permissions - only owner can change plan
+	userID := GetUserID(r.Context())
+	role, err := h.service.GetMemberRole(r.Context(), orgID, userID)
+	if err != nil {
+		http.Error(w, "Failed to verify permissions", http.StatusInternalServerError)
+		return
+	}
+	if role != "owner" {
+		http.Error(w, "Unauthorized: only owners can change the plan", http.StatusForbidden)
+		return
+	}
+
+	if err := h.service.UpdatePlan(r.Context(), orgID, req.Plan); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Audit
+	h.auditService.Log(r.Context(), orgID, &userID, "organization.plan_updated", "organization", strconv.Itoa(orgID), map[string]string{"plan": req.Plan}, r.RemoteAddr)
+
+	w.WriteHeader(http.StatusOK)
 }

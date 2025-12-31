@@ -92,3 +92,14 @@ export interface TrafficStat {
   date: string;
   count: number;
 }
+
+export interface Alert {
+  id: number;
+  organization_id: number;
+  type: string;
+  severity: "info" | "warning" | "error" | "success";
+  title: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+}

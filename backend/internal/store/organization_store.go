@@ -60,7 +60,7 @@ func (s *Store) AddOrganizationMember(ctx context.Context, member *model.Organiz
 
 func (s *Store) GetUserOrganizations(ctx context.Context, userID int) ([]model.Organization, error) {
 	query := `
-		SELECT o.id, o.name, o.slug, o.plan, o.max_devices, o.max_sims_per_device, o.created_at, o.updated_at
+		SELECT o.id, o.name, o.slug, o.plan, o.sms_monthly_limit, o.sms_burst_limit, o.max_devices, o.max_sims_per_device, o.created_at, o.updated_at
 		FROM organizations o
 		JOIN organization_members om ON o.id = om.organization_id
 		WHERE om.user_id = $1
@@ -74,7 +74,7 @@ func (s *Store) GetUserOrganizations(ctx context.Context, userID int) ([]model.O
 	var orgs []model.Organization
 	for rows.Next() {
 		var o model.Organization
-		if err := rows.Scan(&o.ID, &o.Name, &o.Slug, &o.Plan, &o.MaxDevices, &o.MaxSimsPerDevice, &o.CreatedAt, &o.UpdatedAt); err != nil {
+		if err := rows.Scan(&o.ID, &o.Name, &o.Slug, &o.Plan, &o.SMSMonthlyLimit, &o.SMSBurstLimit, &o.MaxDevices, &o.MaxSimsPerDevice, &o.CreatedAt, &o.UpdatedAt); err != nil {
 			return nil, err
 		}
 		orgs = append(orgs, o)
@@ -103,4 +103,101 @@ func (s *Store) RemoveOrganizationMember(ctx context.Context, orgID, userID int)
 		return fmt.Errorf("member not found")
 	}
 	return nil
+}
+
+func (s *Store) UpdateOrganization(ctx context.Context, orgID int, name string) error {
+	query := `UPDATE organizations SET name = $1, updated_at = NOW() WHERE id = $2`
+	result, err := s.db.Exec(ctx, query, name, orgID)
+	if err != nil {
+		return fmt.Errorf("failed to update organization: %w", err)
+	}
+	rowsAffected := result.RowsAffected()
+	if rowsAffected == 0 {
+		return fmt.Errorf("organization not found")
+	}
+	return nil
+}
+
+func (s *Store) UpdateOrganizationPlan(ctx context.Context, orgID int, plan string, smsMonthly, smsBurst, maxDevices, maxSimsPerDevice int) error {
+	query := `
+		UPDATE organizations 
+		SET plan = $1, sms_monthly_limit = $2, sms_burst_limit = $3, max_devices = $4, max_sims_per_device = $5, updated_at = NOW() 
+		WHERE id = $6
+	`
+	result, err := s.db.Exec(ctx, query, plan, smsMonthly, smsBurst, maxDevices, maxSimsPerDevice, orgID)
+	if err != nil {
+		return fmt.Errorf("failed to update organization plan: %w", err)
+	}
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("organization not found")
+	}
+	return nil
+}
+
+func (s *Store) GetOrganizationStats(ctx context.Context, orgID int) (*model.OrganizationStats, error) {
+	stats := &model.OrganizationStats{}
+
+	// Messages today
+	query := `
+		SELECT COUNT(*) 
+		FROM messages 
+		WHERE organization_id = $1 AND DATE(created_at) = CURRENT_DATE
+	`
+	err := s.db.QueryRow(ctx, query, orgID).Scan(&stats.MessagesToday)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get messages today: %w", err)
+	}
+
+	// Messages this month
+	query = `
+		SELECT COUNT(*) 
+		FROM messages 
+		WHERE organization_id = $1 AND DATE_TRUNC('month', created_at) = DATE_TRUNC('month', CURRENT_DATE)
+	`
+	err = s.db.QueryRow(ctx, query, orgID).Scan(&stats.MessagesThisMonth)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get messages this month: %w", err)
+	}
+
+	// Active devices (seen in last 24 hours)
+	query = `
+		SELECT COUNT(*) 
+		FROM devices 
+		WHERE organization_id = $1 AND status = 'online' AND last_seen_at > NOW() - INTERVAL '24 hours'
+	`
+	err = s.db.QueryRow(ctx, query, orgID).Scan(&stats.ActiveDevices)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get active devices: %w", err)
+	}
+
+	// Total devices
+	query = `
+		SELECT COUNT(*) 
+		FROM devices 
+		WHERE organization_id = $1
+	`
+	err = s.db.QueryRow(ctx, query, orgID).Scan(&stats.TotalDevices)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get total devices: %w", err)
+	}
+
+	// Success rate (last 30 days)
+	query = `
+		SELECT 
+			CASE 
+				WHEN COUNT(*) = 0 THEN 0.0
+				ELSE ROUND(
+					(COUNT(*) FILTER (WHERE status = 'delivered')::float / COUNT(*)::float) * 100, 
+					1
+				)
+			END as success_rate
+		FROM messages 
+		WHERE organization_id = $1 AND created_at > NOW() - INTERVAL '30 days'
+	`
+	err = s.db.QueryRow(ctx, query, orgID).Scan(&stats.SuccessRate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get success rate: %w", err)
+	}
+
+	return stats, nil
 }

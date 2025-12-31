@@ -30,3 +30,11 @@ type CreateOrgRequest struct {
 	Name string `json:"name"`
 	Slug string `json:"slug,omitempty"` // Optional, auto-generated if missing
 }
+
+type OrganizationStats struct {
+	MessagesToday     int     `json:"messages_today"`
+	MessagesThisMonth int     `json:"messages_this_month"`
+	ActiveDevices     int     `json:"active_devices"`
+	TotalDevices      int     `json:"total_devices"`
+	SuccessRate       float64 `json:"success_rate"`
+}

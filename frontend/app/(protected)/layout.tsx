@@ -8,6 +8,7 @@ import { DashboardHeader } from "@/components/dashboard/header"
 import { useAuth } from "@/lib/auth";
 import { useApplicationStore } from "@/store/application-store";
 import api from "@/lib/api";
+import axios from "axios";
 import { Application } from "@/types";
 
 export default function ProtectedLayout({
@@ -18,29 +19,52 @@ export default function ProtectedLayout({
   const { token } = useAuth();
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const setApplications = useApplicationStore((state) => state.setApplications);
 
   useEffect(() => {
     setMounted(true);
-    if (!token) {
-      router.push("/login");
-    } else {
-      // Fetch apps once authenticated
-      const fetchApps = async () => {
-        try {
-          const res = await api.get<Application[]>("/applications");
-          setApplications(res.data || []);
-        } catch (error) {
-          console.error("Failed to fetch applications", error);
-        }
-      };
-      fetchApps();
-    }
-  }, [token, router, setApplications]);
+  }, []);
 
-  if (!mounted || !token) {
-    return null; // Or a loading spinner
+  useEffect(() => {
+    if (!mounted) return;
+
+    const timer = setTimeout(() => {
+      if (!token) {
+        router.push("/login");
+      } else {
+        const fetchApps = async () => {
+          try {
+            const res = await api.get<Application[]>("/applications");
+            setApplications(res.data || []);
+          } catch (error) {
+            console.error("Failed to fetch applications", error);
+            if (axios.isAxiosError(error) && error.response?.status === 401) {
+              useAuth.getState().logout();
+              router.push("/login");
+            }
+          }
+        };
+        fetchApps();
+      }
+      setIsLoading(false);
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [mounted, token, router, setApplications]);
+
+  if (!mounted || isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
   }
+
+  if (!token) {
+    return null;
+  }
+
   return (
     <SidebarProvider className="bg-sidebar">
       <DashboardSidebar />

@@ -37,7 +37,13 @@ func (s *RateLimitService) AllowRequest(ctx context.Context, appID int, orgID in
 		return fmt.Errorf("monthly quota exceeded")
 	}
 
-	// 2. Check Burst Limit (In-Memory Token Bucket)
+	// 2. Update limiter with org's burst limit
+	org, err := s.store.GetOrganizationByID(ctx, orgID)
+	if err == nil && org.SMSBurstLimit > 0 {
+		s.UpdateLimiterForOrg(appID, org.SMSBurstLimit)
+	}
+
+	// 3. Check Burst Limit (In-Memory Token Bucket)
 	limiter := s.getLimiter(appID)
 	if !limiter.Allow() {
 		return fmt.Errorf("rate limit exceeded (too many requests per second)")
@@ -58,16 +64,27 @@ func (s *RateLimitService) getLimiter(appID int) *rate.Limiter {
 
 	limiter, exists := s.limiters[appID]
 	if !exists {
-		// Define limits. Ideally fetch from App/Org plan.
-		// Default: 1 request per second, burst of 5.
-		// For MVP we hardcode somewhat permissive global defaults or could look up Org.
-		// Let's assume standard SaaS limits: 5 TPS burst.
+		// Default limits - will be updated per-org when checking quota
 		limit := rate.Limit(5.0)
 		burst := 10
 		limiter = rate.NewLimiter(limit, burst)
 		s.limiters[appID] = limiter
 	}
 	return limiter
+}
+
+// UpdateLimiterForOrg updates the rate limiter based on organization's plan
+func (s *RateLimitService) UpdateLimiterForOrg(appID int, burstLimit int) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	// Convert burst limit to rate (requests per second)
+	ratePerSecond := float64(burstLimit) / 60.0 // burst per minute -> per second
+	if ratePerSecond < 1 {
+		ratePerSecond = 1
+	}
+	limiter := rate.NewLimiter(rate.Limit(ratePerSecond), burstLimit)
+	s.limiters[appID] = limiter
 }
 
 func (s *RateLimitService) checkMonthlyQuota(ctx context.Context, appID, orgID int) (bool, error) {
