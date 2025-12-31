@@ -44,5 +44,5 @@ func (s *Store) GetUserByEmail(ctx context.Context, email string) (*model.User, 
 		}
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
-	return nil, nil
+	return user, nil
 }
