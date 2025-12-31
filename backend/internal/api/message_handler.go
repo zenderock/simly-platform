@@ -17,17 +17,8 @@ func NewMessageHandler(service *core.MessageService, orgService *core.Organizati
 	return &MessageHandler{service: service, orgService: orgService}
 }
 
-func (h *MessageHandler) getActiveOrgID(r *http.Request) (int, error) {
-	userID := GetUserID(r.Context())
-	orgs, err := h.orgService.GetUserOrganizations(r.Context(), userID)
-	if err != nil || len(orgs) == 0 {
-		return 0, core.ErrNoOrganization
-	}
-	return orgs[0].ID, nil
-}
-
 func (h *MessageHandler) SendSMS(w http.ResponseWriter, r *http.Request) {
-	orgID, err := h.getActiveOrgID(r)
+	orgID, err := GetActiveOrgID(r, h.orgService)
 	if err != nil {
 		http.Error(w, "Organization required", http.StatusForbidden)
 		return
@@ -60,7 +51,7 @@ func (h *MessageHandler) InternalReceiveSMS(w http.ResponseWriter, r *http.Reque
 	// BUT, if we use API Key or Device Token, we would extract Device -> Org.
 	// Since we use Bearer Token of User, we can find the Org.
 
-	orgID, err := h.getActiveOrgID(r)
+	orgID, err := GetActiveOrgID(r, h.orgService)
 	if err != nil {
 		http.Error(w, "Organization required", http.StatusForbidden)
 		return
@@ -86,7 +77,7 @@ func (h *MessageHandler) InternalReceiveSMS(w http.ResponseWriter, r *http.Reque
 }
 
 func (h *MessageHandler) ListMessages(w http.ResponseWriter, r *http.Request) {
-	orgID, err := h.getActiveOrgID(r)
+	orgID, err := GetActiveOrgID(r, h.orgService)
 	if err != nil {
 		http.Error(w, "Organization required", http.StatusForbidden)
 		return

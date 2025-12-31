@@ -21,17 +21,8 @@ func NewAPIKeyHandler(service *core.APIKeyService, appService *core.ApplicationS
 	return &APIKeyHandler{service: service, appService: appService, orgService: orgService, auditService: auditService}
 }
 
-func (h *APIKeyHandler) getActiveOrgID(r *http.Request) (int, error) {
-	userID := GetUserID(r.Context())
-	orgs, err := h.orgService.GetUserOrganizations(r.Context(), userID)
-	if err != nil || len(orgs) == 0 {
-		return 0, core.ErrNoOrganization
-	}
-	return orgs[0].ID, nil
-}
-
 func (h *APIKeyHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request) {
-	orgID, err := h.getActiveOrgID(r)
+	orgID, err := GetActiveOrgID(r, h.orgService)
 	if err != nil {
 		http.Error(w, "Organization required", http.StatusForbidden)
 		return
@@ -70,7 +61,7 @@ func (h *APIKeyHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *APIKeyHandler) ListAPIKeys(w http.ResponseWriter, r *http.Request) {
-	orgID, err := h.getActiveOrgID(r)
+	orgID, err := GetActiveOrgID(r, h.orgService)
 	if err != nil {
 		http.Error(w, "Organization required", http.StatusForbidden)
 		return
@@ -112,7 +103,7 @@ func (h *APIKeyHandler) RevokeAPIKey(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orgID, err := h.getActiveOrgID(r)
+	orgID, err := GetActiveOrgID(r, h.orgService)
 	if err != nil {
 		http.Error(w, "Organization required", http.StatusForbidden)
 		return

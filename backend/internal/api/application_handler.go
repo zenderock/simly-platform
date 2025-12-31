@@ -20,17 +20,8 @@ func NewApplicationHandler(service *core.ApplicationService, orgService *core.Or
 	return &ApplicationHandler{service: service, orgService: orgService, auditService: auditService}
 }
 
-func (h *ApplicationHandler) getActiveOrgID(r *http.Request) (int, error) {
-	userID := GetUserID(r.Context())
-	orgs, err := h.orgService.GetUserOrganizations(r.Context(), userID)
-	if err != nil || len(orgs) == 0 {
-		return 0, core.ErrNoOrganization
-	}
-	return orgs[0].ID, nil
-}
-
 func (h *ApplicationHandler) CreateApplication(w http.ResponseWriter, r *http.Request) {
-	orgID, err := h.getActiveOrgID(r)
+	orgID, err := GetActiveOrgID(r, h.orgService)
 	if err != nil {
 		http.Error(w, "Organization required", http.StatusForbidden)
 		return
@@ -58,7 +49,7 @@ func (h *ApplicationHandler) CreateApplication(w http.ResponseWriter, r *http.Re
 }
 
 func (h *ApplicationHandler) ListApplications(w http.ResponseWriter, r *http.Request) {
-	orgID, err := h.getActiveOrgID(r)
+	orgID, err := GetActiveOrgID(r, h.orgService)
 	if err != nil {
 		http.Error(w, "Organization required", http.StatusForbidden)
 		return
@@ -82,7 +73,7 @@ func (h *ApplicationHandler) DeleteApplication(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	orgID, err := h.getActiveOrgID(r)
+	orgID, err := GetActiveOrgID(r, h.orgService)
 	if err != nil {
 		http.Error(w, "Organization required", http.StatusForbidden)
 		return

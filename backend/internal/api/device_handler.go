@@ -20,18 +20,8 @@ func NewDeviceHandler(service *core.DeviceService, orgService *core.Organization
 	return &DeviceHandler{service: service, orgService: orgService, auditService: auditService}
 }
 
-// Helper to get active Org ID (MVP: First available org)
-func (h *DeviceHandler) getActiveOrgID(r *http.Request) (int, error) {
-	userID := GetUserID(r.Context())
-	orgs, err := h.orgService.GetUserOrganizations(r.Context(), userID)
-	if err != nil || len(orgs) == 0 {
-		return 0, core.ErrNoOrganization
-	}
-	return orgs[0].ID, nil
-}
-
 func (h *DeviceHandler) RegisterDevice(w http.ResponseWriter, r *http.Request) {
-	orgID, err := h.getActiveOrgID(r)
+	orgID, err := GetActiveOrgID(r, h.orgService)
 	if err != nil {
 		http.Error(w, "Organization required", http.StatusForbidden)
 		return
@@ -61,7 +51,7 @@ func (h *DeviceHandler) RegisterDevice(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *DeviceHandler) ListDevices(w http.ResponseWriter, r *http.Request) {
-	orgID, err := h.getActiveOrgID(r)
+	orgID, err := GetActiveOrgID(r, h.orgService)
 	if err != nil {
 		http.Error(w, "Organization required", http.StatusForbidden)
 		return
@@ -85,7 +75,7 @@ func (h *DeviceHandler) Heartbeat(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orgID, err := h.getActiveOrgID(r)
+	orgID, err := GetActiveOrgID(r, h.orgService)
 	if err != nil {
 		http.Error(w, "Organization required", http.StatusForbidden)
 		return
@@ -107,7 +97,7 @@ func (h *DeviceHandler) DeleteDevice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orgID, err := h.getActiveOrgID(r)
+	orgID, err := GetActiveOrgID(r, h.orgService)
 	if err != nil {
 		http.Error(w, "Organization required", http.StatusForbidden)
 		return

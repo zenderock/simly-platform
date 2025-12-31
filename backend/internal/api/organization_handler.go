@@ -18,18 +18,8 @@ func NewOrganizationHandler(service *core.OrganizationService, auditService *cor
 	return &OrganizationHandler{service: service, auditService: auditService}
 }
 
-// Helper to get active Org ID (MVP: First available org)
-func (h *OrganizationHandler) getActiveOrgID(r *http.Request) (int, error) {
-	userID := GetUserID(r.Context())
-	orgs, err := h.service.GetUserOrganizations(r.Context(), userID)
-	if err != nil || len(orgs) == 0 {
-		return 0, core.ErrNoOrganization
-	}
-	return orgs[0].ID, nil
-}
-
 func (h *OrganizationHandler) AddMember(w http.ResponseWriter, r *http.Request) {
-	orgID, err := h.getActiveOrgID(r)
+	orgID, err := GetActiveOrgID(r, h.service)
 	if err != nil {
 		http.Error(w, "Organization required", http.StatusForbidden)
 		return
@@ -76,9 +66,21 @@ func (h *OrganizationHandler) RemoveMember(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	orgID, err := h.getActiveOrgID(r)
+	orgID, err := GetActiveOrgID(r, h.service)
 	if err != nil {
 		http.Error(w, "Organization required", http.StatusForbidden)
+		return
+	}
+
+	// Check Permissions
+	userID := GetUserID(r.Context())
+	role, err := h.service.GetMemberRole(r.Context(), orgID, userID)
+	if err != nil {
+		http.Error(w, "Failed to verify permissions", http.StatusInternalServerError)
+		return
+	}
+	if role != "owner" && role != "admin" {
+		http.Error(w, "Unauthorized: only owners and admins can remove members", http.StatusForbidden)
 		return
 	}
 
@@ -88,7 +90,7 @@ func (h *OrganizationHandler) RemoveMember(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Audit
-	userID := GetUserID(r.Context())
+	userID = GetUserID(r.Context())
 	h.auditService.Log(r.Context(), orgID, &userID, "member.removed", "user", userIDStr, nil, r.RemoteAddr)
 
 	w.WriteHeader(http.StatusNoContent)
