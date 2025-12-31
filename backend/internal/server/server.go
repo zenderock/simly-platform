@@ -51,16 +51,18 @@ func (s *Server) setupRoutes() {
 
 	// Dependency Injection
 	notificationProvider := &core.LogNotificationProvider{}
+	emailProvider := core.NewResendEmailProvider(s.Config.ResendAPIKey, s.Config.ResendFromEmail)
+	alertService := core.NewAlertService(s.DB, emailProvider)
 
 	orgService := core.NewOrganizationService(s.DB)
 	appService := core.NewApplicationService(s.DB)
 	apiKeyService := core.NewAPIKeyService(s.DB)
 	webhookService := core.NewWebhookService(s.DB)
 	userService := core.NewUserService(s.DB, orgService, string(jwtSecret))
-	deviceService := core.NewDeviceService(s.DB)
+	deviceService := core.NewDeviceService(s.DB, alertService)
 	rateLimitService := core.NewRateLimitService(s.DB)
 	auditService := core.NewAuditService(s.DB)
-	messageService := core.NewMessageService(s.DB, webhookService, notificationProvider, rateLimitService, appService, s.Config.SandboxSuccessNumber, s.Config.SandboxFailureNumber)
+	messageService := core.NewMessageService(s.DB, webhookService, notificationProvider, rateLimitService, appService, s.Config.SandboxSuccessNumber, s.Config.SandboxFailureNumber, alertService)
 
 	// Handlers
 	authHandler := api.NewAuthHandler(userService)
@@ -70,6 +72,7 @@ func (s *Server) setupRoutes() {
 	messageHandler := api.NewMessageHandler(messageService, orgService)
 	webhookHandler := api.NewWebhookHandler(webhookService, orgService, auditService)
 	orgHandler := api.NewOrganizationHandler(orgService, auditService)
+	alertHandler := api.NewAlertHandler(alertService, orgService)
 
 	// Routing
 	r := s.Router
@@ -156,6 +159,12 @@ func (s *Server) setupRoutes() {
 			r.Post("/", orgHandler.CreateOrganization)
 			r.Post("/members", orgHandler.AddMember)
 			r.Delete("/members/{userID}", orgHandler.RemoveMember)
+		})
+
+		// Alerts
+		r.Route("/api/alerts", func(r chi.Router) {
+			r.Get("/", alertHandler.ListAlerts)
+			r.Post("/{alertID}/read", alertHandler.MarkAsRead)
 		})
 	})
 }

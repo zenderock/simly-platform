@@ -13,6 +13,8 @@ type Config struct {
 	JWTSecret            string
 	SandboxSuccessNumber string
 	SandboxFailureNumber string
+	ResendAPIKey         string
+	ResendFromEmail      string
 }
 
 func Load() *Config {
@@ -27,6 +29,8 @@ func Load() *Config {
 		JWTSecret:            getEnv("JWT_SECRET", "super-secret-key"),
 		SandboxSuccessNumber: getEnv("SANDBOX_SUCCESS_NUMBER", "+15550000000"),
 		SandboxFailureNumber: getEnv("SANDBOX_FAILURE_NUMBER", "+15550000001"),
+		ResendAPIKey:         getEnv("RESEND_API_KEY", ""),
+		ResendFromEmail:      getEnv("RESEND_FROM_EMAIL", "onboarding@resend.dev"),
 	}
 }
 

@@ -48,6 +48,7 @@ import {
   Clock,
 } from "lucide-react";
 import { useDashboardStore } from "@/store/dashboard-store";
+import { useApplicationStore } from "@/store/application-store";
 import { Message } from "@/types";
 import api from "@/lib/api";
 
@@ -55,6 +56,7 @@ const PAGE_SIZE_OPTIONS = [10, 20, 30, 50];
 
 export function MessagesTable() {
   const refreshKey = useDashboardStore((state) => state.refreshKey);
+  const activeAppId = useApplicationStore((state) => state.activeAppId);
   const searchQuery = useDashboardStore((state) => state.searchQuery);
   const statusFilter = useDashboardStore((state) => state.statusFilter);
   const appFilter = useDashboardStore((state) => state.appFilter);
@@ -76,7 +78,8 @@ export function MessagesTable() {
     const fetchMessages = async () => {
       try {
         setLoading(true);
-        const response = await api.get<Message[]>("/messages");
+        const params = activeAppId ? { application_id: activeAppId } : {};
+        const response = await api.get<Message[]>("/messages", { params });
         setMessages(response.data || []);
       } catch (error) {
         console.error("Failed to fetch messages:", error);
@@ -86,7 +89,7 @@ export function MessagesTable() {
     };
 
     fetchMessages();
-  }, [refreshKey]);
+  }, [refreshKey, activeAppId]);
 
   const hasActiveFilters =
     statusFilter !== "all" || appFilter !== "all" || deviceFilter !== "all";

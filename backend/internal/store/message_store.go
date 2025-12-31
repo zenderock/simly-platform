@@ -42,7 +42,7 @@ func (s *Store) CreateMessage(ctx context.Context, msg *model.Message) error {
 	return nil
 }
 
-func (s *Store) GetMessagesByOrganizationID(ctx context.Context, orgID int) ([]model.Message, error) {
+func (s *Store) GetMessagesByOrganizationID(ctx context.Context, orgID int, appID *int) ([]model.Message, error) {
 	query := `
 		SELECT 
 			m.id, m.organization_id, m.application_id, m.device_id, m.to_number, m.body, m.status, m.direction, m.priority, m.required_tags, m.created_at, m.updated_at,
@@ -52,9 +52,15 @@ func (s *Store) GetMessagesByOrganizationID(ctx context.Context, orgID int) ([]m
 		LEFT JOIN applications a ON m.application_id = a.id
 		LEFT JOIN devices d ON m.device_id = d.id
 		WHERE m.organization_id = $1
-		ORDER BY m.created_at DESC
 	`
-	rows, err := s.db.Query(ctx, query, orgID)
+	args := []interface{}{orgID}
+	if appID != nil {
+		query += " AND m.application_id = $2"
+		args = append(args, *appID)
+	}
+	query += " ORDER BY m.created_at DESC"
+
+	rows, err := s.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query messages: %w", err)
 	}
@@ -86,4 +92,16 @@ func (s *Store) GetMessagesByOrganizationID(ctx context.Context, orgID int) ([]m
 		messages = append(messages, m)
 	}
 	return messages, nil
+}
+func (s *Store) UpdateMessageStatus(ctx context.Context, msgID int, status string) error {
+	query := `UPDATE messages SET status = $1, updated_at = NOW() WHERE id = $2`
+	_, err := s.db.Exec(ctx, query, status, msgID)
+	return err
+}
+
+func (s *Store) GetMessageByID(ctx context.Context, msgID int) (*model.Message, error) {
+	query := `SELECT id, organization_id, application_id, device_id, to_number, body, status, direction, created_at FROM messages WHERE id = $1`
+	var m model.Message
+	err := s.db.QueryRow(ctx, query, msgID).Scan(&m.ID, &m.OrganizationID, &m.ApplicationID, &m.DeviceID, &m.ToNumber, &m.Body, &m.Status, &m.Direction, &m.CreatedAt)
+	return &m, err
 }

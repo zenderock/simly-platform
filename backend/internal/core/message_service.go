@@ -15,6 +15,7 @@ type MessageService struct {
 	notifications        NotificationProvider
 	rateLimiter          *RateLimitService
 	appService           *ApplicationService
+	alertService         *AlertService
 	sandboxSuccessNumber string
 	sandboxFailureNumber string
 }
@@ -27,6 +28,7 @@ func NewMessageService(
 	appService *ApplicationService,
 	sandboxSuccessNumber string,
 	sandboxFailureNumber string,
+	alertService *AlertService,
 ) *MessageService {
 	return &MessageService{
 		store:                store,
@@ -34,6 +36,7 @@ func NewMessageService(
 		notifications:        notifications,
 		rateLimiter:          rateLimiter,
 		appService:           appService,
+		alertService:         alertService,
 		sandboxSuccessNumber: sandboxSuccessNumber,
 		sandboxFailureNumber: sandboxFailureNumber,
 	}
@@ -229,6 +232,34 @@ func logNotificationError(msgID int, err error) {
 	fmt.Printf("[ALERT] Push failed for message %d: %v\n", msgID, err)
 }
 
-func (s *MessageService) ListMessages(ctx context.Context, orgID int) ([]model.Message, error) {
-	return s.store.GetMessagesByOrganizationID(ctx, orgID)
+func (s *MessageService) UpdateStatus(ctx context.Context, msgID int, status string) error {
+	// 1. Get Message info (to find Org)
+	msg, err := s.store.GetMessageByID(ctx, msgID)
+	if err != nil {
+		return err
+	}
+
+	// 2. Update Status
+	if err := s.store.UpdateMessageStatus(ctx, msgID, status); err != nil {
+		return err
+	}
+
+	// 3. Trigger Alert if Failed
+	if status == "failed" {
+		title := "Message Delivery Failed"
+		message := fmt.Sprintf("Message to %s failed to deliver. Content: %s", msg.ToNumber, msg.Body)
+		s.alertService.NotifyOrganization(ctx, msg.OrganizationID, "message_failed", title, message, "warning")
+	}
+
+	// 4. Dispatch Webhook
+	s.webhook.DispatchEvent(msg.OrganizationID, msg.ApplicationID, "sms.status_updated", map[string]interface{}{
+		"message_id": msgID,
+		"status":     status,
+	})
+
+	return nil
+}
+
+func (s *MessageService) ListMessages(ctx context.Context, orgID int, appID *int) ([]model.Message, error) {
+	return s.store.GetMessagesByOrganizationID(ctx, orgID, appID)
 }

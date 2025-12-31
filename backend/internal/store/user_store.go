@@ -46,3 +46,26 @@ func (s *Store) GetUserByEmail(ctx context.Context, email string) (*model.User, 
 	}
 	return user, nil
 }
+func (s *Store) GetUsersByOrganizationID(ctx context.Context, orgID int) ([]model.User, error) {
+	query := `
+		SELECT u.id, u.email, u.name, u.avatar_url, u.created_at, u.updated_at
+		FROM users u
+		JOIN organization_members om ON u.id = om.user_id
+		WHERE om.organization_id = $1
+	`
+	rows, err := s.db.Query(ctx, query, orgID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query organization users: %w", err)
+	}
+	defer rows.Close()
+
+	var users []model.User
+	for rows.Next() {
+		var u model.User
+		if err := rows.Scan(&u.ID, &u.Email, &u.Name, &u.AvatarURL, &u.CreatedAt, &u.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("failed to scan user: %w", err)
+		}
+		users = append(users, u)
+	}
+	return users, nil
+}

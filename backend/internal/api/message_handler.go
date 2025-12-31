@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/zenderock/simly-backend/internal/core"
 	"github.com/zenderock/simly-backend/internal/model"
@@ -83,7 +84,14 @@ func (h *MessageHandler) ListMessages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	messages, err := h.service.ListMessages(r.Context(), orgID)
+	var appID *int
+	if aidStr := r.URL.Query().Get("application_id"); aidStr != "" {
+		if aid, err := strconv.Atoi(aidStr); err == nil {
+			appID = &aid
+		}
+	}
+
+	messages, err := h.service.ListMessages(r.Context(), orgID, appID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
