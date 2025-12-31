@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+:root {
+  /* Render-like Color Palette */
+  --background: #ffffff;
+  --foreground: #000000;
+
+  --primary: #443dff; /* Render purple-ish blue */
+  --primary-foreground: #ffffff;
+
+  --card: #f9f9f9;
+  --card-foreground: #000000;
+
+  --border: #e5e5e5;
+  --input: #e5e5e5;
+
+  --radius: 0.25rem; /* Small radius for professional look */
+}
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --radius-md: var(--radius);
+}
+
+/* Dark Mode Overrides - if we decide to enable it later, but keeping it simple for now */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #000000;
+    --foreground: #ffffff;
+    --primary: #5c53ff;
+    --card: #111111;
+    --card-foreground: #ffffff;
+    --border: #333333;
+    --input: #333333;
+  }
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans, system-ui, sans-serif);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Utility to force no shadow */
+.no-shadow {
+  box-shadow: none !important;
+}
+
+/* Flat Card Style */
+.flat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--card-foreground);
+  box-shadow: none;
+}
