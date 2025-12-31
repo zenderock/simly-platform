@@ -168,13 +168,13 @@ export function RevenueFlowChart() {
   const totalRevenue = chartData.reduce((acc, item) => acc + item.thisYear, 0);
 
   return (
-    <div className="flex-1 flex flex-col gap-4 sm:gap-6 p-4 sm:p-6 rounded-xl border bg-card min-w-0">
+    <div className="flex-1 flex flex-col gap-4 sm:gap-6 p-4 sm:p-6 rounded-xl border bg-card min-w-0 h-full">
       <div className="flex flex-wrap items-center gap-2 sm:gap-4">
         <div className="flex items-center gap-2 sm:gap-2.5 flex-1">
           <Button variant="outline" size="icon" className="size-7 sm:size-8">
             <BarChart2 className="size-4 sm:size-[18px] text-muted-foreground" />
           </Button>
-          <span className="text-sm sm:text-base font-medium">Revenue Flow</span>
+          <span className="text-sm sm:text-base font-medium">Trafic Messages</span>
         </div>
         <div className="hidden sm:flex items-center gap-3 sm:gap-5">
           <div className="flex items-center gap-1.5">
@@ -303,10 +303,10 @@ export function RevenueFlowChart() {
         <div className="flex flex-col gap-4 w-full lg:w-[200px] xl:w-[220px] shrink-0">
           <div className="space-y-2 sm:space-y-4">
             <p className="text-xl sm:text-2xl lg:text-[28px] font-semibold leading-tight tracking-tight">
-              ${totalRevenue.toLocaleString()}
+              {totalRevenue.toLocaleString()}
             </p>
             <p className="text-xs sm:text-sm text-muted-foreground">
-              Total Revenue ({periodLabels[period]})
+              Total Messages ({periodLabels[period]})
             </p>
           </div>
 
@@ -352,28 +352,6 @@ export function RevenueFlowChart() {
           <ResponsiveContainer width="100%" height="100%">
             {chartType === "bar" ? (
               <BarChart data={chartData} barGap={2}>
-                <defs>
-                  <linearGradient
-                    id="thisYearGradient"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop offset="0%" stopColor="#6e3ff3" stopOpacity={1} />
-                    <stop offset="100%" stopColor="#6e3ff3" stopOpacity={0.6} />
-                  </linearGradient>
-                  <linearGradient
-                    id="prevYearGradient"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop offset="0%" stopColor="#e255f2" stopOpacity={1} />
-                    <stop offset="100%" stopColor="#e255f2" stopOpacity={0.6} />
-                  </linearGradient>
-                </defs>
                 {showGrid && (
                   <CartesianGrid
                     strokeDasharray="0"
@@ -393,7 +371,7 @@ export function RevenueFlowChart() {
                   tickLine={false}
                   tick={{ fill: axisColor, fontSize: 10 }}
                   dx={-5}
-                  tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                  tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
                   width={40}
                 />
                 <Tooltip
@@ -403,7 +381,7 @@ export function RevenueFlowChart() {
                 {showThisYear && (
                   <Bar
                     dataKey="thisYear"
-                    fill="url(#thisYearGradient)"
+                    fill="#6e3ff3"
                     radius={[4, 4, 0, 0]}
                     maxBarSize={18}
                   />
@@ -411,7 +389,7 @@ export function RevenueFlowChart() {
                 {showPrevYear && (
                   <Bar
                     dataKey="prevYear"
-                    fill="url(#prevYearGradient)"
+                    fill="#e255f2"
                     radius={[4, 4, 0, 0]}
                     maxBarSize={18}
                   />
@@ -438,7 +416,7 @@ export function RevenueFlowChart() {
                   tickLine={false}
                   tick={{ fill: axisColor, fontSize: 10 }}
                   dx={-5}
-                  tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                  tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
                   width={40}
                 />
                 <Tooltip
@@ -468,28 +446,6 @@ export function RevenueFlowChart() {
               </LineChart>
             ) : (
               <AreaChart data={chartData}>
-                <defs>
-                  <linearGradient
-                    id="thisYearAreaGradient"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop offset="0%" stopColor="#6e3ff3" stopOpacity={0.3} />
-                    <stop offset="100%" stopColor="#6e3ff3" stopOpacity={0.05} />
-                  </linearGradient>
-                  <linearGradient
-                    id="prevYearAreaGradient"
-                    x1="0"
-                    y1="0"
-                    x2="0"
-                    y2="1"
-                  >
-                    <stop offset="0%" stopColor="#e255f2" stopOpacity={0.3} />
-                    <stop offset="100%" stopColor="#e255f2" stopOpacity={0.05} />
-                  </linearGradient>
-                </defs>
                 {showGrid && (
                   <CartesianGrid
                     strokeDasharray="0"
@@ -509,7 +465,7 @@ export function RevenueFlowChart() {
                   tickLine={false}
                   tick={{ fill: axisColor, fontSize: 10 }}
                   dx={-5}
-                  tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                  tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
                   width={40}
                 />
                 <Tooltip
@@ -517,28 +473,30 @@ export function RevenueFlowChart() {
                   cursor={{ stroke: isDark ? "#52525b" : "#d4d4d8" }}
                 />
                 {showThisYear && (
-                  <Area
-                    type={smoothCurve ? "monotone" : "linear"}
-                    dataKey="thisYear"
-                    stroke="#6e3ff3"
-                    strokeWidth={2}
-                    fill="url(#thisYearAreaGradient)"
-                  />
+                      <Area
+                        type={smoothCurve ? "monotone" : "linear"}
+                        dataKey="thisYear"
+                        stroke="#6e3ff3"
+                        strokeWidth={2}
+                        fill="#6e3ff3"
+                        fillOpacity={0.1}
+                      />
+                    )}
+                    {showPrevYear && (
+                      <Area
+                        type={smoothCurve ? "monotone" : "linear"}
+                        dataKey="prevYear"
+                        stroke="#e255f2"
+                        strokeWidth={2}
+                        fill="#e255f2"
+                        fillOpacity={0.1}
+                      />
+                    )}
+                  </AreaChart>
                 )}
-                {showPrevYear && (
-                  <Area
-                    type={smoothCurve ? "monotone" : "linear"}
-                    dataKey="prevYear"
-                    stroke="#e255f2"
-                    strokeWidth={2}
-                    fill="url(#prevYearAreaGradient)"
-                  />
-                )}
-              </AreaChart>
-            )}
-          </ResponsiveContainer>
+              </ResponsiveContainer>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-  );
-}
+      );
+    }

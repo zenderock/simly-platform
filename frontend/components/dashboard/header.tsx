@@ -1,7 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import React, { useEffect } from "react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import {
@@ -9,91 +8,112 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
-import {
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { 
+  Building2, 
+  Check, 
+  ChevronsUpDown, 
+  PlusCircle,
+  Bell,
   Search,
-  MessageSquare,
-  UserPlus,
-  Command,
-  MoreVertical,
+  Command
 } from "lucide-react";
-import Link from "next/link";
+import { useAuth } from "@/lib/auth";
+import api from "@/lib/api";
+import { cn } from "@/lib/utils";
 
 export function DashboardHeader() {
-  return (
-    <header className="flex items-center gap-2 sm:gap-3 px-3 sm:px-6 py-3 sm:py-4 border-b bg-card sticky top-0 z-10 w-full">
-      <SidebarTrigger className="-ml-1 sm:-ml-2" />
-      <h1 className="text-base sm:text-lg font-medium flex-1 truncate">Dashboard</h1>
+  const { organizationId, organizations, setOrganizations, setOrganizationId } = useAuth();
 
-      <div className="hidden md:block relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-5 text-muted-foreground" />
-        <Input
-          placeholder="Search Anything..."
-          className="pl-10 pr-14 w-[180px] lg:w-[220px] h-9 bg-card border"
-        />
-        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 bg-muted px-1 py-0.5 rounded text-xs text-muted-foreground">
-          <Command className="size-3" />
-          <span>K</span>
+  useEffect(() => {
+    const fetchOrgs = async () => {
+      try {
+        const response = await api.get("/organizations");
+        setOrganizations(response.data);
+      } catch (error) {
+        console.error("Failed to fetch organizations", error);
+      }
+    };
+
+    fetchOrgs();
+  }, [setOrganizations]);
+
+  const activeOrg = organizations.find(org => org.id === organizationId);
+
+  return (
+    <header className="flex items-center gap-2 sm:gap-4 px-3 sm:px-6 h-16 border-b bg-card/80 backdrop-blur-md sticky top-0 z-20 w-full transition-all">
+      <SidebarTrigger className="-ml-1" />
+      
+      <div className="flex items-center gap-2 sm:gap-4 flex-1">
+        {/* Org Switcher */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              variant="ghost" 
+              className="flex items-center gap-2 px-2 hover:bg-accent/50 h-9 transition-colors"
+            >
+              <div className="size-6 rounded bg-primary/10 flex items-center justify-center text-primary">
+                 <Building2 className="size-3.5" />
+              </div>
+              <span className="font-bold text-sm truncate max-w-[120px] sm:max-w-[200px]">{activeOrg?.name || "Organisation"}</span>
+              <ChevronsUpDown className="size-3.5 text-muted-foreground opacity-50" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="w-[240px]" align="start">
+            <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wider font-bold p-3">Mes Organisations</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            {organizations.map((org) => (
+              <DropdownMenuItem 
+                key={org.id} 
+                className="flex items-center justify-between cursor-pointer py-2.5 px-3"
+                onSelect={() => setOrganizationId(org.id)}
+              >
+                <div className="flex items-center gap-2">
+                  <Building2 className="size-4 text-muted-foreground" />
+                  <span className={cn(
+                    "text-sm font-semibold",
+                    org.id === organizationId ? "text-primary" : "text-foreground"
+                  )}>{org.name}</span>
+                </div>
+                {org.id === organizationId && <Check className="size-4 text-primary" />}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="cursor-pointer py-2.5 px-3 text-primary font-medium">
+              <PlusCircle className="size-4 mr-2" />
+              <span className="text-sm">Créer une organisation</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <div className="h-4 w-px bg-border hidden sm:block" />
+
+        {/* Global Search - Premium Template Feature */}
+        <div className="hidden md:flex relative max-w-md flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <Input
+            placeholder="Rechercher partout..."
+            className="pl-9 pr-12 h-9 bg-background/50 border shadow-none focus-visible:ring-1 focus-visible:ring-primary w-full"
+          />
+          <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 bg-muted px-1.5 py-0.5 rounded border text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+            <Command className="size-2.5" />
+            <span>K</span>
+          </div>
         </div>
       </div>
 
-      <ThemeToggle />
-
-      <Button variant="ghost" size="icon" className="hidden sm:flex" asChild>
-        <Link
-          href="https://github.com/ln-dev7/square-ui/tree/master/templates/dashboard-2"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="currentColor"
-            className="size-5"
-          >
-            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-          </svg>
-        </Link>
-      </Button>
-
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="sm:hidden h-8 w-8">
-            <MoreVertical className="size-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem>
-            <Search className="size-4 mr-2" />
-            Search
-          </DropdownMenuItem>
-          <DropdownMenuItem>
-            <MessageSquare className="size-4 mr-2" />
-            Messages
-          </DropdownMenuItem>
-          <DropdownMenuItem>
-            <UserPlus className="size-4 mr-2" />
-            Invite
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link
-              href="https://github.com/ln-dev7/square-ui/tree/master/templates/dashboard-2"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="size-4 mr-2"
-              >
-                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-              </svg>
-              GitHub
-            </Link>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <div className="flex items-center gap-2 sm:gap-3">
+        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg hover:bg-accent/50 relative">
+          <Bell className="size-4" />
+          <span className="absolute top-2 right-2 size-2 bg-primary rounded-full border-2 border-card" />
+        </Button>
+        <div className="h-4 w-px bg-border mx-1" />
+        <ThemeToggle />
+      </div>
     </header>
   );
 }

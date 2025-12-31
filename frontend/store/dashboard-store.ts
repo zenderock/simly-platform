@@ -2,30 +2,30 @@ import { create } from "zustand";
 
 interface DashboardState {
   searchQuery: string;
-  stageFilter: string;
-  ownerFilter: string;
-  valueFilter: string;
+  statusFilter: string;
+  appFilter: string;
+  deviceFilter: string;
   setSearchQuery: (query: string) => void;
-  setStageFilter: (filter: string) => void;
-  setOwnerFilter: (filter: string) => void;
-  setValueFilter: (filter: string) => void;
+  setStatusFilter: (filter: string) => void;
+  setAppFilter: (filter: string) => void;
+  setDeviceFilter: (filter: string) => void;
   clearFilters: () => void;
 }
 
 export const useDashboardStore = create<DashboardState>((set) => ({
   searchQuery: "",
-  stageFilter: "all",
-  ownerFilter: "all",
-  valueFilter: "all",
+  statusFilter: "all",
+  appFilter: "all",
+  deviceFilter: "all",
   setSearchQuery: (query) => set({ searchQuery: query }),
-  setStageFilter: (filter) => set({ stageFilter: filter }),
-  setOwnerFilter: (filter) => set({ ownerFilter: filter }),
-  setValueFilter: (filter) => set({ valueFilter: filter }),
+  setStatusFilter: (filter) => set({ statusFilter: filter }),
+  setAppFilter: (filter) => set({ appFilter: filter }),
+  setDeviceFilter: (filter) => set({ deviceFilter: filter }),
   clearFilters: () =>
     set({
       searchQuery: "",
-      stageFilter: "all",
-      ownerFilter: "all",
-      valueFilter: "all",
+      statusFilter: "all",
+      appFilter: "all",
+      deviceFilter: "all",
     }),
 }));

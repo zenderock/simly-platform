@@ -25,22 +25,22 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Sector } from "recharts";
 
 const allData = {
   "7days": [
-    { name: "Website", value: 312, color: "#35b9e9" },
-    { name: "Paid Ads", value: 198, color: "#6e3ff3" },
-    { name: "Emails", value: 156, color: "#375dfb" },
-    { name: "Referral", value: 98, color: "#e255f2" },
+    { name: "Envoyés", value: 3820, color: "#35b9e9" },
+    { name: "Délivrés", value: 3750, color: "#6e3ff3" },
+    { name: "Échecs", value: 45, color: "#e255f2" },
+    { name: "En attente", value: 25, color: "#375dfb" },
   ],
   "30days": [
-    { name: "Website", value: 1445, color: "#35b9e9" },
-    { name: "Paid Ads", value: 903, color: "#6e3ff3" },
-    { name: "Emails", value: 722, color: "#375dfb" },
-    { name: "Referral", value: 451, color: "#e255f2" },
+    { name: "Envoyés", value: 14285, color: "#35b9e9" },
+    { name: "Délivrés", value: 14102, color: "#6e3ff3" },
+    { name: "Échecs", value: 138, color: "#e255f2" },
+    { name: "En attente", value: 45, color: "#375dfb" },
   ],
   "90days": [
-    { name: "Website", value: 4235, color: "#35b9e9" },
-    { name: "Paid Ads", value: 2709, color: "#6e3ff3" },
-    { name: "Emails", value: 2166, color: "#375dfb" },
-    { name: "Referral", value: 1353, color: "#e255f2" },
+    { name: "Envoyés", value: 42350, color: "#35b9e9" },
+    { name: "Délivrés", value: 41900, color: "#6e3ff3" },
+    { name: "Échecs", value: 350, color: "#e255f2" },
+    { name: "En attente", value: 100, color: "#375dfb" },
   ],
 };
 
@@ -96,13 +96,13 @@ export function LeadSourcesChart() {
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4 sm:p-6 rounded-xl border bg-card w-full xl:w-[410px]">
+    <div className="flex flex-col gap-4 p-4 sm:p-6 rounded-xl border bg-card w-full h-full">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 sm:gap-2.5">
           <Button variant="outline" size="icon" className="size-7 sm:size-8">
             <ChartLine className="size-4 sm:size-[18px] text-muted-foreground" />
           </Button>
-          <span className="text-sm sm:text-base font-medium">Lead Sources</span>
+          <span className="text-sm sm:text-base font-medium">Statut des Messages</span>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -179,7 +179,7 @@ export function LeadSourcesChart() {
               {totalLeads.toLocaleString()}
             </span>
             <span className="text-[10px] sm:text-xs text-muted-foreground">
-              Total Leads
+              Total Messages
             </span>
           </div>
         </div>
@@ -201,7 +201,7 @@ export function LeadSourcesChart() {
                   className="w-1 h-4 sm:h-5 rounded-sm shrink-0"
                   style={{ backgroundColor: item.color }}
                 />
-                <span className="flex-1 text-xs sm:text-sm text-muted-foreground truncate">
+                <span className="flex-1 text-xs sm:text-sm text-muted-foreground">
                   {item.name}
                 </span>
                 <span className="text-xs sm:text-sm font-semibold tabular-nums">

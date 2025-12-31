@@ -95,3 +95,15 @@ func (h *OrganizationHandler) RemoveMember(w http.ResponseWriter, r *http.Reques
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+func (h *OrganizationHandler) ListOrganizations(w http.ResponseWriter, r *http.Request) {
+	userID := GetUserID(r.Context())
+	orgs, err := h.service.GetUserOrganizations(r.Context(), userID)
+	if err != nil {
+		http.Error(w, "Failed to fetch organizations", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(orgs)
+}

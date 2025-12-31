@@ -1,39 +1,39 @@
 "use client";
 
-import { Coins, Package, Users, MessageCircle } from "lucide-react";
+import { Smartphone, MessageSquare, CheckCircle2, ListOrdered } from "lucide-react";
 
 const statsData = [
   {
-    title: "Product Revenue",
-    value: "$10,312.10",
-    change: "+20%",
-    changeValue: "($2,423)",
+    title: "Messages Envoyés",
+    value: "14,285",
+    change: "+12.5%",
+    changeValue: "(1,423)",
     isPositive: true,
-    icon: Coins,
+    icon: MessageSquare,
   },
   {
-    title: "Total Sales Product",
-    value: "224",
-    change: "+20%",
-    changeValue: "(84)",
-    isPositive: true,
-    icon: Package,
-  },
-  {
-    title: "Total Deals",
-    value: "3,612",
-    change: "-15%",
-    changeValue: "(134)",
-    isPositive: false,
-    icon: Users,
-  },
-  {
-    title: "Convo Rate",
-    value: "67%",
-    change: "-12%",
+    title: "Taux de Succès",
+    value: "99.2%",
+    change: "+0.4%",
     changeValue: "",
-    isPositive: false,
-    icon: MessageCircle,
+    isPositive: true,
+    icon: CheckCircle2,
+  },
+  {
+    title: "Appareils Actifs",
+    value: "4",
+    change: "stable",
+    changeValue: "",
+    isPositive: true,
+    icon: Smartphone,
+  },
+  {
+    title: "File d'attente",
+    value: "145",
+    change: "-18%",
+    changeValue: "",
+    isPositive: true, // fewer in queue is positive if it means processing
+    icon: ListOrdered,
   },
 ];
 

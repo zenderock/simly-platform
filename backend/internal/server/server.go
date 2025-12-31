@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	"github.com/zenderock/simly-backend/internal/api"
 	"github.com/zenderock/simly-backend/internal/config"
 	"github.com/zenderock/simly-backend/internal/core"
@@ -76,7 +77,18 @@ func (s *Server) setupRoutes() {
 	// Global Middlewares
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(middleware.StripSlashes)
 	r.Use(middleware.Timeout(60 * time.Second))
+
+	// CORS
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"*"}, // Allow all origins for dev
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-Organization-ID"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: false,
+		MaxAge:           300,
+	}))
 
 	// Health Check
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
@@ -130,7 +142,8 @@ func (s *Server) setupRoutes() {
 		})
 
 		// Organization Management
-		r.Route("/api/organization", func(r chi.Router) {
+		r.Route("/api/organizations", func(r chi.Router) {
+			r.Get("/", orgHandler.ListOrganizations)
 			r.Post("/members", orgHandler.AddMember)
 			r.Delete("/members/{userID}", orgHandler.RemoveMember)
 		})

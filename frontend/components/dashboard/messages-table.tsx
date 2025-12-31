@@ -1,0 +1,456 @@
+"use client";
+
+import * as React from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
+} from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  MessageSquare,
+  Search,
+  Filter,
+  FileInput,
+  MoreHorizontal,
+  X,
+  Eye,
+  Trash2,
+  Copy,
+  FileSpreadsheet,
+  FileText,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Clock,
+} from "lucide-react";
+import { useDashboardStore } from "@/store/dashboard-store";
+import { messages } from "@/mock-data/messages";
+
+const statuses = ["Sent", "Delivered", "Failed", "Pending"];
+const apps = ["Production Auth", "Sandbox Test", "E-commerce Bot", "Marketing Alert"];
+const devices = ["Pixel 7 Pro #1", "Pixel 7 Pro #2", "Galaxy S21 #1", "Nokia Gateway"];
+
+const PAGE_SIZE_OPTIONS = [10, 20, 30, 50];
+
+export function MessagesTable() {
+  const searchQuery = useDashboardStore((state) => state.searchQuery);
+  const statusFilter = useDashboardStore((state) => state.statusFilter);
+  const appFilter = useDashboardStore((state) => state.appFilter);
+  const deviceFilter = useDashboardStore((state) => state.deviceFilter);
+  
+  const setSearchQuery = useDashboardStore((state) => state.setSearchQuery);
+  const setStatusFilter = useDashboardStore((state) => state.setStatusFilter);
+  const setAppFilter = useDashboardStore((state) => state.setAppFilter);
+  const setDeviceFilter = useDashboardStore((state) => state.setDeviceFilter);
+  const clearFilters = useDashboardStore((state) => state.clearFilters);
+
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const [pageSize, setPageSize] = React.useState(10);
+
+  const hasActiveFilters =
+    statusFilter !== "all" || appFilter !== "all" || deviceFilter !== "all";
+
+  const filteredMessages = React.useMemo(() => {
+    return messages.filter((msg) => {
+      const matchesSearch =
+        msg.recipient.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        msg.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        msg.app.toLowerCase().includes(searchQuery.toLowerCase());
+
+      const matchesStatus =
+        statusFilter === "all" || msg.status === statusFilter;
+
+      const matchesApp =
+        appFilter === "all" || msg.app === appFilter;
+
+      const matchesDevice =
+        deviceFilter === "all" || msg.device === deviceFilter;
+
+      return matchesSearch && matchesStatus && matchesApp && matchesDevice;
+    });
+  }, [searchQuery, statusFilter, appFilter, deviceFilter]);
+
+  const totalPages = Math.ceil(filteredMessages.length / pageSize);
+
+  const paginatedMessages = React.useMemo(() => {
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return filteredMessages.slice(startIndex, endIndex);
+  }, [filteredMessages, currentPage, pageSize]);
+
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, appFilter, deviceFilter, pageSize]);
+
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "Delivered": return "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/10 border-none font-bold";
+      case "Failed": return "bg-destructive/10 text-destructive hover:bg-destructive/10 border-none font-bold";
+      case "Pending": return "bg-amber-500/10 text-amber-500 hover:bg-amber-500/10 border-none font-bold";
+      default: return "bg-primary/10 text-primary hover:bg-primary/10 border-none font-bold";
+    }
+  };
+
+  return (
+    <div className="rounded-xl border bg-card shadow-none">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-3 sm:px-6 sm:py-3.5">
+        <div className="flex items-center gap-2 sm:gap-2.5 flex-1">
+          <Button variant="outline" size="icon" className="size-7 sm:size-8 shrink-0 shadow-none">
+            <MessageSquare className="size-4 sm:size-[18px] text-muted-foreground" />
+          </Button>
+          <span className="text-sm sm:text-base font-bold italic uppercase tracking-tight">Messages Récents</span>
+          <Badge variant="secondary" className="ml-1 text-[10px] sm:text-xs font-bold bg-muted/50">
+            {filteredMessages.length}
+          </Badge>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative flex-1 sm:flex-none">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 w-full sm:w-[160px] lg:w-[200px] h-8 sm:h-9 text-xs shadow-none italic"
+            />
+          </div>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className={`h-8 sm:h-9 gap-1.5 sm:gap-2 shadow-none font-semibold ${hasActiveFilters ? "border-primary" : ""}`}
+              >
+                <Filter className="size-3.5 sm:size-4" />
+                <span className="hidden sm:inline">Filtrer</span>
+                {hasActiveFilters && (
+                  <span className="size-1.5 sm:size-2 rounded-full bg-primary" />
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-[220px]">
+              <DropdownMenuLabel>Filtrer par Statut</DropdownMenuLabel>
+              <DropdownMenuCheckboxItem
+                checked={statusFilter === "all"}
+                onCheckedChange={() => setStatusFilter("all")}
+              >
+                Tous les statuts
+              </DropdownMenuCheckboxItem>
+              {statuses.map((status) => (
+                <DropdownMenuCheckboxItem
+                  key={status}
+                  checked={statusFilter === status}
+                  onCheckedChange={() => setStatusFilter(status)}
+                >
+                  {status}
+                </DropdownMenuCheckboxItem>
+              ))}
+
+              <DropdownMenuSeparator />
+
+              <DropdownMenuLabel>Filtrer par Application</DropdownMenuLabel>
+              <DropdownMenuCheckboxItem
+                checked={appFilter === "all"}
+                onCheckedChange={() => setAppFilter("all")}
+              >
+                Toutes les apps
+              </DropdownMenuCheckboxItem>
+              {apps.map((app) => (
+                <DropdownMenuCheckboxItem
+                  key={app}
+                  checked={appFilter === app}
+                  onCheckedChange={() => setAppFilter(app)}
+                >
+                  {app}
+                </DropdownMenuCheckboxItem>
+              ))}
+
+              <DropdownMenuSeparator />
+
+              <DropdownMenuLabel>Filtrer par Appareil</DropdownMenuLabel>
+              <DropdownMenuCheckboxItem
+                 checked={deviceFilter === "all"}
+                 onCheckedChange={() => setDeviceFilter("all")}
+              >
+                Tous les appareils
+              </DropdownMenuCheckboxItem>
+              {devices.map((device) => (
+                <DropdownMenuCheckboxItem
+                  key={device}
+                  checked={deviceFilter === device}
+                  onCheckedChange={() => setDeviceFilter(device)}
+                >
+                  {device}
+                </DropdownMenuCheckboxItem>
+              ))}
+
+              {hasActiveFilters && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={clearFilters}
+                    className="text-destructive font-bold"
+                  >
+                    <X className="size-4 mr-2" />
+                    Réinitialiser
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <div className="hidden sm:block w-px h-[22px] bg-border" />
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 sm:h-9 gap-1.5 sm:gap-2 shadow-none font-semibold">
+                <FileInput className="size-3.5 sm:size-4" />
+                <span className="hidden sm:inline">Exporter</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem>
+                <FileSpreadsheet className="size-4 mr-2" />
+                CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <FileText className="size-4 mr-2" />
+                PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
+      <div className="px-3 sm:px-6 pb-3 sm:pb-4 overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/30 hover:bg-muted/30 border-none">
+              <TableHead className="w-[40px] font-bold text-muted-foreground text-[10px] uppercase italic">
+                #
+              </TableHead>
+              <TableHead className="min-w-[150px] font-bold text-muted-foreground text-[10px] uppercase italic">
+                Destinataire
+              </TableHead>
+              <TableHead className="min-w-[200px] font-bold text-muted-foreground text-[10px] uppercase italic">
+                Message
+              </TableHead>
+              <TableHead className="min-w-[100px] font-bold text-muted-foreground text-[10px] uppercase italic">
+                App
+              </TableHead>
+              <TableHead className="min-w-[100px] font-bold text-muted-foreground text-[10px] uppercase italic">
+                Statut
+              </TableHead>
+              <TableHead className="min-w-[120px] font-bold text-muted-foreground text-[10px] uppercase italic">
+                Appareil
+              </TableHead>
+              <TableHead className="min-w-[100px] font-bold text-muted-foreground text-[10px] uppercase italic text-right">
+                Date
+              </TableHead>
+              <TableHead className="w-[40px]"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginatedMessages.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={8}
+                  className="h-24 text-center text-muted-foreground text-sm italic"
+                >
+                  Aucun message trouvé.
+                </TableCell>
+              </TableRow>
+            ) : (
+              paginatedMessages.map((msg, index) => (
+                <TableRow key={msg.id} className="border-muted/50 transition-colors">
+                  <TableCell className="font-medium text-xs text-muted-foreground italic">
+                    {(currentPage - 1) * pageSize + index + 1}
+                  </TableCell>
+                  <TableCell className="font-bold text-xs tabular-nums">
+                    {msg.recipient}
+                  </TableCell>
+                  <TableCell className="max-w-[200px] truncate text-xs text-muted-foreground italic">
+                    {msg.content}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="text-[10px] font-semibold bg-muted/30 border-none">
+                      {msg.app}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant="outline"
+                      className={getStatusColor(msg.status)}
+                    >
+                      {msg.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-xs font-medium text-muted-foreground">
+                    {msg.device}
+                  </TableCell>
+                  <TableCell className="text-right text-[10px] text-muted-foreground italic">
+                    {new Date(msg.createdAt).toLocaleDateString('fr-FR', {
+                      day: '2-digit',
+                      month: '2-digit',
+                      year: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-7 text-muted-foreground hover:text-foreground"
+                        >
+                          <MoreHorizontal className="size-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem>
+                          <Eye className="size-4 mr-2" />
+                          Détails
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                          <Copy className="size-4 mr-2" />
+                          Copier ID
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem className="text-destructive font-bold">
+                          <Trash2 className="size-4 mr-2" />
+                          Supprimer
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-3 sm:px-6 py-3 border-t bg-muted/10">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium italic">
+          <span className="hidden sm:inline italic">Lignes par page:</span>
+          <Select
+            value={pageSize.toString()}
+            onValueChange={(value) => setPageSize(Number(value))}
+          >
+            <SelectTrigger className="h-7 w-[60px] shadow-none bg-background text-[11px] font-bold">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PAGE_SIZE_OPTIONS.map((size) => (
+                <SelectItem key={size} value={size.toString()} className="text-[11px]">
+                  {size}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <span className="text-muted-foreground ml-2">
+            {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, filteredMessages.length)} sur {filteredMessages.length}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-1">
+          <Button
+            variant="outline"
+            size="icon"
+            className="size-7 shadow-none"
+            onClick={() => goToPage(1)}
+            disabled={currentPage === 1}
+          >
+            <ChevronsLeft className="size-3.5" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            className="size-7 shadow-none"
+            onClick={() => goToPage(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            <ChevronLeft className="size-3.5" />
+          </Button>
+          
+          <div className="flex items-center gap-1 mx-1">
+            {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
+              let pageNum: number;
+              if (totalPages <= 3) {
+                pageNum = i + 1;
+              } else if (currentPage <= 2) {
+                pageNum = i + 1;
+              } else if (currentPage >= totalPages - 1) {
+                pageNum = totalPages - 2 + i;
+              } else {
+                pageNum = currentPage - 1 + i;
+              }
+              
+              return (
+                <Button
+                  key={pageNum}
+                  variant={currentPage === pageNum ? "default" : "outline"}
+                  size="icon"
+                  className="size-7 shadow-none text-xs font-bold"
+                  onClick={() => goToPage(pageNum)}
+                >
+                  {pageNum}
+                </Button>
+              );
+            })}
+          </div>
+
+          <Button
+            variant="outline"
+            size="icon"
+            className="size-7 shadow-none"
+            onClick={() => goToPage(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
+            <ChevronRight className="size-3.5" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            className="size-7 shadow-none"
+            onClick={() => goToPage(totalPages)}
+            disabled={currentPage === totalPages}
+          >
+            <ChevronsRight className="size-3.5" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
