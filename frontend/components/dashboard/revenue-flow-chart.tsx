@@ -174,7 +174,7 @@ export function RevenueFlowChart() {
           <Button variant="outline" size="icon" className="size-7 sm:size-8">
             <BarChart2 className="size-4 sm:size-[18px] text-muted-foreground" />
           </Button>
-          <span className="text-sm sm:text-base font-medium">Trafic Messages</span>
+          <span className="text-sm sm:text-base font-medium">Message Traffic</span>
         </div>
         <div className="hidden sm:flex items-center gap-3 sm:gap-5">
           <div className="flex items-center gap-1.5">

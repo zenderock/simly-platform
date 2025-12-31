@@ -25,22 +25,22 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Sector } from "recharts";
 
 const allData = {
   "7days": [
-    { name: "Envoyés", value: 3820, color: "#35b9e9" },
-    { name: "Délivrés", value: 3750, color: "#6e3ff3" },
-    { name: "Échecs", value: 45, color: "#e255f2" },
-    { name: "En attente", value: 25, color: "#375dfb" },
+    { name: "Sent", value: 3820, color: "#35b9e9" },
+    { name: "Delivered", value: 3750, color: "#6e3ff3" },
+    { name: "Failed", value: 45, color: "#e255f2" },
+    { name: "Pending", value: 25, color: "#375dfb" },
   ],
   "30days": [
-    { name: "Envoyés", value: 14285, color: "#35b9e9" },
-    { name: "Délivrés", value: 14102, color: "#6e3ff3" },
-    { name: "Échecs", value: 138, color: "#e255f2" },
-    { name: "En attente", value: 45, color: "#375dfb" },
+    { name: "Sent", value: 14285, color: "#35b9e9" },
+    { name: "Delivered", value: 14102, color: "#6e3ff3" },
+    { name: "Failed", value: 138, color: "#e255f2" },
+    { name: "Pending", value: 45, color: "#375dfb" },
   ],
   "90days": [
-    { name: "Envoyés", value: 42350, color: "#35b9e9" },
-    { name: "Délivrés", value: 41900, color: "#6e3ff3" },
-    { name: "Échecs", value: 350, color: "#e255f2" },
-    { name: "En attente", value: 100, color: "#375dfb" },
+    { name: "Sent", value: 42350, color: "#35b9e9" },
+    { name: "Delivered", value: 41900, color: "#6e3ff3" },
+    { name: "Failed", value: 350, color: "#e255f2" },
+    { name: "Pending", value: 100, color: "#375dfb" },
   ],
 };
 
@@ -102,7 +102,7 @@ export function LeadSourcesChart() {
           <Button variant="outline" size="icon" className="size-7 sm:size-8">
             <ChartLine className="size-4 sm:size-[18px] text-muted-foreground" />
           </Button>
-          <span className="text-sm sm:text-base font-medium">Statut des Messages</span>
+          <span className="text-sm sm:text-base font-medium">Message Status</span>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

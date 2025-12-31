@@ -12,11 +12,11 @@ export default function ApplicationsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Applications</h1>
-          <p className="text-muted-foreground">Gérez vos projets et leurs accès API.</p>
+          <p className="text-muted-foreground">Manage your projects and their API access.</p>
         </div>
         <Button className="shrink-0 gap-2">
           <Plus className="size-4" />
-          Nouvelle Application
+          New Application
         </Button>
       </div>
 
@@ -25,7 +25,7 @@ export default function ApplicationsPage() {
           <div className="flex items-center gap-2 mb-6">
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              <Input placeholder="Rechercher une application..." className="pl-9" />
+              <Input placeholder="Search for an application..." className="pl-9" />
             </div>
           </div>
 
@@ -36,11 +36,11 @@ export default function ApplicationsPage() {
                   <Folder className="size-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-sm">Mon Premier Projet</h3>
-                  <p className="text-xs text-muted-foreground truncate">Créé il y a 2 heures</p>
+                  <h3 className="font-semibold text-sm">My First Project</h3>
+                  <p className="text-xs text-muted-foreground truncate">Created 2 hours ago</p>
                 </div>
                 <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                  Gérer
+                  Manage
                 </Button>
               </div>
             </Card>

@@ -59,12 +59,12 @@ export function DashboardHeader() {
               <div className="size-6 rounded bg-primary/10 flex items-center justify-center text-primary">
                  <Building2 className="size-3.5" />
               </div>
-              <span className="font-bold text-sm truncate max-w-[120px] sm:max-w-[200px]">{activeOrg?.name || "Organisation"}</span>
+              <span className="font-bold text-sm truncate max-w-[120px] sm:max-w-[200px]">{activeOrg?.name || "Organization"}</span>
               <ChevronsUpDown className="size-3.5 text-muted-foreground opacity-50" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-[240px]" align="start">
-            <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wider font-bold p-3">Mes Organisations</DropdownMenuLabel>
+            <DropdownMenuLabel className="text-xs text-muted-foreground uppercase tracking-wider font-bold p-3">My Organizations</DropdownMenuLabel>
             <DropdownMenuSeparator />
             {organizations.map((org) => (
               <DropdownMenuItem 
@@ -85,7 +85,7 @@ export function DashboardHeader() {
             <DropdownMenuSeparator />
             <DropdownMenuItem className="cursor-pointer py-2.5 px-3 text-primary font-medium">
               <PlusCircle className="size-4 mr-2" />
-              <span className="text-sm">Créer une organisation</span>
+              <span className="text-sm">Create an organization</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -96,7 +96,7 @@ export function DashboardHeader() {
         <div className="hidden md:flex relative max-w-md flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
-            placeholder="Rechercher partout..."
+            placeholder="Search everywhere..."
             className="pl-9 pr-12 h-9 bg-background/50 border shadow-none focus-visible:ring-1 focus-visible:ring-primary w-full"
           />
           <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-0.5 bg-muted px-1.5 py-0.5 rounded border text-[10px] font-bold text-muted-foreground uppercase tracking-widest">

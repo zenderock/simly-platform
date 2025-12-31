@@ -4,7 +4,7 @@ import { Smartphone, MessageSquare, CheckCircle2, ListOrdered } from "lucide-rea
 
 const statsData = [
   {
-    title: "Messages Envoyés",
+    title: "Sent Messages",
     value: "14,285",
     change: "+12.5%",
     changeValue: "(1,423)",
@@ -12,7 +12,7 @@ const statsData = [
     icon: MessageSquare,
   },
   {
-    title: "Taux de Succès",
+    title: "Success Rate",
     value: "99.2%",
     change: "+0.4%",
     changeValue: "",
@@ -20,7 +20,7 @@ const statsData = [
     icon: CheckCircle2,
   },
   {
-    title: "Appareils Actifs",
+    title: "Active Devices",
     value: "4",
     change: "stable",
     changeValue: "",
@@ -28,7 +28,7 @@ const statsData = [
     icon: Smartphone,
   },
   {
-    title: "File d'attente",
+    title: "Message Queue",
     value: "145",
     change: "-18%",
     changeValue: "",

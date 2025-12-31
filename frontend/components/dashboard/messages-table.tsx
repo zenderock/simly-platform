@@ -126,7 +126,7 @@ export function MessagesTable() {
           <Button variant="outline" size="icon" className="size-7 sm:size-8 shrink-0 shadow-none">
             <MessageSquare className="size-4 sm:size-[18px] text-muted-foreground" />
           </Button>
-          <span className="text-sm sm:text-base font-bold italic uppercase tracking-tight">Messages Récents</span>
+          <span className="text-sm sm:text-base font-bold italic uppercase tracking-tight">Recent Messages</span>
           <Badge variant="secondary" className="ml-1 text-[10px] sm:text-xs font-bold bg-muted/50">
             {filteredMessages.length}
           </Badge>
@@ -136,7 +136,7 @@ export function MessagesTable() {
           <div className="relative flex-1 sm:flex-none">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
-              placeholder="Rechercher..."
+              placeholder="Search..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9 w-full sm:w-[160px] lg:w-[200px] h-8 sm:h-9 text-xs shadow-none italic"
@@ -151,19 +151,19 @@ export function MessagesTable() {
                 className={`h-8 sm:h-9 gap-1.5 sm:gap-2 shadow-none font-semibold ${hasActiveFilters ? "border-primary" : ""}`}
               >
                 <Filter className="size-3.5 sm:size-4" />
-                <span className="hidden sm:inline">Filtrer</span>
+                <span className="hidden sm:inline">Filter</span>
                 {hasActiveFilters && (
                   <span className="size-1.5 sm:size-2 rounded-full bg-primary" />
                 )}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-[220px]">
-              <DropdownMenuLabel>Filtrer par Statut</DropdownMenuLabel>
+              <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
               <DropdownMenuCheckboxItem
                 checked={statusFilter === "all"}
                 onCheckedChange={() => setStatusFilter("all")}
               >
-                Tous les statuts
+                All statuses
               </DropdownMenuCheckboxItem>
               {statuses.map((status) => (
                 <DropdownMenuCheckboxItem
@@ -177,12 +177,12 @@ export function MessagesTable() {
 
               <DropdownMenuSeparator />
 
-              <DropdownMenuLabel>Filtrer par Application</DropdownMenuLabel>
+              <DropdownMenuLabel>Filter by Application</DropdownMenuLabel>
               <DropdownMenuCheckboxItem
                 checked={appFilter === "all"}
                 onCheckedChange={() => setAppFilter("all")}
               >
-                Toutes les apps
+                All apps
               </DropdownMenuCheckboxItem>
               {apps.map((app) => (
                 <DropdownMenuCheckboxItem
@@ -196,12 +196,12 @@ export function MessagesTable() {
 
               <DropdownMenuSeparator />
 
-              <DropdownMenuLabel>Filtrer par Appareil</DropdownMenuLabel>
+              <DropdownMenuLabel>Filter by Device</DropdownMenuLabel>
               <DropdownMenuCheckboxItem
                  checked={deviceFilter === "all"}
                  onCheckedChange={() => setDeviceFilter("all")}
               >
-                Tous les appareils
+                All devices
               </DropdownMenuCheckboxItem>
               {devices.map((device) => (
                 <DropdownMenuCheckboxItem
@@ -221,7 +221,7 @@ export function MessagesTable() {
                     className="text-destructive font-bold"
                   >
                     <X className="size-4 mr-2" />
-                    Réinitialiser
+                    Reset
                   </DropdownMenuItem>
                 </>
               )}
@@ -234,7 +234,7 @@ export function MessagesTable() {
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="h-8 sm:h-9 gap-1.5 sm:gap-2 shadow-none font-semibold">
                 <FileInput className="size-3.5 sm:size-4" />
-                <span className="hidden sm:inline">Exporter</span>
+                <span className="hidden sm:inline">Export</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -259,7 +259,7 @@ export function MessagesTable() {
                 #
               </TableHead>
               <TableHead className="min-w-[150px] font-bold text-muted-foreground text-[10px] uppercase italic">
-                Destinataire
+                Recipient
               </TableHead>
               <TableHead className="min-w-[200px] font-bold text-muted-foreground text-[10px] uppercase italic">
                 Message
@@ -268,10 +268,10 @@ export function MessagesTable() {
                 App
               </TableHead>
               <TableHead className="min-w-[100px] font-bold text-muted-foreground text-[10px] uppercase italic">
-                Statut
+                Status
               </TableHead>
               <TableHead className="min-w-[120px] font-bold text-muted-foreground text-[10px] uppercase italic">
-                Appareil
+                Device
               </TableHead>
               <TableHead className="min-w-[100px] font-bold text-muted-foreground text-[10px] uppercase italic text-right">
                 Date
@@ -286,7 +286,7 @@ export function MessagesTable() {
                   colSpan={8}
                   className="h-24 text-center text-muted-foreground text-sm italic"
                 >
-                  Aucun message trouvé.
+                  No messages found.
                 </TableCell>
               </TableRow>
             ) : (
@@ -318,7 +318,7 @@ export function MessagesTable() {
                     {msg.device}
                   </TableCell>
                   <TableCell className="text-right text-[10px] text-muted-foreground italic">
-                    {new Date(msg.createdAt).toLocaleDateString('fr-FR', {
+                    {new Date(msg.createdAt).toLocaleDateString('en-US', {
                       day: '2-digit',
                       month: '2-digit',
                       year: '2-digit',
@@ -340,16 +340,16 @@ export function MessagesTable() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem>
                           <Eye className="size-4 mr-2" />
-                          Détails
+                          Details
                         </DropdownMenuItem>
                         <DropdownMenuItem>
                           <Copy className="size-4 mr-2" />
-                          Copier ID
+                          Copy ID
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem className="text-destructive font-bold">
                           <Trash2 className="size-4 mr-2" />
-                          Supprimer
+                          Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -363,7 +363,7 @@ export function MessagesTable() {
 
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-3 sm:px-6 py-3 border-t bg-muted/10">
         <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium italic">
-          <span className="hidden sm:inline italic">Lignes par page:</span>
+          <span className="hidden sm:inline italic">Rows per page:</span>
           <Select
             value={pageSize.toString()}
             onValueChange={(value) => setPageSize(Number(value))}
@@ -380,7 +380,7 @@ export function MessagesTable() {
             </SelectContent>
           </Select>
           <span className="text-muted-foreground ml-2">
-            {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, filteredMessages.length)} sur {filteredMessages.length}
+            {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, filteredMessages.length)} of {filteredMessages.length}
           </span>
         </div>
 

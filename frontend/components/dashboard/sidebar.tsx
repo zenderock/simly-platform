@@ -60,12 +60,12 @@ const menuItems = [
     href: "/messages",
   },
   {
-    title: "Appareils",
+    title: "Devices",
     icon: Smartphone,
     href: "/devices",
   },
   {
-    title: "Clés API",
+    title: "API Keys",
     icon: Key,
     href: "/api-keys",
   },
@@ -138,7 +138,7 @@ export function DashboardSidebar({
                       appsOpen ? "" : "-rotate-90"
                     }`}
                   />
-                  PROJETS
+                  PROJECTS
                 </div>
               </CollapsibleTrigger>
               <MoreHorizontal className="size-4 cursor-pointer hover:text-foreground transition-colors" />
@@ -180,7 +180,7 @@ export function DashboardSidebar({
             <SidebarMenuButton asChild className="h-9 sm:h-[38px]">
               <Link href="#">
                 <HelpCircle className="size-4 sm:size-5" />
-                <span className="text-sm">Centre d'aide</span>
+                <span className="text-sm">Help Center</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -188,7 +188,7 @@ export function DashboardSidebar({
             <SidebarMenuButton asChild className="h-9 sm:h-[38px]">
               <Link href="/settings">
                 <Settings className="size-4 sm:size-5" />
-                <span className="text-sm">Paramètres</span>
+                <span className="text-sm">Settings</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -202,7 +202,7 @@ export function DashboardSidebar({
                 <AvatarFallback className="text-xs uppercase">{user?.name?.charAt(0)}</AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-xs sm:text-sm truncate">{user?.name || "Utilisateur"}</p>
+                <p className="font-semibold text-xs sm:text-sm truncate">{user?.name || "User"}</p>
                 <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
                    {user?.email}
                 </p>
@@ -222,7 +222,7 @@ export function DashboardSidebar({
             <DropdownMenuSeparator />
             <DropdownMenuItem className="text-destructive font-medium" onClick={() => logout()}>
               <LogOut className="size-4 mr-2" />
-              Déconnexion
+              Sign out
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
