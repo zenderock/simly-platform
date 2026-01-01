@@ -3,7 +3,7 @@ services:
     build: .
     container_name: simly-backend
     ports:
-      - "${HOST_PORT:-8081}:8080" # Map host port (default 8081) to container 8080
+      - "8085:8080" # Map host 8085 to container 8080 (Hardcoded)
     env_file:
       - .env
     environment:
