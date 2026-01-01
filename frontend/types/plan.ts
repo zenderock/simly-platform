@@ -14,4 +14,5 @@ export interface Plan {
   features: string[];
   limits: PlanLimits;
   popular: boolean;
+  stripe_price_id?: string;
 }

@@ -8,12 +8,20 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/zenderock/simly-backend/migrations"
 )
 
+type DBTX interface {
+	Exec(context.Context, string, ...interface{}) (pgconn.CommandTag, error)
+	Query(context.Context, string, ...interface{}) (pgx.Rows, error)
+	QueryRow(context.Context, string, ...interface{}) pgx.Row
+}
+
 type Store struct {
-	db *pgxpool.Pool
+	db DBTX
 }
 
 func New(databaseURL string) (*Store, error) {
@@ -40,7 +48,29 @@ func New(databaseURL string) (*Store, error) {
 }
 
 func (s *Store) Close() {
-	s.db.Close()
+	if pool, ok := s.db.(*pgxpool.Pool); ok {
+		pool.Close()
+	}
+}
+
+// ExecTx executes a function within a database transaction
+func (s *Store) ExecTx(ctx context.Context, fn func(*Store) error) error {
+	pool, ok := s.db.(*pgxpool.Pool)
+	if !ok {
+		return fmt.Errorf("store is already in a transaction")
+	}
+
+	tx, err := pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+
+	if err := fn(&Store{db: tx}); err != nil {
+		return err
+	}
+
+	return tx.Commit(ctx)
 }
 
 func RunMigrations(databaseURL string) error {

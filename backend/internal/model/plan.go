@@ -2,14 +2,15 @@ package model
 
 // Plan represents a subscription plan with its limits
 type Plan struct {
-	ID          string     `json:"id"`
-	Name        string     `json:"name"`
-	Price       int        `json:"price"` // in cents
-	Period      string     `json:"period"`
-	Description string     `json:"description"`
-	Features    []string   `json:"features"`
-	Limits      PlanLimits `json:"limits"`
-	Popular     bool       `json:"popular"`
+	ID            string     `json:"id"`
+	Name          string     `json:"name"`
+	Price         int        `json:"price"` // in cents
+	Period        string     `json:"period"`
+	Description   string     `json:"description"`
+	Features      []string   `json:"features"`
+	Limits        PlanLimits `json:"limits"`
+	Popular       bool       `json:"popular"`
+	StripePriceID string     `json:"stripe_price_id,omitempty"`
 }
 
 type PlanLimits struct {

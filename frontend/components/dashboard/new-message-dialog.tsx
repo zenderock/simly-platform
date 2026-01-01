@@ -26,6 +26,7 @@ import api from "@/lib/api";
 import { Device } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
 import { useDashboardStore } from "@/store/dashboard-store";
+import { PhoneInput } from "@/components/ui/phone-input";
 
 import { useApplicationStore } from "@/store/application-store";
 
@@ -124,13 +125,12 @@ export function NewMessageDialog() {
           <div className="grid gap-6 p-6 bg-white dark:bg-card">
             <div className="grid gap-2.5">
               <Label htmlFor="to" className="text-sm font-semibold text-foreground/80">Recipient Number</Label>
-              <Input
+              <PhoneInput
                 id="to"
-                placeholder="+33 6 12 34 56 78"
                 value={formData.to}
-                onChange={(e) => setFormData({ ...formData, to: e.target.value })}
+                onValueChange={(val: string) => setFormData({ ...formData, to: val })}
                 required
-                className="h-10 text-base sm:text-sm bg-background border-input/60 focus-visible:bg-background transition-all focus-visible:ring-1 focus-visible:ring-primary/20 focus-visible:border-primary/50 shadow-sm"
+                className="h-10 text-base sm:text-sm"
               />
             </div>
             

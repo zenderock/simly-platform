@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { Alert } from "@/types";
 import Link from "next/link";
 import BellIcon from "./bell-icon";
+import LoaderQuater from "../loader";
 
 interface AlertSeverityConfig {
   icon: React.ComponentType<{ className?: string }>;
@@ -134,8 +135,8 @@ export function NotificationDropdown() {
         
         <ScrollArea className="h-[400px]">
           {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+             <div className="flex items-center justify-center py-8">
+              <LoaderQuater />
             </div>
           ) : alerts.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">

@@ -18,6 +18,10 @@ func NewOrganizationService(store *store.Store) *OrganizationService {
 	return &OrganizationService{store: store}
 }
 
+func (s *OrganizationService) WithStore(store *store.Store) *OrganizationService {
+	return &OrganizationService{store: store}
+}
+
 func (s *OrganizationService) CreateOrganization(ctx context.Context, userID int, name, slug string, role string) (*model.Organization, error) {
 	org := &model.Organization{
 		Name: name,

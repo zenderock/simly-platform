@@ -59,7 +59,7 @@ func (s *Server) setupRoutes() {
 	appService := core.NewApplicationService(s.DB)
 	apiKeyService := core.NewAPIKeyService(s.DB)
 	webhookService := core.NewWebhookService(s.DB)
-	authUserService := core.NewUserService(s.DB, orgService, string(jwtSecret))
+	authUserService := core.NewUserService(s.DB, orgService, appService, string(jwtSecret))
 	userProfileService := core.NewUserProfileService(s.DB)
 	deviceService := core.NewDeviceService(s.DB, alertService)
 	rateLimitService := core.NewRateLimitService(s.DB)
@@ -78,11 +78,17 @@ func (s *Server) setupRoutes() {
 	deviceHandler := api.NewDeviceHandler(deviceService, orgService, auditService)
 	messageHandler := api.NewMessageHandler(messageService, orgService)
 	webhookHandler := api.NewWebhookHandler(webhookService, orgService, auditService)
-	orgHandler := api.NewOrganizationHandler(orgService, auditService)
+	orgHandler := api.NewOrganizationHandler(orgService, auditService, s.Config.StripePricePro, s.Config.StripePriceAgency)
 	alertHandler := api.NewAlertHandler(alertService, orgService)
+
+	// Billing
+	billingService := core.NewBillingService(s.DB, s.Config.StripeSecretKey, s.Config.StripeWebhookSecret, "http://localhost:3000", s.Config.StripePricePro, s.Config.StripePriceAgency) // TODO: get frontend URL from config
+	billingHandler := api.NewBillingHandler(billingService)
 
 	// Routing
 	r := s.Router
+
+	// ... Middlewares ...
 
 	// Global Middlewares
 	r.Use(middleware.Logger)
@@ -99,6 +105,9 @@ func (s *Server) setupRoutes() {
 		AllowCredentials: false,
 		MaxAge:           300,
 	}))
+
+	// Public Routes
+	r.Post("/api/webhooks/stripe", billingHandler.HandleStripeWebhook)
 
 	// Health Check
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
@@ -189,6 +198,11 @@ func (s *Server) setupRoutes() {
 			r.Get("/", alertHandler.ListAlerts)
 			r.Post("/{alertID}/read", alertHandler.MarkAsRead)
 			r.Post("/test", alertHandler.CreateTestAlert) // Route de test
+		})
+
+		// Billing
+		r.Route("/api/billing", func(r chi.Router) {
+			billingHandler.RegisterRoutes(r)
 		})
 	})
 }

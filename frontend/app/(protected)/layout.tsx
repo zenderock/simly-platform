@@ -10,6 +10,7 @@ import { useApplicationStore } from "@/store/application-store";
 import api from "@/lib/api";
 import axios from "axios";
 import { Application } from "@/types";
+import LoaderQuater from "@/components/loader";
 
 export default function ProtectedLayout({
   children,
@@ -20,7 +21,7 @@ export default function ProtectedLayout({
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const setApplications = useApplicationStore((state) => state.setApplications);
+  const fetchApplications = useApplicationStore((state) => state.fetchApplications);
 
   useEffect(() => {
     setMounted(true);
@@ -35,11 +36,9 @@ export default function ProtectedLayout({
       } else {
         const fetchApps = async () => {
           try {
-            const res = await api.get<Application[]>("/applications");
-            setApplications(res.data || []);
+            await fetchApplications();
           } catch (error) {
-            console.error("Failed to fetch applications", error);
-            if (axios.isAxiosError(error) && error.response?.status === 401) {
+             if (axios.isAxiosError(error) && error.response?.status === 401) {
               useAuth.getState().logout();
               router.push("/login");
             }
@@ -51,12 +50,12 @@ export default function ProtectedLayout({
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [mounted, token, router, setApplications]);
+  }, [mounted, token, router, fetchApplications]);
 
   if (!mounted || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <LoaderQuater />
       </div>
     );
   }

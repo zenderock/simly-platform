@@ -120,3 +120,19 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Phone Input Customization */
+.PhoneInput {
+  display: flex;
+  align-items: center;
+}
+
+.PhoneInputCountry {
+  display: flex;
+  align-items: center;
+  margin-right: 0.5rem;
+}
+
+.PhoneInputCountrySelect {
+  margin-right: 0.35rem;
+}

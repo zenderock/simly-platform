@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth";
 import api from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Alert } from "@/types";
+import LoaderQuater from "@/components/loader";
 
 const severityConfig = {
   info: {
@@ -108,7 +109,7 @@ export default function NotificationsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <LoaderQuater />
       </div>
     );
   }

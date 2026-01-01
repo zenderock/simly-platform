@@ -21,13 +21,15 @@ var (
 type UserService struct {
 	store      *store.Store
 	orgService *OrganizationService
+	appService *ApplicationService
 	jwtSecret  string
 }
 
-func NewUserService(store *store.Store, orgService *OrganizationService, jwtSecret string) *UserService {
+func NewUserService(store *store.Store, orgService *OrganizationService, appService *ApplicationService, jwtSecret string) *UserService {
 	return &UserService{
 		store:      store,
 		orgService: orgService,
+		appService: appService,
 		jwtSecret:  jwtSecret,
 	}
 }
@@ -52,8 +54,39 @@ func (s *UserService) Register(ctx context.Context, req model.CreateUserRequest)
 		Name:         req.Name,
 	}
 
-	if err := s.store.CreateUser(ctx, user); err != nil {
-		return nil, fmt.Errorf("failed to create user: %w", err)
+	// Use Transaction for atomic creation of User -> Org -> App
+	err = s.store.ExecTx(ctx, func(txStore *store.Store) error {
+		// 1. Create User
+		if err := txStore.CreateUser(ctx, user); err != nil {
+			return fmt.Errorf("failed to create user: %w", err)
+		}
+
+		// 2. Create Default Organization
+		orgName := fmt.Sprintf("%s's Org", user.Name)
+
+		// Generate explicit unique slug: "org-{user_id}-{random}"
+		slug := fmt.Sprintf("org-%d-%d", user.ID, time.Now().UnixNano()%10000)
+
+		// Create scoped services
+		txOrgService := s.orgService.WithStore(txStore)
+		txAppService := s.appService.WithStore(txStore)
+
+		org, err := txOrgService.CreateOrganization(ctx, user.ID, orgName, slug, "owner")
+		if err != nil {
+			return fmt.Errorf("failed to create default organization: %w", err)
+		}
+
+		// 3. Create Default Application
+		_, err = txAppService.CreateApplication(ctx, org.ID, "Default App", false)
+		if err != nil {
+			return fmt.Errorf("failed to create default application: %w", err)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
 	}
 
 	// Generate JWT token

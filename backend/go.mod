@@ -10,6 +10,7 @@ require (
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/joho/godotenv v1.5.1
 	github.com/stretchr/testify v1.11.1
+	github.com/stripe/stripe-go/v79 v79.12.0
 	golang.org/x/crypto v0.46.0
 	golang.org/x/time v0.14.0
 )

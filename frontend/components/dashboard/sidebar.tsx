@@ -53,32 +53,40 @@ import {
 import { useAuth } from "@/lib/auth";
 import { useApplicationStore } from "@/store/application-store";
 import Image from "next/image";
+import { CreateAppDialog } from "./create-app-dialog";
+
+import { IconLogs,IconCreditCard,IconHome2,IconMail,IconDeviceMobile,IconKey } from '@tabler/icons-react';
 
 const menuItems = [
   {
     title: "Dashboard",
-    icon: LayoutGrid,
+    icon: IconHome2,
     href: "/dashboard",
   },
   {
     title: "Messages",
-    icon: Mail,
+    icon: IconMail,
     href: "/messages",
   },
   {
     title: "Devices",
-    icon: Smartphone,
+    icon: IconDeviceMobile,
     href: "/devices",
   },
   {
     title: "API Keys",
-    icon: Key,
+    icon: IconKey,
     href: "/api-keys",
   },
   {
     title: "Webhooks",
-    icon: Webhook,
+    icon: IconLogs,
     href: "/webhooks",
+  },
+  {
+    title: "Billing",
+    icon: IconCreditCard,
+    href: "/organization/plans",
   },
 ];
 
@@ -143,7 +151,7 @@ export function DashboardSidebar({
                     className="h-9 sm:h-[38px]"
                   >
                     <Link href={item.href}>
-                      <item.icon className="size-4 sm:size-5" />
+                      <item.icon className="size-6 sm:size-6" />
                       <span className="text-sm font-medium">{item.title}</span>
                       {pathname === item.href && (
                         <ChevronRight className="ml-auto size-4 text-muted-foreground opacity-60" />
@@ -169,9 +177,9 @@ export function DashboardSidebar({
                   APPLICATIONS
                 </div>
               </CollapsibleTrigger>
-              <Link href="/applications" className="hover:text-foreground">
-                <MoreHorizontal className="size-4 cursor-pointer" />
-              </Link>
+              <CreateAppDialog>
+                 <Plus className="size-4 cursor-pointer hover:text-foreground transition-colors" />
+              </CreateAppDialog>
             </SidebarGroupLabel>
             <CollapsibleContent>
               <SidebarGroupContent>
@@ -197,12 +205,12 @@ export function DashboardSidebar({
                     </SidebarMenuItem>
                   ))}
                   <SidebarMenuItem>
-                     <SidebarMenuButton asChild className="h-9 sm:h-[38px] border-zinc-200/50">
-                        <Link href="/applications" className="text-primary font-medium hover:text-primary/80">
-                           <Plus className="size-4" />
-                           <span className="text-xs">Manage Apps</span>
-                        </Link>
-                     </SidebarMenuButton>
+                     <CreateAppDialog>
+                         <SidebarMenuButton className="h-9 sm:h-[38px] border-zinc-200/50 text-muted-foreground hover:text-primary">
+                               <Plus className="size-4" />
+                               <span className="text-xs">Create New App</span>
+                         </SidebarMenuButton>
+                     </CreateAppDialog>
                   </SidebarMenuItem>
                 </SidebarMenu>
               </SidebarGroupContent>

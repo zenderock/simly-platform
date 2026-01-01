@@ -24,6 +24,7 @@ import { useAuth } from "@/lib/auth";
 import { Organization } from "@/types";
 import Link from "next/link";
 import api from "@/lib/api";
+import LoaderQuater from "@/components/loader";
 
 interface OrganizationStats {
   messages_today: number;
@@ -96,7 +97,7 @@ export default function OrganizationPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <LoaderQuater />
       </div>
     );
   }
@@ -182,7 +183,7 @@ export default function OrganizationPage() {
               <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto">
                 {saving ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                    <LoaderQuater className="size-4 mr-2 animate-spin" />
                     Saving...
                   </>
                 ) : (

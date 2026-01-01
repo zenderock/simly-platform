@@ -15,6 +15,11 @@ type Config struct {
 	SandboxFailureNumber string
 	ResendAPIKey         string
 	ResendFromEmail      string
+	StripeSecretKey      string
+	StripePublishableKey string
+	StripeWebhookSecret  string
+	StripePricePro       string
+	StripePriceAgency    string
 }
 
 func Load() *Config {
@@ -31,6 +36,11 @@ func Load() *Config {
 		SandboxFailureNumber: getEnv("SANDBOX_FAILURE_NUMBER", "+15550000001"),
 		ResendAPIKey:         getEnv("RESEND_API_KEY", ""),
 		ResendFromEmail:      getEnv("RESEND_FROM_EMAIL", "onboarding@resend.dev"),
+		StripeSecretKey:      getEnv("STRIPE_SECRET_KEY", ""),
+		StripePublishableKey: getEnv("STRIPE_PUBLISHABLE_KEY", ""),
+		StripeWebhookSecret:  getEnv("STRIPE_WEBHOOK_SECRET", ""),
+		StripePricePro:       getEnv("STRIPE_PRICE_PRO", "price_pro_default"),
+		StripePriceAgency:    getEnv("STRIPE_PRICE_AGENCY", "price_agency_default"),
 	}
 }
 

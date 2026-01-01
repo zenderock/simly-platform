@@ -22,7 +22,7 @@ func (s *Store) CreateOrganization(ctx context.Context, org *model.Organization)
 
 func (s *Store) GetOrganizationByID(ctx context.Context, id int) (*model.Organization, error) {
 	query := `
-		SELECT id, name, slug, plan, sms_monthly_limit, sms_burst_limit, max_devices, max_sims_per_device, created_at, updated_at
+		SELECT id, name, slug, plan, sms_monthly_limit, sms_burst_limit, max_devices, max_sims_per_device, stripe_customer_id, stripe_subscription_id, stripe_price_id, stripe_current_period_end, created_at, updated_at
 		FROM organizations
 		WHERE id = $1
 	`
@@ -36,6 +36,10 @@ func (s *Store) GetOrganizationByID(ctx context.Context, id int) (*model.Organiz
 		&org.SMSBurstLimit,
 		&org.MaxDevices,
 		&org.MaxSimsPerDevice,
+		&org.StripeCustomerID,
+		&org.StripeSubscriptionID,
+		&org.StripePriceID,
+		&org.StripeCurrentPeriodEnd,
 		&org.CreatedAt,
 		&org.UpdatedAt,
 	)
@@ -200,4 +204,20 @@ func (s *Store) GetOrganizationStats(ctx context.Context, orgID int) (*model.Org
 	}
 
 	return stats, nil
+}
+
+func (s *Store) UpdateOrganizationStripe(ctx context.Context, orgID int, customerID, subscriptionID string) error {
+	query := `UPDATE organizations SET stripe_customer_id = $1, stripe_subscription_id = $2, updated_at = NOW() WHERE id = $3`
+	_, err := s.db.Exec(ctx, query, customerID, subscriptionID, orgID)
+	return err
+}
+
+func (s *Store) GetOrganizationByStripeCustomerID(ctx context.Context, customerID string) (*model.Organization, error) {
+	query := `SELECT id, name, plan FROM organizations WHERE stripe_customer_id = $1`
+	var org model.Organization
+	err := s.db.QueryRow(ctx, query, customerID).Scan(&org.ID, &org.Name, &org.Plan)
+	if err != nil {
+		return nil, err
+	}
+	return &org, nil
 }

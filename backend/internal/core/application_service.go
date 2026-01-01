@@ -15,6 +15,10 @@ func NewApplicationService(store *store.Store) *ApplicationService {
 	return &ApplicationService{store: store}
 }
 
+func (s *ApplicationService) WithStore(store *store.Store) *ApplicationService {
+	return &ApplicationService{store: store}
+}
+
 func (s *ApplicationService) CreateApplication(ctx context.Context, orgID int, name string, isSandbox bool) (*model.Application, error) {
 	app := &model.Application{
 		OrganizationID: orgID,

@@ -13,10 +13,17 @@ import (
 type OrganizationHandler struct {
 	service      *core.OrganizationService
 	auditService *core.AuditService
+	pricePro     string
+	priceAgency  string
 }
 
-func NewOrganizationHandler(service *core.OrganizationService, auditService *core.AuditService) *OrganizationHandler {
-	return &OrganizationHandler{service: service, auditService: auditService}
+func NewOrganizationHandler(service *core.OrganizationService, auditService *core.AuditService, pricePro, priceAgency string) *OrganizationHandler {
+	return &OrganizationHandler{
+		service:      service,
+		auditService: auditService,
+		pricePro:     pricePro,
+		priceAgency:  priceAgency,
+	}
 }
 
 func (h *OrganizationHandler) AddMember(w http.ResponseWriter, r *http.Request) {
@@ -211,8 +218,19 @@ func (h *OrganizationHandler) GetOrganizationStats(w http.ResponseWriter, r *htt
 }
 
 func (h *OrganizationHandler) ListPlans(w http.ResponseWriter, r *http.Request) {
+	plans := make([]model.Plan, len(model.AvailablePlans))
+	copy(plans, model.AvailablePlans)
+
+	for i := range plans {
+		if plans[i].ID == "professional" {
+			plans[i].StripePriceID = h.pricePro
+		} else if plans[i].ID == "enterprise" { // or agency
+			plans[i].StripePriceID = h.priceAgency
+		}
+	}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(model.AvailablePlans)
+	json.NewEncoder(w).Encode(plans)
 }
 
 func (h *OrganizationHandler) UpdatePlan(w http.ResponseWriter, r *http.Request) {
