@@ -10,6 +10,7 @@ import (
 	"github.com/stripe/stripe-go/v79/billingportal/session"
 	checkoutsession "github.com/stripe/stripe-go/v79/checkout/session"
 	"github.com/stripe/stripe-go/v79/webhook"
+	"github.com/zenderock/simly-backend/internal/model"
 	"github.com/zenderock/simly-backend/internal/store"
 )
 
@@ -148,46 +149,22 @@ func (s *BillingService) handleSubscriptionUpdated(sub *stripe.Subscription) err
 	}
 
 	priceID := sub.Items.Data[0].Price.ID
-
-	// Map Price ID to Plan Name using configured IDs
-	planName := "free"
+	planName := model.PlanFree
 
 	switch priceID {
 	case s.pricePro:
-		planName = "pro"
+		planName = model.PlanPro
 	case s.priceAgency:
-		planName = "agency"
+		planName = model.PlanAgency
 	default:
-		// Fallback or log unknown price
-		log.Printf("Billing: Unknown price ID %s, defaulting to free/current or handling error", priceID)
-		// If unknown, maybe we shouldn't change the plan?
-		// For safety let's return nil to avoid downgrading to free erroneously if ID just doesn't match config
-		// But for now, let's assume 'free' if not matched is safer than 'pro'.
+		log.Printf("Billing: Unknown price ID %s, defaulting to free", priceID)
 	}
 
-	// We should also update subscription_end_date
-	// plan, smsMonthly, smsBurst, maxDevices, maxSimsPerDevice
-	// For now, only updating Plan status. Ideally we fetch plan config and apply limits.
-	// Passing -1 or 0 to indicate "no change" isn't supported by the store method currently.
-	// We might need to fetch org first (which we have) and pass existing values or updated values.
+	limits := model.GetPlanLimits(planName)
 
-	// Quick fix: Use existing limits from 'org' or defaults.
-	// Assuming 'org' struct has these fields populated (it does from OrganizationStore.GetOrganizationByStripeCustomerID if query selected them)
-	// WAIT: GetOrganizationByStripeCustomerID ONLY selects id, name, plan.
-	// We need to fetch full org or update Store method to just update Plan.
+	log.Printf("Billing: Updating org %d to plan %s with limits: SMS=%d, Devices=%d", org.ID, planName, limits.SMSMonthly, limits.MaxDevices)
 
-	// Better approach: Update only plan columns.
-	// But Store.UpdateOrganizationPlan updates everything.
-	// Let's create a specific method for Stripe updates in Store?
-	// Or just reuse UpdateOrganizationPlan if we fetch full org.
-
-	// Let's fetch full org first.
-	fullOrg, err := s.db.GetOrganizationByID(context.Background(), org.ID)
-	if err != nil {
-		return err
-	}
-
-	return s.db.UpdateOrganizationPlan(context.Background(), org.ID, planName, fullOrg.SMSMonthlyLimit, fullOrg.SMSBurstLimit, fullOrg.MaxDevices, fullOrg.MaxSimsPerDevice)
+	return s.db.UpdateOrganizationPlan(context.Background(), org.ID, planName, limits.SMSMonthly, limits.SMSBurst, limits.MaxDevices, limits.MaxSimsPerDevice)
 }
 
 func (s *BillingService) handleSubscriptionDeleted(sub *stripe.Subscription) error {
@@ -196,10 +173,10 @@ func (s *BillingService) handleSubscriptionDeleted(sub *stripe.Subscription) err
 		return nil
 	}
 
-	fullOrg, err := s.db.GetOrganizationByID(context.Background(), org.ID)
-	if err != nil {
-		return err
-	}
+	planName := model.PlanFree
+	limits := model.GetPlanLimits(planName)
 
-	return s.db.UpdateOrganizationPlan(context.Background(), org.ID, "free", fullOrg.SMSMonthlyLimit, fullOrg.SMSBurstLimit, fullOrg.MaxDevices, fullOrg.MaxSimsPerDevice)
+	log.Printf("Billing: Subscription deleted for org %d, downgrading to free", org.ID)
+
+	return s.db.UpdateOrganizationPlan(context.Background(), org.ID, planName, limits.SMSMonthly, limits.SMSBurst, limits.MaxDevices, limits.MaxSimsPerDevice)
 }

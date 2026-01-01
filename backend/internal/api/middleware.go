@@ -5,13 +5,16 @@ import (
 	"net/http"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/zenderock/simly-backend/internal/core"
 )
 
 type contextKey string
 
 const userIDKey contextKey = "user_id"
+const appIDKey contextKey = "app_id"
+const orgIDKey contextKey = "org_id"
 
-func AuthMiddleware(jwtSecret []byte) func(http.Handler) http.Handler {
+func AuthMiddleware(jwtSecret []byte, apiKeyService *core.APIKeyService) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			tokenString := r.Header.Get("Authorization")
@@ -22,6 +25,20 @@ func AuthMiddleware(jwtSecret []byte) func(http.Handler) http.Handler {
 				return
 			}
 
+			// 1. Check for API Key (starts with sk_live_)
+			if len(tokenString) > 8 && tokenString[:8] == "sk_live_" {
+				apiKey, err := apiKeyService.VerifyAPIKey(r.Context(), tokenString)
+				if err != nil {
+					http.Error(w, "Unauthorized: Invalid API Key", http.StatusUnauthorized)
+					return
+				}
+				ctx := context.WithValue(r.Context(), orgIDKey, apiKey.OrganizationID)
+				ctx = context.WithValue(ctx, appIDKey, apiKey.ApplicationID)
+				next.ServeHTTP(w, r.WithContext(ctx))
+				return
+			}
+
+			// 2. Fallback to JWT
 			token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 				return jwtSecret, nil
 			})

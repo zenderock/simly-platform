@@ -13,6 +13,11 @@ import (
 // 1. X-Organization-ID Header (Strict check: User must be member)
 // 2. Default: User's first available organization (MVP Fallback)
 func GetActiveOrgID(r *http.Request, orgService *core.OrganizationService) (int, error) {
+	// 0. Check for API Key Context
+	if id, ok := r.Context().Value(orgIDKey).(int); ok {
+		return id, nil
+	}
+
 	// 1. Check Header
 	orgIDStr := r.Header.Get("X-Organization-ID")
 	if orgIDStr != "" {

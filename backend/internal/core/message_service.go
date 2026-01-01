@@ -60,6 +60,7 @@ func (s *MessageService) ReceiveSMS(ctx context.Context, orgID int, fromNumber s
 	}
 
 	// Dispatch webhook for the specific organization (Global event for now)
+	// TODO: If we implement DID/Virtual Numbers mapped to Apps, we would resolve AppID here.
 	s.webhook.DispatchEvent(orgID, nil, "sms.received", msg)
 	return nil
 }

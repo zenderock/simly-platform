@@ -216,3 +216,32 @@ func (s *Store) DeleteExpiredLinkTokens(ctx context.Context, orgID int) error {
 	_, err := s.db.Exec(ctx, query, orgID)
 	return err
 }
+func (s *Store) GetInactiveDevices(ctx context.Context, threshold time.Duration) ([]model.Device, error) {
+	query := `
+		SELECT id, organization_id, name, model, last_seen_at, status
+		FROM devices
+		WHERE status = 'online' AND last_seen_at < $1
+	`
+	cutoff := time.Now().Add(-threshold)
+	rows, err := s.db.Query(ctx, query, cutoff)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var devices []model.Device
+	for rows.Next() {
+		var d model.Device
+		if err := rows.Scan(&d.ID, &d.OrganizationID, &d.Name, &d.Model, &d.LastSeenAt, &d.Status); err != nil {
+			return nil, err
+		}
+		devices = append(devices, d)
+	}
+	return devices, nil
+}
+
+func (s *Store) UpdateDeviceStatus(ctx context.Context, id int, status string) error {
+	query := `UPDATE devices SET status = $1, updated_at = NOW() WHERE id = $2`
+	_, err := s.db.Exec(ctx, query, status, id)
+	return err
+}

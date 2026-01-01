@@ -10,12 +10,13 @@ import (
 )
 
 type MessageHandler struct {
-	service    *core.MessageService
-	orgService *core.OrganizationService
+	service       *core.MessageService
+	orgService    *core.OrganizationService
+	deviceService *core.DeviceService
 }
 
-func NewMessageHandler(service *core.MessageService, orgService *core.OrganizationService) *MessageHandler {
-	return &MessageHandler{service: service, orgService: orgService}
+func NewMessageHandler(service *core.MessageService, orgService *core.OrganizationService, deviceService *core.DeviceService) *MessageHandler {
+	return &MessageHandler{service: service, orgService: orgService, deviceService: deviceService}
 }
 
 func (h *MessageHandler) SendSMS(w http.ResponseWriter, r *http.Request) {
@@ -43,29 +44,28 @@ func (h *MessageHandler) SendSMS(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *MessageHandler) InternalReceiveSMS(w http.ResponseWriter, r *http.Request) {
-	// For Inbound, the Device identifies itself.
-	// But how do we know the Org? The Device is linked to Org.
-	// This handler is protected by User Auth usually, but for a Device calling?
-	// Note: We haven't implemented Device Auth yet.
-	// Assuming the device is authenticated as a User (owner) for now.
-
-	// BUT, if we use API Key or Device Token, we would extract Device -> Org.
-	// Since we use Bearer Token of User, we can find the Org.
-
+	// 1. Resolve Organization from Context (works for both User and API Key)
 	orgID, err := GetActiveOrgID(r, h.orgService)
 	if err != nil {
 		http.Error(w, "Organization required", http.StatusForbidden)
 		return
 	}
 
-	// This payload comes from the Android App
+	// 2. Parse Payload from Android App
 	var req struct {
 		From     string `json:"from"`
 		Body     string `json:"body"`
 		DeviceID int    `json:"device_id"`
+		// Timestamp?
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// 3. Verify Device Belongs to Org
+	if err := h.deviceService.VerifyDeviceOwnership(r.Context(), req.DeviceID, orgID); err != nil {
+		http.Error(w, "Unauthorized: Device validation failed", http.StatusForbidden)
 		return
 	}
 

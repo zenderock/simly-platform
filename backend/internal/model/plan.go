@@ -20,73 +20,71 @@ type PlanLimits struct {
 	MaxSimsPerDevice int `json:"max_sims_per_device"`
 }
 
+const (
+	PlanFree   = "free"
+	PlanPro    = "pro"
+	PlanAgency = "agency"
+)
+
 // AvailablePlans returns all available subscription plans
 var AvailablePlans = []Plan{
 	{
-		ID:          "starter",
-		Name:        "Starter",
-		Price:       2900, // $29
+		ID:          PlanFree,
+		Name:        "Free",
+		Price:       0,
 		Period:      "month",
-		Description: "Perfect for small projects and testing",
+		Description: "For hobbyists and testing",
 		Features: []string{
-			"1,000 SMS per month",
-			"Up to 2 devices",
-			"1 SIM per device",
-			"Basic support",
-			"API access",
-			"Webhook support",
+			"100 SMS per month",
+			"1 connection allowed",
+			"Basic receipt webhooks",
+			"Community support",
 		},
 		Limits: PlanLimits{
-			SMSMonthly:       1000,
-			SMSBurst:         100,
-			MaxDevices:       2,
+			SMSMonthly:       100,
+			SMSBurst:         10,
+			MaxDevices:       1,
 			MaxSimsPerDevice: 1,
 		},
 		Popular: false,
 	},
 	{
-		ID:          "professional",
-		Name:        "Professional",
-		Price:       9900, // $99
+		ID:          PlanPro,
+		Name:        "Pro",
+		Price:       1500, // $15
 		Period:      "month",
-		Description: "Ideal for growing businesses",
+		Description: "For startups and small businesses",
 		Features: []string{
 			"10,000 SMS per month",
-			"Up to 10 devices",
-			"2 SIMs per device",
-			"Priority support",
-			"Advanced analytics",
-			"Custom webhooks",
-			"Rate limiting controls",
+			"Up to 3 devices",
+			"Unlimited SIMs per device",
+			"Priority delivery",
+			"Email support",
 		},
 		Limits: PlanLimits{
 			SMSMonthly:       10000,
-			SMSBurst:         500,
-			MaxDevices:       10,
+			SMSBurst:         100,
+			MaxDevices:       3,
 			MaxSimsPerDevice: 2,
 		},
 		Popular: true,
 	},
 	{
-		ID:          "enterprise",
-		Name:        "Enterprise",
-		Price:       29900, // $299
+		ID:          PlanAgency,
+		Name:        "Agency",
+		Price:       4900, // $49
 		Period:      "month",
-		Description: "For large-scale operations",
+		Description: "For large campaigns and fleets",
 		Features: []string{
-			"50,000 SMS per month",
+			"Unlimited SMS",
 			"Unlimited devices",
-			"4 SIMs per device",
-			"24/7 dedicated support",
-			"Custom integrations",
-			"SLA guarantee",
-			"Advanced security",
-			"Multi-organization support",
+			"White-label options",
+			"Priority support",
 		},
 		Limits: PlanLimits{
-			SMSMonthly:       50000,
-			SMSBurst:         2000,
-			MaxDevices:       -1, // unlimited
+			SMSMonthly:       1000000, // Effectively unlimited
+			SMSBurst:         1000,
+			MaxDevices:       -1,
 			MaxSimsPerDevice: 4,
 		},
 		Popular: false,
@@ -107,7 +105,7 @@ func GetPlanByID(id string) *Plan {
 func GetPlanLimits(planID string) PlanLimits {
 	plan := GetPlanByID(planID)
 	if plan == nil {
-		// Default to starter
+		// Default to free
 		return AvailablePlans[0].Limits
 	}
 	return plan.Limits

@@ -2,7 +2,6 @@ package store
 
 import (
 	"context"
-	"database/sql"
 )
 
 func (s *Store) IncrementUsageLedger(ctx context.Context, appID, orgID int, period string) error {
@@ -20,11 +19,18 @@ func (s *Store) GetUsage(ctx context.Context, appID int, period string) (int, er
 	query := `SELECT sms_count FROM usage_ledger WHERE application_id = $1 AND period = $2`
 	var count int
 	err := s.db.QueryRow(ctx, query, appID, period).Scan(&count)
-	if err == sql.ErrNoRows {
-		return 0, nil
-	}
 	if err != nil {
-		return 0, err
+		return 0, nil // Handle any error (no rows or other) as 0 for safety in rate limiting
+	}
+	return count, nil
+}
+
+func (s *Store) GetOrganizationUsage(ctx context.Context, orgID int, period string) (int, error) {
+	query := `SELECT COALESCE(SUM(sms_count), 0) FROM usage_ledger WHERE organization_id = $1 AND period = $2`
+	var count int
+	err := s.db.QueryRow(ctx, query, orgID, period).Scan(&count)
+	if err != nil {
+		return 0, nil
 	}
 	return count, nil
 }

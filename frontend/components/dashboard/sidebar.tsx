@@ -55,7 +55,7 @@ import { useApplicationStore } from "@/store/application-store";
 import Image from "next/image";
 import { CreateAppDialog } from "./create-app-dialog";
 
-import { IconLogs,IconCreditCard,IconHome2,IconMail,IconDeviceMobile,IconKey } from '@tabler/icons-react';
+import { IconLogs,IconCreditCard,IconHome2,IconMail,IconDeviceMobile,IconKey,IconUsers,IconSpeakerphone } from '@tabler/icons-react';
 
 const menuItems = [
   {
@@ -72,6 +72,16 @@ const menuItems = [
     title: "Devices",
     icon: IconDeviceMobile,
     href: "/devices",
+  },
+  {
+    title: "Contacts",
+    icon: IconUsers,
+    href: "/contacts",
+  },
+  {
+    title: "Campaigns",
+    icon: IconSpeakerphone,
+    href: "/campaigns",
   },
   {
     title: "API Keys",
@@ -222,18 +232,18 @@ export function DashboardSidebar({
       <SidebarFooter className="px-3 sm:px-4 lg:px-5 pb-3 sm:pb-4 lg:pb-5">
         {/* Upgrade Card */}
         {currentOrg && currentOrg.plan !== "enterprise" && (
-          <div className="mb-4 p-3 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 dark:from-blue-950/50 dark:to-indigo-950/50 dark:border-blue-800">
+          <div className="mb-4 p-3 rounded-lg bg-linear-to-r from-purple-50 to-gray-50 border border-purple-200 dark:from-purple-950/50 dark:to-gray-950/50 dark:border-purple-800">
             <div className="flex items-center gap-2 mb-2">
-              <Crown className="size-4 text-blue-600 dark:text-blue-400" />
-              <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+              <Crown className="size-4 text-purple-600 dark:text-purple-400" />
+              <span className="text-sm font-semibold text-purple-900 dark:text-purple-100">
                 Upgrade Plan
               </span>
             </div>
-            <p className="text-xs text-blue-700 dark:text-blue-300 mb-3">
+            <p className="text-xs text-purple-700 dark:text-purple-300 mb-3">
               Get more SMS, devices, and premium features
             </p>
             <Link href="/organization/plans">
-              <button className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium py-2 px-3 rounded-md transition-colors flex items-center justify-center gap-1">
+              <button className="w-full bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium py-2 px-3 rounded-md transition-colors flex items-center justify-center gap-1">
                 <ArrowUp className="size-3" />
                 View Plans
               </button>

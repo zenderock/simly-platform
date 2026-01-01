@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 
 	"github.com/zenderock/simly-backend/internal/model"
 	"github.com/zenderock/simly-backend/internal/store"
@@ -57,4 +58,37 @@ func (s *APIKeyService) ListAPIKeys(ctx context.Context, appID int) ([]model.API
 func (s *APIKeyService) RevokeAPIKey(ctx context.Context, keyID, orgID int) error {
 	// Secure deletion ensuring the key belongs to the organization
 	return s.store.DeleteAPIKey(ctx, keyID, orgID)
+}
+func (s *APIKeyService) VerifyAPIKey(ctx context.Context, rawKey string) (*model.APIKey, error) {
+	if len(rawKey) < 12 {
+		return nil, errors.New("invalid key format") // or fmt.Errorf("invalid key format")
+	}
+
+	// 1. Extract Prefix
+	prefix := rawKey[:12] + "..."
+
+	// 2. Find Candidates
+	candidates, err := s.store.GetAPIKeysByPrefix(ctx, prefix)
+	if err != nil {
+		return nil, err
+	}
+
+	// 3. Check Hash
+	for _, k := range candidates {
+		err := bcrypt.CompareHashAndPassword([]byte(k.KeyHash), []byte(rawKey))
+		if err == nil {
+			// Match found!
+			// Update LastUsedAt asynchronously to not block the request
+			go func(id int) {
+				// Create a background context as the request context may be cancelled
+				if err := s.store.UpdateAPIKeyLastUsed(context.Background(), id); err != nil {
+					// Log error? For now silent failure is acceptable for metrics
+				}
+			}(k.ID)
+
+			return &k, nil
+		}
+	}
+
+	return nil, errors.New("invalid api key") // Key not found or mismatch
 }

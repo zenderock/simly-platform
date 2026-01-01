@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth";
 import { Webhook as WebhookIcon, ShieldAlert } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import LoaderQuater from "@/components/loader";
 
 export default function WebhooksPage() {
   const { organizationId } = useAuth();
@@ -36,7 +37,7 @@ export default function WebhooksPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <LoaderQuater />
       </div>
     );
   }

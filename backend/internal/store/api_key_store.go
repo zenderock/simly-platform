@@ -69,3 +69,46 @@ func (s *Store) DeleteAPIKey(ctx context.Context, id, orgID int) error {
 	}
 	return nil
 }
+func (s *Store) GetAPIKeysByPrefix(ctx context.Context, prefix string) ([]model.APIKey, error) {
+	query := `
+		SELECT id, organization_id, application_id, name, key_hash, prefix, last_used_at, created_at
+		FROM api_keys
+		WHERE prefix = $1
+	`
+	rows, err := s.db.Query(ctx, query, prefix)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query api keys by prefix: %w", err)
+	}
+	defer rows.Close()
+
+	var keys []model.APIKey
+	for rows.Next() {
+		var k model.APIKey
+		if err := rows.Scan(
+			&k.ID,
+			&k.OrganizationID,
+			&k.ApplicationID,
+			&k.Name,
+			&k.KeyHash,
+			&k.Prefix,
+			&k.LastUsedAt,
+			&k.CreatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan api key: %w", err)
+		}
+		keys = append(keys, k)
+	}
+	return keys, nil
+}
+func (s *Store) UpdateAPIKeyLastUsed(ctx context.Context, id int) error {
+	query := `
+		UPDATE api_keys
+		SET last_used_at = NOW()
+		WHERE id = $1
+	`
+	_, err := s.db.Exec(ctx, query, id)
+	if err != nil {
+		return fmt.Errorf("failed to update api key last_used: %w", err)
+	}
+	return nil
+}

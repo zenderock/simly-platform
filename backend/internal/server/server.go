@@ -66,9 +66,12 @@ func (s *Server) setupRoutes() {
 	auditService := core.NewAuditService(s.DB)
 	messageService := core.NewMessageService(s.DB, webhookService, notificationProvider, rateLimitService, appService, s.Config.SandboxSuccessNumber, s.Config.SandboxFailureNumber, alertService)
 
-	// Start Scheduler
+	// Start Workers
 	scheduler := core.NewSchedulerService(s.DB, messageService)
 	go scheduler.Start(context.Background())
+
+	monitoringService := core.NewMonitoringService(s.DB, alertService)
+	go monitoringService.Start(context.Background())
 
 	// Handlers
 	authHandler := api.NewAuthHandler(authUserService)
@@ -76,7 +79,7 @@ func (s *Server) setupRoutes() {
 	appHandler := api.NewApplicationHandler(appService, orgService, auditService)
 	apiKeyHandler := api.NewAPIKeyHandler(apiKeyService, appService, orgService, auditService)
 	deviceHandler := api.NewDeviceHandler(deviceService, orgService, auditService)
-	messageHandler := api.NewMessageHandler(messageService, orgService)
+	messageHandler := api.NewMessageHandler(messageService, orgService, deviceService)
 	webhookHandler := api.NewWebhookHandler(webhookService, orgService, auditService)
 	orgHandler := api.NewOrganizationHandler(orgService, auditService, s.Config.StripePricePro, s.Config.StripePriceAgency)
 	alertHandler := api.NewAlertHandler(alertService, orgService)
@@ -125,7 +128,7 @@ func (s *Server) setupRoutes() {
 
 	// Protected Routes (SaaS core)
 	r.Group(func(r chi.Router) {
-		r.Use(api.AuthMiddleware(jwtSecret))
+		r.Use(api.AuthMiddleware(jwtSecret, apiKeyService))
 
 		// Application Management
 		r.Route("/api/applications", func(r chi.Router) {
@@ -198,6 +201,38 @@ func (s *Server) setupRoutes() {
 			r.Get("/", alertHandler.ListAlerts)
 			r.Post("/{alertID}/read", alertHandler.MarkAsRead)
 			r.Post("/test", alertHandler.CreateTestAlert) // Route de test
+		})
+
+		// Contacts & Lists/Groups
+		contactService := core.NewContactService(s.DB)
+		contactHandler := api.NewContactHandler(contactService, orgService)
+
+		r.Route("/api/contacts", func(r chi.Router) {
+			r.Get("/", contactHandler.ListContacts)
+			r.Post("/", contactHandler.CreateContact)
+			r.Put("/{id}", contactHandler.UpdateContact)
+			r.Delete("/{id}", contactHandler.DeleteContact)
+		})
+
+		r.Route("/api/contact-lists", func(r chi.Router) {
+			r.Get("/", contactHandler.ListLists)
+			r.Post("/", contactHandler.CreateList)
+			r.Get("/{id}", contactHandler.GetList)
+			r.Delete("/{id}", contactHandler.DeleteList)
+			r.Post("/{id}/members", contactHandler.ManageListMembers)
+			r.Delete("/{id}/members/{memberID}", contactHandler.RemoveMember)
+		})
+
+		// Campaigns
+		campaignService := core.NewCampaignService(s.DB, messageService)
+		campaignHandler := api.NewCampaignHandler(campaignService, orgService)
+
+		r.Route("/api/campaigns", func(r chi.Router) {
+			r.Get("/", campaignHandler.ListCampaigns)
+			r.Post("/", campaignHandler.CreateCampaign)
+			r.Get("/{id}", campaignHandler.GetCampaign)
+			r.Delete("/{id}", campaignHandler.DeleteCampaign)
+			r.Post("/{id}/launch", campaignHandler.LaunchCampaign)
 		})
 
 		// Billing

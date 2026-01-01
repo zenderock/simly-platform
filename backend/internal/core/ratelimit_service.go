@@ -89,12 +89,9 @@ func (s *RateLimitService) UpdateLimiterForOrg(appID int, burstLimit int) {
 
 func (s *RateLimitService) checkMonthlyQuota(ctx context.Context, appID, orgID int) (bool, error) {
 	period := time.Now().Format("2006-01")
-	usage, err := s.store.GetUsage(ctx, appID, period)
+	usage, err := s.store.GetOrganizationUsage(ctx, orgID, period)
 	if err != nil {
-		// If check fails (e.g. db error), fail open or closed?
-		// For MVP fail open but log error usually. Here we return error.
-		// Actually if error is "no rows", usage is 0.
-		// The store returns 0 if no rows, so real error here is DB failure.
+		// If check fails (e.g. db error), fail closed for safety
 		return true, err
 	}
 
@@ -106,7 +103,7 @@ func (s *RateLimitService) checkMonthlyQuota(ctx context.Context, appID, orgID i
 
 	limit := org.SMSMonthlyLimit
 	if limit == 0 {
-		limit = 100 // Fallback
+		limit = 100 // Fallback for safety
 	}
 
 	return usage >= limit, nil

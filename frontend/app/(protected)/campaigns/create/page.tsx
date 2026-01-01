@@ -1,0 +1,372 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft, ArrowRight, Check, Rocket, Smartphone, Users } from "lucide-react";
+import { listLists } from "@/lib/api/contacts";
+import { listDevices } from "@/lib/api/devices";
+import { createCampaign, launchCampaign } from "@/lib/api/campaigns";
+import LoaderQuater from "@/components/loader";
+import { Separator } from "@/components/ui/separator";
+
+const steps = [
+  { id: 1, title: "Details" },
+  { id: 2, title: "Target" },
+  { id: 3, title: "Review" },
+];
+
+const schema = z.object({
+  name: z.string().min(1, "Campaign name is required"),
+  template_body: z.string().min(1, "Message template is required"),
+  list_id: z.string().min(1, "Contact list is required"), // Select is string usually
+  device_id: z.string().min(1, "Device is required"),
+});
+
+type FormData = z.infer<typeof schema>;
+
+export default function CreateCampaignPage() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [currentStep, setCurrentStep] = useState(1);
+  const [isLaunching, setIsLaunching] = useState(false);
+
+  const form = useForm<FormData>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      name: "",
+      template_body: "",
+      list_id: "",
+      device_id: "",
+    },
+    mode: "onChange",
+  });
+
+  // Fetch Data
+  const { data: lists } = useQuery({ queryKey: ["contact-lists"], queryFn: listLists });
+  const { data: devices } = useQuery({ queryKey: ["devices"], queryFn: listDevices });
+
+  const createMutation = useMutation({
+    mutationFn: createCampaign,
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["campaigns"] });
+      // If launching immediately
+      if (isLaunching) {
+        launchMutation.mutate(data.id);
+      } else {
+        toast.success("Campaign draft created");
+        router.push("/campaigns");
+      }
+    },
+    onError: () => toast.error("Failed to create campaign"),
+  });
+
+  const launchMutation = useMutation({
+    mutationFn: launchCampaign,
+    onSuccess: () => {
+      toast.success("Campaign launched successfully!");
+      router.push("/campaigns");
+    },
+    onError: () => {
+        toast.error("Campaign created but failed to launch");
+        router.push("/campaigns");
+    },
+  });
+
+  const nextStep = async () => {
+    // Validate current step fields
+    let valid = false;
+    if (currentStep === 1) {
+      valid = await form.trigger(["name", "template_body"]);
+    } else if (currentStep === 2) {
+      valid = await form.trigger(["list_id", "device_id"]);
+    }
+    
+    if (valid) setCurrentStep((prev) => prev + 1);
+  };
+
+  const prevStep = () => setCurrentStep((prev) => prev - 1);
+
+  const onSubmit = (data: FormData) => {
+    createMutation.mutate({
+        name: data.name,
+        template_body: data.template_body,
+        list_id: parseInt(data.list_id),
+        device_id: parseInt(data.device_id),
+    });
+  };
+
+  const selectedList = lists?.find(l => l.id.toString() === form.watch("list_id"));
+  const selectedDevice = devices?.find(d => d.id.toString() === form.watch("device_id"));
+
+  return (
+    <div className="flex flex-col h-full bg-muted/10">
+        {/* Header */}
+        <div className="border-b bg-background px-6 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+                <Button variant="ghost" size="icon" onClick={() => router.back()}>
+                    <ArrowLeft className="size-4" />
+                </Button>
+                <div>
+                   <h1 className="text-lg font-semibold">Create Campaign</h1>
+                   <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
+                       {steps.map((step, idx) => (
+                           <div key={step.id} className="flex items-center gap-2">
+                               <span className={`flex size-5 items-center justify-center rounded-full text-[10px] border ${currentStep === step.id ? "bg-primary text-primary-foreground border-primary" : currentStep > step.id ? "bg-primary text-primary-foreground border-primary" : "border-muted-foreground"}`}>
+                                   {currentStep > step.id ? <Check className="size-3" /> : step.id}
+                               </span>
+                               <span className={currentStep === step.id ? "font-medium text-foreground" : ""}>{step.title}</span>
+                               {idx < steps.length - 1 && <div className="h-px w-4 bg-border" />}
+                           </div>
+                       ))}
+                   </div>
+                </div>
+            </div>
+        </div>
+
+        <div className="flex-1 overflow-auto p-6">
+            <div className="max-w-3xl mx-auto">
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                        
+                        {/* Step 1: Details */}
+                        {currentStep === 1 && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Campaign Details</CardTitle>
+                                    <CardDescription>Give your campaign a name and draft your message.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <FormField
+                                        control={form.control}
+                                        name="name"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Campaign Name</FormLabel>
+                                                <FormControl>
+                                                    <Input placeholder="e.g. Summer Sale Promo" {...field} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="template_body"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Message Template</FormLabel>
+                                                <FormControl>
+                                                    <Textarea 
+                                                        placeholder="Hello {{first_name}}, check out our new offer!" 
+                                                        className="min-h-[150px]"
+                                                        {...field} 
+                                                    />
+                                                </FormControl>
+                                                <FormDescription>
+                                                    Available variables: <code className="bg-muted px-1 rounded">{"{{first_name}}"}</code>, <code className="bg-muted px-1 rounded">{"{{last_name}}"}</code>, <code className="bg-muted px-1 rounded">{"{{phone}}"}</code>
+                                                </FormDescription>
+                                                <div className="flex justify-end text-xs text-muted-foreground">
+                                                    {field.value.length} characters • {Math.ceil(field.value.length / 160)} SMS
+                                                </div>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {/* Step 2: Target */}
+                        {currentStep === 2 && (
+                             <Card>
+                                <CardHeader>
+                                    <CardTitle>Target Audience & Method</CardTitle>
+                                    <CardDescription>Select who to send to and which device to use.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <FormField
+                                        control={form.control}
+                                        name="list_id"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Contact List</FormLabel>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                    <FormControl>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Select a contact list" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        {lists?.map(list => (
+                                                            <SelectItem key={list.id} value={list.id.toString()}>
+                                                                <div className="flex items-center justify-between w-full min-w-[200px]">
+                                                                    <span>{list.name}</span>
+                                                                    <span className="text-xs text-muted-foreground ml-2">({list.member_count} members)</span>
+                                                                </div>
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    
+                                     <FormField
+                                        control={form.control}
+                                        name="device_id"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Sending Device</FormLabel>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                    <FormControl>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Select a device" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        {devices?.map(device => {
+                                                            const phoneNumbers = device.sim_cards?.map((s: any) => s.phone_number).filter(Boolean).join(", ");
+                                                            return (
+                                                                <SelectItem key={device.id} value={device.id.toString()} disabled={device.status !== 'online'}>
+                                                                    <div className="flex items-center">
+                                                                        <div className={`size-2 rounded-full mr-2 ${device.status === 'online' ? 'bg-green-500' : 'bg-gray-300'}`} />
+                                                                        <span>{device.name}</span>
+                                                                        {phoneNumbers && (
+                                                                            <span className="text-xs text-muted-foreground ml-2">({phoneNumbers})</span>
+                                                                        )}
+                                                                    </div>
+                                                                </SelectItem>
+                                                            );
+                                                        })}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormDescription>Only online devices are available.</FormDescription>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                </CardContent>
+                             </Card>
+                        )}
+
+                        {/* Step 3: Review */}
+                        {currentStep === 3 && (
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Review Campaign</CardTitle>
+                                    <CardDescription>Double check everything before launching.</CardDescription>
+                                </CardHeader>
+                                <CardContent className="space-y-6">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="p-4 border rounded-md bg-muted/50">
+                                            <div className="flex items-center gap-2 text-muted-foreground mb-2">
+                                                <Users className="size-4" />
+                                                <span className="text-sm font-medium">Target List</span>
+                                            </div>
+                                            <div className="font-semibold">{selectedList?.name}</div>
+                                            <div className="text-sm text-muted-foreground">{selectedList?.member_count} contacts</div>
+                                        </div>
+                                        <div className="p-4 border rounded-md bg-muted/50">
+                                            <div className="flex items-center gap-2 text-muted-foreground mb-2">
+                                                <Smartphone className="size-4" />
+                                                <span className="text-sm font-medium">Using Device</span>
+                                            </div>
+                                            <div className="font-semibold">{selectedDevice?.name}</div>
+                                            <div className="text-sm text-muted-foreground">
+                                                {selectedDevice?.sim_cards?.map((s: any) => s.phone_number).filter(Boolean).join(", ")}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h4 className="text-sm font-medium text-muted-foreground mb-2">Message Preview</h4>
+                                        <div className="p-4 border rounded-md bg-white dark:bg-zinc-900 text-sm whitespace-pre-wrap">
+                                            {form.getValues("template_body")}
+                                        </div>
+                                    </div>
+                                    
+                                    <Separator />
+                                    
+                                    <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-md border border-blue-100 dark:border-blue-900 flex gap-3">
+                                        <Rocket className="size-5 text-blue-600 shrink-0" />
+                                        <p className="text-sm text-blue-900 dark:text-blue-100">
+                                            You are about to queue <strong>{selectedList?.member_count} messages</strong>. 
+                                            Depending on your device connection, this might take some time to process.
+                                            Make sure your Android device is charged and has a stable internet connection.
+                                        </p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {/* Footer Buttons */}
+                        <div className="flex items-center justify-between">
+                            {currentStep > 1 ? (
+                                <Button type="button" variant="outline" onClick={prevStep}>
+                                    <ArrowLeft className="mr-2 size-4" /> Back
+                                </Button>
+                            ) : (
+                                <Button type="button" variant="ghost" onClick={() => router.back()}>
+                                    Cancel
+                                </Button>
+                            )}
+                            
+                            {currentStep < 3 ? (
+                                <Button type="button" onClick={nextStep}>
+                                    Next <ArrowRight className="ml-2 size-4" />
+                                </Button>
+                            ) : (
+                                <div className="flex gap-2">
+                                    <Button 
+                                        type="submit" 
+                                        variant="outline" 
+                                        disabled={createMutation.isPending || launchMutation.isPending}
+                                        onClick={() => setIsLaunching(false)}
+                                    >
+                                        Save Draft
+                                    </Button>
+                                    <Button 
+                                        type="submit" 
+                                        disabled={createMutation.isPending || launchMutation.isPending}
+                                        onClick={() => setIsLaunching(true)}
+                                        className="bg-blue-600 hover:bg-blue-700"
+                                    >
+                                        {(createMutation.isPending || launchMutation.isPending) && <LoaderQuater className="mr-2" />}
+                                        Launch Campaign
+                                    </Button>
+                                </div>
+                            )}
+                        </div>
+                    </form>
+                </Form>
+            </div>
+        </div>
+    </div>
+  );
+}

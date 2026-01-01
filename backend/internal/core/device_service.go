@@ -196,3 +196,15 @@ func (s *DeviceService) LinkDevice(ctx context.Context, req model.LinkDeviceRequ
 
 	return device, nil
 }
+
+// VerifyDeviceOwnership checks if a device belongs to an organization
+func (s *DeviceService) VerifyDeviceOwnership(ctx context.Context, deviceID, orgID int) error {
+	device, err := s.store.GetDeviceByID(ctx, deviceID)
+	if err != nil {
+		return fmt.Errorf("device not found")
+	}
+	if device.OrganizationID != orgID {
+		return fmt.Errorf("unauthorized: device does not belong to organization")
+	}
+	return nil
+}
