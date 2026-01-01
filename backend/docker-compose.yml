@@ -1,0 +1,11 @@
+services:
+  app:
+    build: .
+    container_name: simly-backend
+    ports:
+      - "8081:8080" # Map host 8081 to container 8080
+    env_file:
+      - .env
+    environment:
+      - PORT=8080 # Override PORT to match internal container port
+    restart: unless-stopped
