@@ -106,6 +106,9 @@ func (s *Server) setupRoutes() {
 		r.Post("/login", authHandler.Login)
 	})
 
+	// Public device linking endpoint (for mobile app)
+	r.Post("/api/devices/link", deviceHandler.LinkDevice)
+
 	// Protected Routes (SaaS core)
 	r.Group(func(r chi.Router) {
 		r.Use(api.AuthMiddleware(jwtSecret))
@@ -128,6 +131,7 @@ func (s *Server) setupRoutes() {
 		r.Route("/api/devices", func(r chi.Router) {
 			r.Get("/", deviceHandler.ListDevices)
 			r.Post("/", deviceHandler.RegisterDevice)
+			r.Post("/link-token", deviceHandler.GenerateLinkToken)
 			r.Delete("/{deviceID}", deviceHandler.DeleteDevice)
 			r.Post("/{deviceID}/heartbeat", deviceHandler.Heartbeat)
 		})

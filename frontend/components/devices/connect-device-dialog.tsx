@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Dialog, 
   DialogContent, 
@@ -11,18 +11,61 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Plus, Smartphone, QrCode, Download, ShieldCheck } from "lucide-react";
+import { Plus, Download, ShieldCheck, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
+import { QRCodeSVG } from "qrcode.react";
+import api from "@/lib/api";
+
+interface LinkToken {
+  token: string;
+  expires_at: string;
+}
 
 export function ConnectDeviceDialog() {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(1);
+  const [linkToken, setLinkToken] = useState<LinkToken | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Fetch link token when step 2 is reached
+  useEffect(() => {
+    if (step === 2 && !linkToken) {
+      fetchLinkToken();
+    }
+  }, [step]);
+
+  const fetchLinkToken = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await api.post<LinkToken>("/devices/link-token");
+      setLinkToken(res.data);
+    } catch (err) {
+      setError("Failed to generate QR code. Please try again.");
+      console.error("Failed to generate link token:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClose = (val: boolean) => {
+    setOpen(val);
+    if (!val) {
+      setStep(1);
+      setLinkToken(null);
+      setError(null);
+    }
+  };
+
+  // Generate QR code data (the mobile app will scan this)
+  const qrData = linkToken ? JSON.stringify({
+    token: linkToken.token,
+    expires_at: linkToken.expires_at
+  }) : "";
 
   return (
-    <Dialog open={open} onOpenChange={(val) => {
-      setOpen(val);
-      if (!val) setStep(1);
-    }}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogTrigger asChild>
         <Button className="shrink-0 gap-2 bg-[#6e3ff3] hover:bg-[#5b32cc] text-white border-none shadow-lg shadow-[#6e3ff3]/20">
           <Plus className="size-4" />
@@ -63,12 +106,24 @@ export function ConnectDeviceDialog() {
                animate={{ opacity: 1, y: 0 }}
                className="space-y-6 w-full"
              >
-               <div className="size-48 bg-white border rounded-xl flex items-center justify-center mx-auto p-4">
-                 {/* This would be a real QR code in production */}
-                 <QrCode className="size-full text-zinc-300" />
-                 <div className="absolute inset-0 flex items-center justify-center bg-white/60 backdrop-blur-[1px] rounded-xl">
-                   <p className="text-xs font-mono font-bold text-zinc-600 bg-white border px-2 py-1 rounded shadow-sm">QR_CODE_GEN_PENDING</p>
-                 </div>
+               <div className="size-48 bg-white border rounded-xl flex items-center justify-center mx-auto p-4 relative">
+                 {loading ? (
+                   <Loader2 className="size-8 text-zinc-400 animate-spin" />
+                 ) : error ? (
+                   <div className="text-center">
+                     <p className="text-xs text-red-500 mb-2">{error}</p>
+                     <Button size="sm" variant="outline" onClick={fetchLinkToken}>
+                       Retry
+                     </Button>
+                   </div>
+                 ) : linkToken ? (
+                   <QRCodeSVG 
+                     value={qrData} 
+                     size={160}
+                     level="M"
+                     includeMargin={false}
+                   />
+                 ) : null}
                </div>
                <div className="space-y-2">
                  <p className="font-semibold">Step 2: Scan QR Code</p>

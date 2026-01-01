@@ -2,6 +2,8 @@ package core
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"time"
@@ -13,6 +15,9 @@ import (
 var (
 	ErrDeviceLimitReached = errors.New("device limit reached for your plan")
 	ErrSimLimitReached    = errors.New("SIM limit per device reached for your plan")
+	ErrTokenExpired       = errors.New("link token has expired")
+	ErrTokenUsed          = errors.New("link token has already been used")
+	ErrInvalidToken       = errors.New("invalid link token")
 )
 
 type DeviceService struct {
@@ -93,4 +98,101 @@ func (s *DeviceService) Heartbeat(ctx context.Context, deviceID int, battery, si
 
 func (s *DeviceService) DeleteDevice(ctx context.Context, deviceID, orgID int) error {
 	return s.store.DeleteDevice(ctx, deviceID, orgID)
+}
+
+// GenerateLinkToken creates a new device link token for QR code
+func (s *DeviceService) GenerateLinkToken(ctx context.Context, orgID int) (*model.DeviceLinkToken, error) {
+	// Check device limit before generating token
+	org, err := s.store.GetOrganizationByID(ctx, orgID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get organization: %w", err)
+	}
+
+	if org.MaxDevices != -1 {
+		deviceCount, err := s.store.CountDevicesByOrganization(ctx, orgID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to count devices: %w", err)
+		}
+		if deviceCount >= org.MaxDevices {
+			return nil, ErrDeviceLimitReached
+		}
+	}
+
+	// Clean up expired tokens
+	s.store.DeleteExpiredLinkTokens(ctx, orgID)
+
+	// Generate secure random token
+	tokenBytes := make([]byte, 32)
+	if _, err := rand.Read(tokenBytes); err != nil {
+		return nil, fmt.Errorf("failed to generate token: %w", err)
+	}
+	token := hex.EncodeToString(tokenBytes)
+
+	// Token expires in 10 minutes
+	expiresAt := time.Now().Add(10 * time.Minute)
+
+	if err := s.store.CreateDeviceLinkToken(ctx, orgID, token, expiresAt); err != nil {
+		return nil, err
+	}
+
+	return &model.DeviceLinkToken{
+		Token:     token,
+		ExpiresAt: expiresAt,
+	}, nil
+}
+
+// LinkDevice links a device using a token (called by mobile app)
+func (s *DeviceService) LinkDevice(ctx context.Context, req model.LinkDeviceRequest) (*model.Device, error) {
+	// Get and validate token
+	tokenData, err := s.store.GetDeviceLinkToken(ctx, req.Token)
+	if err != nil {
+		return nil, ErrInvalidToken
+	}
+
+	if tokenData.UsedAt != nil {
+		return nil, ErrTokenUsed
+	}
+
+	if time.Now().After(tokenData.ExpiresAt) {
+		return nil, ErrTokenExpired
+	}
+
+	// Check device limit
+	org, err := s.store.GetOrganizationByID(ctx, tokenData.OrganizationID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get organization: %w", err)
+	}
+
+	if org.MaxDevices != -1 {
+		deviceCount, err := s.store.CountDevicesByOrganization(ctx, tokenData.OrganizationID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to count devices: %w", err)
+		}
+		if deviceCount >= org.MaxDevices {
+			return nil, ErrDeviceLimitReached
+		}
+	}
+
+	// Create device
+	now := time.Now()
+	device := &model.Device{
+		OrganizationID: tokenData.OrganizationID,
+		Name:           req.Name,
+		Model:          req.Model,
+		FCMToken:       req.FCMToken,
+		Status:         "online",
+		LastSeenAt:     &now,
+	}
+
+	if err := s.store.CreateDevice(ctx, device); err != nil {
+		return nil, err
+	}
+
+	// Mark token as used
+	if err := s.store.MarkDeviceLinkTokenUsed(ctx, req.Token, device.ID); err != nil {
+		// Device created but token not marked - not critical
+		fmt.Printf("Warning: failed to mark token as used: %v\n", err)
+	}
+
+	return device, nil
 }

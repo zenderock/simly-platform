@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/zenderock/simly-backend/internal/model"
 )
@@ -165,4 +166,53 @@ func (s *Store) CountSimsByDevice(ctx context.Context, deviceID int) (int, error
 		return 0, fmt.Errorf("failed to count SIMs: %w", err)
 	}
 	return count, nil
+}
+
+// Device Link Token functions
+
+func (s *Store) CreateDeviceLinkToken(ctx context.Context, orgID int, token string, expiresAt time.Time) error {
+	query := `
+		INSERT INTO device_link_tokens (organization_id, token, expires_at, created_at)
+		VALUES ($1, $2, $3, NOW())
+	`
+	_, err := s.db.Exec(ctx, query, orgID, token, expiresAt)
+	if err != nil {
+		return fmt.Errorf("failed to create device link token: %w", err)
+	}
+	return nil
+}
+
+func (s *Store) GetDeviceLinkToken(ctx context.Context, token string) (*model.DeviceLinkTokenFull, error) {
+	query := `
+		SELECT id, organization_id, token, expires_at, used_at, device_id, created_at
+		FROM device_link_tokens
+		WHERE token = $1
+	`
+	var t model.DeviceLinkTokenFull
+	err := s.db.QueryRow(ctx, query, token).Scan(
+		&t.ID, &t.OrganizationID, &t.Token, &t.ExpiresAt, &t.UsedAt, &t.DeviceID, &t.CreatedAt,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get device link token: %w", err)
+	}
+	return &t, nil
+}
+
+func (s *Store) MarkDeviceLinkTokenUsed(ctx context.Context, token string, deviceID int) error {
+	query := `
+		UPDATE device_link_tokens 
+		SET used_at = NOW(), device_id = $1
+		WHERE token = $2
+	`
+	_, err := s.db.Exec(ctx, query, deviceID, token)
+	if err != nil {
+		return fmt.Errorf("failed to mark token as used: %w", err)
+	}
+	return nil
+}
+
+func (s *Store) DeleteExpiredLinkTokens(ctx context.Context, orgID int) error {
+	query := `DELETE FROM device_link_tokens WHERE organization_id = $1 AND expires_at < NOW() AND used_at IS NULL`
+	_, err := s.db.Exec(ctx, query, orgID)
+	return err
 }

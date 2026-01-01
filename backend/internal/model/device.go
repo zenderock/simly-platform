@@ -47,3 +47,22 @@ type DeviceLinkToken struct {
 	Token     string    `json:"token"`
 	ExpiresAt time.Time `json:"expires_at"`
 }
+
+// DeviceLinkTokenFull represents a device link token with all fields
+type DeviceLinkTokenFull struct {
+	ID             int        `json:"id"`
+	OrganizationID int        `json:"organization_id"`
+	Token          string     `json:"token"`
+	ExpiresAt      time.Time  `json:"expires_at"`
+	UsedAt         *time.Time `json:"used_at,omitempty"`
+	DeviceID       *int       `json:"device_id,omitempty"`
+	CreatedAt      time.Time  `json:"created_at"`
+}
+
+// LinkDeviceRequest is sent by the mobile app to link a device
+type LinkDeviceRequest struct {
+	Token    string `json:"token"`
+	Name     string `json:"name"`
+	Model    string `json:"model"`
+	FCMToken string `json:"fcm_token"`
+}

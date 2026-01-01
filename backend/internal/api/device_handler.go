@@ -113,3 +113,44 @@ func (h *DeviceHandler) DeleteDevice(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNoContent)
 }
+
+// GenerateLinkToken creates a new device link token for QR code
+func (h *DeviceHandler) GenerateLinkToken(w http.ResponseWriter, r *http.Request) {
+	orgID, err := GetActiveOrgID(r, h.orgService)
+	if err != nil {
+		http.Error(w, "Organization required", http.StatusForbidden)
+		return
+	}
+
+	token, err := h.service.GenerateLinkToken(r.Context(), orgID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(token)
+}
+
+// LinkDevice links a device using a token (called by mobile app - public endpoint)
+func (h *DeviceHandler) LinkDevice(w http.ResponseWriter, r *http.Request) {
+	var req model.LinkDeviceRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	device, err := h.service.LinkDevice(r.Context(), req)
+	if err != nil {
+		status := http.StatusInternalServerError
+		if err.Error() == "link token has expired" || err.Error() == "link token has already been used" || err.Error() == "invalid link token" {
+			status = http.StatusBadRequest
+		}
+		http.Error(w, err.Error(), status)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(device)
+}
