@@ -222,9 +222,9 @@ func (h *OrganizationHandler) ListPlans(w http.ResponseWriter, r *http.Request) 
 	copy(plans, model.AvailablePlans)
 
 	for i := range plans {
-		if plans[i].ID == "professional" {
+		if plans[i].ID == model.PlanPro {
 			plans[i].StripePriceID = h.pricePro
-		} else if plans[i].ID == "enterprise" { // or agency
+		} else if plans[i].ID == model.PlanAgency {
 			plans[i].StripePriceID = h.priceAgency
 		}
 	}

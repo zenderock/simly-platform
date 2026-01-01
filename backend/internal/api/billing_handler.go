@@ -11,11 +11,13 @@ import (
 
 type BillingHandler struct {
 	billingService *core.BillingService
+	orgService     *core.OrganizationService
 }
 
-func NewBillingHandler(billingService *core.BillingService) *BillingHandler {
+func NewBillingHandler(billingService *core.BillingService, orgService *core.OrganizationService) *BillingHandler {
 	return &BillingHandler{
 		billingService: billingService,
+		orgService:     orgService,
 	}
 }
 
@@ -34,8 +36,12 @@ type CreateCheckoutRequest struct {
 }
 
 func (h *BillingHandler) CreateCheckoutSession(w http.ResponseWriter, r *http.Request) {
-	orgID := getOrgIDFromContext(r)
-	userEmail := getUserEmailFromContext(r) // We need to ensure we can get this or pass it from frontend
+	orgID, err := GetActiveOrgID(r, h.orgService)
+	if err != nil {
+		http.Error(w, "Organization required", http.StatusForbidden)
+		return
+	}
+	userEmail := getUserEmailFromContext(r)
 
 	var req CreateCheckoutRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -58,7 +64,11 @@ func (h *BillingHandler) CreateCheckoutSession(w http.ResponseWriter, r *http.Re
 }
 
 func (h *BillingHandler) CreateBillingPortalSession(w http.ResponseWriter, r *http.Request) {
-	orgID := getOrgIDFromContext(r)
+	orgID, err := GetActiveOrgID(r, h.orgService)
+	if err != nil {
+		http.Error(w, "Organization required", http.StatusForbidden)
+		return
+	}
 
 	url, err := h.billingService.CreatePortalSession(r.Context(), orgID)
 	if err != nil {
@@ -103,16 +113,6 @@ func getUserEmailFromContext(r *http.Request) string {
 }
 
 func getOrgIDFromContext(r *http.Request) int {
-	// Assuming a middleware sets "orgID" in context or similar
-	// For now, attempting to read strict standard claims or headers if needed
-	// Or assuming auth middleware puts it there.
-	// We'll trust the middleware pattern used in other handlers.
-	// Looking at other handlers (e.g. OrgHandler) might reveal the pattern.
-	// BUT since I am writing this blind, I will use a safe cast.
-	if val, ok := r.Context().Value("organization_id").(int); ok {
-		return val
-	}
-
-	// Fallback: try parsing header if context missing (should not happen in protected route)
+	// Deprecated: use GetActiveOrgID instead
 	return 0
 }

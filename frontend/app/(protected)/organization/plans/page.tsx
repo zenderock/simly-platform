@@ -81,7 +81,7 @@ export default function PlansPage() {
   };
 
   const formatPrice = (cents: number) => `$${(cents / 100).toFixed(0)}`;
-  const currentPlanId = currentOrg?.plan?.toLowerCase() || "starter";
+  const currentPlanId = currentOrg?.plan?.toLowerCase() || "free";
 
   const container = {
     hidden: { opacity: 0 },
@@ -129,12 +129,12 @@ export default function PlansPage() {
              >
                 <div className="flex items-center gap-2 px-4 py-2 bg-secondary/50 rounded-full border border-border/50 backdrop-blur-sm">
                     <span className="text-sm text-muted-foreground">Current Status:</span>
-                    <Badge variant={currentPlanId === "starter" ? "secondary" : "default"} className="text-sm px-3 py-0.5 uppercase tracking-wider font-semibold">
+                    <Badge variant={currentPlanId === "free" ? "secondary" : "default"} className="text-sm px-3 py-0.5 uppercase tracking-wider font-semibold">
                        {currentOrg.plan}
                     </Badge>
                 </div>
 
-                {currentPlanId !== "starter" && (
+                {currentPlanId !== "free" && (
                     <Button variant="ghost" size="sm" onClick={handlePortal} disabled={upgrading !== null} className="text-muted-foreground hover:text-primary transition-colors">
                          {upgrading === "portal" && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                          Manage Subscription →
@@ -152,7 +152,7 @@ export default function PlansPage() {
       >
         {plans.map((plan) => {
           const isCurrent = plan.id === currentPlanId;
-          const isStarter = plan.id === "starter";
+          const isFree = plan.id === "free";
           const isPopular = plan.popular;
           
           return (
@@ -175,13 +175,13 @@ export default function PlansPage() {
                   <CardHeader className="text-center pb-8 pt-6 space-y-4">
                     <div className="flex justify-center mb-4">
                         <div className={`p-3 rounded-2xl ${
-                            plan.id === "enterprise" ? "bg-yellow-500/10 text-yellow-500" :
-                            plan.id === "professional" ? "bg-blue-500/10 text-blue-500" :
+                            plan.id === "agency" ? "bg-yellow-500/10 text-yellow-500" :
+                            plan.id === "pro" ? "bg-blue-500/10 text-blue-500" :
                             "bg-green-500/10 text-green-500"
                         }`}>
-                            {plan.id === "enterprise" && <Crown className="size-8" />}
-                            {plan.id === "professional" && <Zap className="size-8" />}
-                            {plan.id === "starter" && <Building2 className="size-8" />}
+                            {plan.id === "agency" && <Crown className="size-8" />}
+                            {plan.id === "pro" && <Zap className="size-8" />}
+                            {plan.id === "free" && <Building2 className="size-8" />}
                         </div>
                     </div>
                     
@@ -233,7 +233,7 @@ export default function PlansPage() {
                       }`}
                       variant={isCurrent ? "secondary" : isPopular ? "default" : "outline"}
                       onClick={() => !isCurrent && plan.stripe_price_id ? handleCheckout(plan.stripe_price_id) : null}
-                      disabled={isCurrent || upgrading !== null || (!plan.stripe_price_id && !isStarter)} 
+                      disabled={isCurrent || upgrading !== null || (!plan.stripe_price_id && !isFree)} 
                     >
                       {upgrading === plan.stripe_price_id ? (
                         <>
@@ -245,7 +245,7 @@ export default function PlansPage() {
                           Current Plan
                         </>
                       ) : !plan.stripe_price_id ? (
-                          isStarter ? "Current Plan (Free)" : (
+                          isFree ? "Current Plan (Free)" : (
                              <span className="flex items-center gap-2">Contact Sales <ArrowRight className="size-4" /></span>
                           )
                       ) : (

@@ -107,7 +107,7 @@ func (s *Server) setupRoutes() {
 
 	// Billing
 	billingService := core.NewBillingService(s.DB, s.Config.StripeSecretKey, s.Config.StripeWebhookSecret, "http://localhost:3000", s.Config.StripePricePro, s.Config.StripePriceAgency) // TODO: get frontend URL from config
-	billingHandler := api.NewBillingHandler(billingService)
+	billingHandler := api.NewBillingHandler(billingService, orgService)
 
 	// Routing
 	r := s.Router
