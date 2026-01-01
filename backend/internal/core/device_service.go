@@ -163,14 +163,17 @@ func (s *DeviceService) LinkDevice(ctx context.Context, req model.LinkDeviceRequ
 	// Get and validate token
 	tokenData, err := s.store.GetDeviceLinkToken(ctx, req.Token)
 	if err != nil {
+		fmt.Printf("LinkDevice: GetDeviceLinkToken failed: %v\n", err)
 		return nil, ErrInvalidToken
 	}
 
 	if tokenData.UsedAt != nil {
+		fmt.Printf("LinkDevice: Token already used at %v\n", tokenData.UsedAt)
 		return nil, ErrTokenUsed
 	}
 
 	if time.Now().After(tokenData.ExpiresAt) {
+		fmt.Printf("LinkDevice: Token expired. Now: %v, ExpiresAt: %v\n", time.Now(), tokenData.ExpiresAt)
 		return nil, ErrTokenExpired
 	}
 

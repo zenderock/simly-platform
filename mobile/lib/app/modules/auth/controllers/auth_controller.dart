@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:get/get.dart';
@@ -77,15 +78,37 @@ class AuthController extends GetxController {
         );
       }
     } catch (e) {
-      print("Linking exception: $e");
+      String errorMessage = "An error occurred during linking.";
+      if (e is DioException) {
+        if (e.response != null) {
+          print("Dio Error Response: ${e.response?.data}");
+          // Try to extract message string from backend response body usually "message" or just the body if it's string
+          final data = e.response?.data;
+          if (data is String) {
+            errorMessage = data;
+          } else if (data is Map && data.containsKey('message')) {
+            errorMessage = data['message'];
+          } else {
+            errorMessage = "Server error: ${e.response?.statusCode}";
+          }
+        } else {
+          errorMessage = e.message ?? "Connection error";
+        }
+      } else {
+        errorMessage = e.toString();
+      }
+
+      print("Linking exception details: $errorMessage");
+
       Get.snackbar(
-        "Error",
-        "An error occurred during linking: $e",
+        "Linking Failed",
+        errorMessage,
         backgroundColor: const Color(0xFFEF4444),
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,
         margin: const EdgeInsets.all(16),
         borderRadius: 8,
+        duration: const Duration(seconds: 5),
       );
     } finally {
       isLoading.value = false;
