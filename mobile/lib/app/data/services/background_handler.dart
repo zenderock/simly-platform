@@ -22,10 +22,11 @@ class BackgroundHandler {
         onStart: onStart,
         autoStart: false,
         isForegroundMode: true,
-        notificationChannelId: 'simly_gateway',
-        initialNotificationTitle: 'Simly Gateway',
-        initialNotificationContent: 'Running in background',
-        foregroundServiceNotificationId: 888,
+        notificationChannelId:
+            'simly_gateway_v2', // Changed ID to force refresh
+        initialNotificationTitle: 'Simly Gateway Active',
+        initialNotificationContent: 'Ready to send SMS',
+        foregroundServiceNotificationId: 999, // Changed ID
       ),
       iosConfiguration: IosConfiguration(
         autoStart: false,
@@ -43,6 +44,21 @@ class BackgroundHandler {
   @pragma('vm:entry-point')
   static void onStart(ServiceInstance service) async {
     DartPluginRegistrant.ensureInitialized();
+
+    // IMMEDIATELY set as foreground to prevent ANR/Crash on Android 14+
+    if (service is AndroidServiceInstance) {
+      service.on('setAsForeground').listen((event) {
+        service.setAsForegroundService();
+      });
+      service.on('setAsBackground').listen((event) {
+        service.setAsBackgroundService();
+      });
+    }
+
+    service.on('stopService').listen((event) {
+      service.stopSelf();
+    });
+
     try {
       await Firebase.initializeApp();
     } catch (e) {
@@ -57,20 +73,6 @@ class BackgroundHandler {
         connectTimeout: const Duration(seconds: 10),
       ),
     );
-
-    if (service is AndroidServiceInstance) {
-      service.on('setAsForeground').listen((event) {
-        service.setAsForegroundService();
-      });
-
-      service.on('setAsBackground').listen((event) {
-        service.setAsBackgroundService();
-      });
-    }
-
-    service.on('stopService').listen((event) {
-      service.stopSelf();
-    });
 
     // FCM Integration for real-time triggers
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {

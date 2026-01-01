@@ -135,6 +135,30 @@ func (h *DeviceHandler) GenerateLinkToken(w http.ResponseWriter, r *http.Request
 	json.NewEncoder(w).Encode(token)
 }
 
+// GetLinkTokenStatus checks if a token has been used
+func (h *DeviceHandler) GetLinkTokenStatus(w http.ResponseWriter, r *http.Request) {
+	token := chi.URLParam(r, "token")
+	if token == "" {
+		http.Error(w, "Token required", http.StatusBadRequest)
+		return
+	}
+
+	orgID, err := GetActiveOrgID(r, h.orgService)
+	if err != nil {
+		http.Error(w, "Organization required", http.StatusForbidden)
+		return
+	}
+
+	status, err := h.service.GetLinkTokenStatus(r.Context(), orgID, token)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(status)
+}
+
 // LinkDevice links a device using a token (called by mobile app - public endpoint)
 func (h *DeviceHandler) LinkDevice(w http.ResponseWriter, r *http.Request) {
 	log.Println("LinkDevice called")

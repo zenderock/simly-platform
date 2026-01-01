@@ -158,6 +158,44 @@ func (s *DeviceService) GenerateLinkToken(ctx context.Context, orgID int) (*mode
 	}, nil
 }
 
+// GetLinkTokenStatus returns the status of a token: pending, success, expired
+func (s *DeviceService) GetLinkTokenStatus(ctx context.Context, orgID int, token string) (map[string]interface{}, error) {
+	t, err := s.store.GetDeviceLinkToken(ctx, token)
+	if err != nil {
+		return nil, ErrInvalidToken
+	}
+
+	if t.OrganizationID != orgID {
+		return nil, fmt.Errorf("unauthorized")
+	}
+
+	if t.UsedAt != nil {
+		// Fetch device info
+		var deviceName string
+		if t.DeviceID != nil {
+			if device, err := s.store.GetDeviceByID(ctx, *t.DeviceID); err == nil {
+				deviceName = device.Name
+			}
+		}
+		return map[string]interface{}{
+			"status":      "success",
+			"device_id":   t.DeviceID,
+			"device_name": deviceName,
+			"used_at":     t.UsedAt,
+		}, nil
+	}
+
+	if time.Now().After(t.ExpiresAt) {
+		return map[string]interface{}{
+			"status": "expired",
+		}, nil
+	}
+
+	return map[string]interface{}{
+		"status": "pending",
+	}, nil
+}
+
 // LinkDevice links a device using a token (called by mobile app)
 func (s *DeviceService) LinkDevice(ctx context.Context, req model.LinkDeviceRequest) (*model.LinkDeviceResponse, error) {
 	// Get and validate token

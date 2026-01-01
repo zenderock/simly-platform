@@ -33,6 +33,13 @@ class HomeController extends GetxController {
     _startHeartbeats();
     _checkServiceStatus();
     _initLogListener();
+
+    // Auto-start service when authentication becomes true (e.g. after linking)
+    ever(_authService.isAuthenticated, (bool authed) {
+      if (authed) {
+        _checkServiceStatus();
+      }
+    });
   }
 
   void _initLogListener() {
@@ -56,7 +63,16 @@ class HomeController extends GetxController {
   }
 
   Future<void> _checkServiceStatus() async {
-    isGatewayRunning.value = await FlutterBackgroundService().isRunning();
+    final service = FlutterBackgroundService();
+    var isRunning = await service.isRunning();
+
+    // Auto-start if authenticated and not running
+    if (!isRunning && _authService.isAuthenticated.value) {
+      await service.startService();
+      isRunning = true;
+    }
+
+    isGatewayRunning.value = isRunning;
   }
 
   @override

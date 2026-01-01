@@ -170,6 +170,7 @@ func (s *Server) setupRoutes() {
 			r.Get("/", deviceHandler.ListDevices)
 			r.Post("/", deviceHandler.RegisterDevice)
 			r.Post("/link-token", deviceHandler.GenerateLinkToken)
+			r.Get("/link-token/{token}", deviceHandler.GetLinkTokenStatus)
 			r.Delete("/{deviceID}", deviceHandler.DeleteDevice)
 			r.Post("/{deviceID}/heartbeat", deviceHandler.Heartbeat)
 		})

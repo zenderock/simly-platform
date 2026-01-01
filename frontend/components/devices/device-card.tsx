@@ -50,11 +50,8 @@ export function DeviceCard({ device, onDelete }: DeviceCardProps) {
       whileHover={{ y: -2 }}
       transition={{ duration: 0.2 }}
     >
-      <div className="group relative flex flex-col rounded-xl border bg-white dark:bg-zinc-900 shadow-sm transition-all hover:shadow-md hover:border-zinc-300 dark:hover:border-zinc-700 overflow-hidden">
-        {/* Status Indicator Bar */}
-        <div className={`absolute top-0 left-0 w-1 h-full ${isOnline ? "bg-emerald-500" : "bg-zinc-300 dark:bg-zinc-700"}`} />
-        
-        <div className="p-4 pl-5 flex flex-col gap-4">
+      <div className="group relative flex flex-col rounded-xl border bg-white dark:bg-zinc-900 transition-all hover:border-zinc-300 dark:hover:border-zinc-700 overflow-hidden">
+        <div className="p-4 flex flex-col gap-4">
           {/* Header: Name, Model, Menu */}
           <div className="flex justify-between items-start">
             <div className="space-y-1">

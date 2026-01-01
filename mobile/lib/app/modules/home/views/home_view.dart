@@ -25,17 +25,6 @@ class HomeView extends GetView<HomeController> {
         shape: Border(
           bottom: BorderSide(color: Colors.black.withOpacity(0.05), width: 1),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.tune_rounded,
-              size: 20,
-              color: Color(0xFF666666),
-            ),
-            onPressed: () => Get.toNamed('/settings'),
-          ),
-          const SizedBox(width: 8),
-        ],
       ),
       body: Obx(() {
         if (!controller.isAuthenticated.value) {
