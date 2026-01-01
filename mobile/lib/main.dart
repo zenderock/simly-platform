@@ -26,9 +26,7 @@ void main() async {
   runApp(
     GetMaterialApp(
       title: "Simly Gateway",
-      initialRoute: authService.isAuthenticated.value
-          ? AppPages.INITIAL
-          : Routes.AUTH,
+      initialRoute: AppPages.INITIAL,
       getPages: AppPages.routes,
       debugShowCheckedModeBanner: false,
       theme: ThemeData(

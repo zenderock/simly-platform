@@ -20,6 +20,8 @@ class HomeController extends GetxController {
   final notificationMode = "Polling".obs;
   final lastPushReceivedAt = Rxn<DateTime>();
 
+  RxBool get isAuthenticated => _authService.isAuthenticated;
+
   late StreamSubscription<ConnectivityResult> _connectivitySubscription;
   Timer? _heartbeatTimer;
   Timer? _statTimer;

@@ -31,10 +31,8 @@ COPY --from=builder /app/simly-backend .
 # Copy migrations for auto-migration startup
 COPY --from=builder /app/migrations ./migrations
 
-# Copy firebase config if generic name, otherwise user must mount it
-# Assuming standard config/firebase-service-account.json or similar if inside project
-# But typically sensitive files are mounted. For now, we assume environment variables 
-# or mounted volumes for secrets.
+# Copy Firebase service account file
+COPY --from=builder /app/*.json ./
 
 # Expose port (internal container port)
 EXPOSE 8080
