@@ -158,3 +158,11 @@ func replaceVariables(template string, contact *model.Contact) string {
 	// TODO: Add support for custom attributes/tags if needed
 	return res
 }
+func (s *CampaignService) GetCampaignAnalytics(ctx context.Context, id, orgID int) (*model.CampaignAnalytics, error) {
+	// Verify ownership first
+	_, err := s.GetCampaign(ctx, id, orgID)
+	if err != nil {
+		return nil, err
+	}
+	return s.store.GetCampaignAnalytics(ctx, id)
+}

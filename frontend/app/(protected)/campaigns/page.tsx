@@ -108,10 +108,10 @@ export default function CampaignsPage() {
                         campaigns?.map((campaign) => (
                             <TableRow key={campaign.id}>
                                 <TableCell className="font-medium">
-                                    <div className="flex items-center gap-2">
+                                    <Link href={`/campaigns/${campaign.id}`} className="hover:underline flex items-center gap-2">
                                         <Megaphone className="size-4 text-muted-foreground" />
                                         {campaign.name}
-                                    </div>
+                                    </Link>
                                     <div className="text-xs text-muted-foreground mt-0.5 truncate max-w-[300px]">
                                         {campaign.template_body}
                                     </div>

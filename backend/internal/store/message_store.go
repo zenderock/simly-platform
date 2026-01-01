@@ -9,8 +9,8 @@ import (
 
 func (s *Store) CreateMessage(ctx context.Context, msg *model.Message) error {
 	query := `
-		INSERT INTO messages (organization_id, application_id, device_id, to_number, body, status, direction, priority, required_tags, created_at, updated_at, scheduled_at, processed_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW(), $10, $11)
+		INSERT INTO messages (organization_id, application_id, device_id, to_number, body, status, direction, priority, required_tags, created_at, updated_at, scheduled_at, processed_at, retry_count, max_retries, metadata)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW(), $10, $11, $12, $13, $14)
 		RETURNING id, created_at, updated_at
 	`
 
@@ -22,6 +22,16 @@ func (s *Store) CreateMessage(ctx context.Context, msg *model.Message) error {
 	reqTags := msg.RequiredTags
 	if reqTags == nil {
 		reqTags = []string{}
+	}
+
+	maxRetries := msg.MaxRetries
+	if maxRetries == 0 {
+		maxRetries = 3
+	}
+
+	metadata := msg.Metadata
+	if metadata == nil {
+		metadata = make(map[string]interface{})
 	}
 
 	err := s.db.QueryRow(ctx, query,
@@ -36,6 +46,9 @@ func (s *Store) CreateMessage(ctx context.Context, msg *model.Message) error {
 		reqTags,
 		msg.ScheduledAt,
 		msg.ProcessedAt,
+		msg.RetryCount,
+		maxRetries,
+		metadata,
 	).Scan(&msg.ID, &msg.CreatedAt, &msg.UpdatedAt)
 
 	if err != nil {
@@ -47,7 +60,7 @@ func (s *Store) CreateMessage(ctx context.Context, msg *model.Message) error {
 func (s *Store) GetMessagesByOrganizationID(ctx context.Context, orgID int, appID *int) ([]model.Message, error) {
 	query := `
 		SELECT 
-			m.id, m.organization_id, m.application_id, m.device_id, m.to_number, m.body, m.status, m.direction, m.priority, m.required_tags, m.created_at, m.updated_at, m.scheduled_at, m.processed_at,
+			m.id, m.organization_id, m.application_id, m.device_id, m.to_number, m.body, m.status, m.direction, m.priority, m.required_tags, m.created_at, m.updated_at, m.scheduled_at, m.processed_at, m.retry_count, m.max_retries, m.last_error, m.metadata,
 			a.name as application_name,
 			d.name as device_name
 		FROM messages m
@@ -87,6 +100,10 @@ func (s *Store) GetMessagesByOrganizationID(ctx context.Context, orgID int, appI
 			&m.UpdatedAt,
 			&m.ScheduledAt,
 			&m.ProcessedAt,
+			&m.RetryCount,
+			&m.MaxRetries,
+			&m.LastError,
+			&m.Metadata,
 			&m.ApplicationName,
 			&m.DeviceName,
 		); err != nil {
@@ -104,15 +121,33 @@ func (s *Store) UpdateMessageStatus(ctx context.Context, msgID int, status strin
 }
 
 func (s *Store) GetMessageByID(ctx context.Context, msgID int) (*model.Message, error) {
-	query := `SELECT id, organization_id, application_id, device_id, to_number, body, status, direction, created_at FROM messages WHERE id = $1`
+	query := `
+		SELECT id, organization_id, application_id, device_id, to_number, body, status, direction, priority, required_tags, created_at, updated_at, scheduled_at, processed_at, retry_count, max_retries, last_error, metadata
+		FROM messages 
+		WHERE id = $1
+	`
 	var m model.Message
-	err := s.db.QueryRow(ctx, query, msgID).Scan(&m.ID, &m.OrganizationID, &m.ApplicationID, &m.DeviceID, &m.ToNumber, &m.Body, &m.Status, &m.Direction, &m.CreatedAt)
+	var reqTags []string
+	err := s.db.QueryRow(ctx, query, msgID).Scan(
+		&m.ID, &m.OrganizationID, &m.ApplicationID, &m.DeviceID, &m.ToNumber, &m.Body, &m.Status, &m.Direction, &m.Priority, &reqTags, &m.CreatedAt, &m.UpdatedAt, &m.ScheduledAt, &m.ProcessedAt, &m.RetryCount, &m.MaxRetries, &m.LastError, &m.Metadata,
+	)
+	m.RequiredTags = reqTags
 	return &m, err
+}
+
+func (s *Store) UpdateMessageRetry(ctx context.Context, msgID int, retryCount int, lastError string, status string) error {
+	query := `
+		UPDATE messages 
+		SET retry_count = $1, last_error = $2, status = $3, updated_at = NOW() 
+		WHERE id = $4
+	`
+	_, err := s.db.Exec(ctx, query, retryCount, lastError, status, msgID)
+	return err
 }
 
 func (s *Store) GetDueScheduledMessages(ctx context.Context) ([]model.Message, error) {
 	query := `
-		SELECT id, organization_id, application_id, device_id, to_number, body, status, direction, priority, required_tags, created_at, updated_at, scheduled_at, processed_at
+		SELECT id, organization_id, application_id, device_id, to_number, body, status, direction, priority, required_tags, created_at, updated_at, scheduled_at, processed_at, retry_count, max_retries, last_error, metadata
 		FROM messages
 		WHERE status = 'scheduled' AND scheduled_at <= NOW()
 		ORDER BY scheduled_at ASC
@@ -143,6 +178,10 @@ func (s *Store) GetDueScheduledMessages(ctx context.Context) ([]model.Message, e
 			&m.UpdatedAt,
 			&m.ScheduledAt,
 			&m.ProcessedAt,
+			&m.RetryCount,
+			&m.MaxRetries,
+			&m.LastError,
+			&m.Metadata,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan due message: %w", err)
 		}

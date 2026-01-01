@@ -108,3 +108,20 @@ func (h *CampaignHandler) LaunchCampaign(w http.ResponseWriter, r *http.Request)
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(map[string]string{"status": "launched"})
 }
+func (h *CampaignHandler) GetCampaignAnalytics(w http.ResponseWriter, r *http.Request) {
+	orgID, err := GetActiveOrgID(r, h.orgService)
+	if err != nil {
+		http.Error(w, "Organization required", http.StatusForbidden)
+		return
+	}
+
+	idStr := chi.URLParam(r, "id")
+	id, _ := strconv.Atoi(idStr)
+
+	analytics, err := h.service.GetCampaignAnalytics(r.Context(), id, orgID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(analytics)
+}

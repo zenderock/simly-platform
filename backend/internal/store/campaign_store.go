@@ -230,3 +230,47 @@ func (s *Store) BulkCreateMessagesForCampaign(ctx context.Context, campaignID, o
 		return nil
 	})
 }
+func (s *Store) GetCampaignAnalytics(ctx context.Context, campaignID int) (*model.CampaignAnalytics, error) {
+	query := `
+		SELECT 
+			COALESCE(COUNT(*), 0) as total,
+			COALESCE(COUNT(*) FILTER (WHERE status = 'sent'), 0) as sent,
+			COALESCE(COUNT(*) FILTER (WHERE status = 'failed'), 0) as failed,
+			COALESCE(COUNT(*) FILTER (WHERE status = 'pending'), 0) as pending,
+			COALESCE(COUNT(*) FILTER (WHERE status = 'delivered'), 0) as delivered
+		FROM messages
+		WHERE campaign_id = $1
+	`
+	var a model.CampaignAnalytics
+	a.CampaignID = campaignID
+	err := s.db.QueryRow(ctx, query, campaignID).Scan(
+		&a.Total,
+		&a.Sent,
+		&a.Failed,
+		&a.Pending,
+		&a.Delivered,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get campaign analytics: %w", err)
+	}
+
+	// Get breakdown by status
+	statusQuery := `SELECT status, COUNT(*) FROM messages WHERE campaign_id = $1 GROUP BY status`
+	rows, err := s.db.Query(ctx, statusQuery, campaignID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	a.ByStatus = make(map[string]int)
+	for rows.Next() {
+		var status string
+		var count int
+		if err := rows.Scan(&status, &count); err != nil {
+			return nil, err
+		}
+		a.ByStatus[status] = count
+	}
+
+	return &a, nil
+}

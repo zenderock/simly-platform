@@ -27,12 +27,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, ArrowRight, Check, Rocket, Smartphone, Users } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Rocket, Smartphone, Users, Info } from "lucide-react";
 import { listLists } from "@/lib/api/contacts";
 import { listDevices } from "@/lib/api/devices";
 import { createCampaign, launchCampaign } from "@/lib/api/campaigns";
 import LoaderQuater from "@/components/loader";
 import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/lib/auth";
 
 const steps = [
   { id: 1, title: "Details" },
@@ -54,6 +55,9 @@ export default function CreateCampaignPage() {
   const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLaunching, setIsLaunching] = useState(false);
+  const { organizations, organizationId } = useAuth();
+  const currentOrg = organizations.find(o => o.id === organizationId);
+  const isFreePlan = currentOrg?.plan === 'free';
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -190,8 +194,18 @@ export default function CreateCampaignPage() {
                                                 <FormDescription>
                                                     Available variables: <code className="bg-muted px-1 rounded">{"{{first_name}}"}</code>, <code className="bg-muted px-1 rounded">{"{{last_name}}"}</code>, <code className="bg-muted px-1 rounded">{"{{phone}}"}</code>
                                                 </FormDescription>
-                                                <div className="flex justify-end text-xs text-muted-foreground">
-                                                    {field.value.length} characters • {Math.ceil(field.value.length / 160)} SMS
+                                                <div className="flex justify-between items-center text-xs text-muted-foreground">
+                                                    <div>
+                                                        {isFreePlan && (
+                                                            <div className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 font-medium">
+                                                                <Info className="size-3" />
+                                                                Branding will be added (+17 chars)
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        {field.value.length} characters • {Math.ceil(field.value.length / 160)} SMS
+                                                    </div>
                                                 </div>
                                                 <FormMessage />
                                             </FormItem>

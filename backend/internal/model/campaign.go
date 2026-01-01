@@ -34,3 +34,12 @@ type CreateCampaignRequest struct {
 	DeviceID     int        `json:"device_id"`
 	ScheduledAt  *time.Time `json:"scheduled_at"`
 }
+type CampaignAnalytics struct {
+	CampaignID int            `json:"campaign_id"`
+	Total      int            `json:"total"`
+	Sent       int            `json:"sent"`
+	Failed     int            `json:"failed"`
+	Pending    int            `json:"pending"`
+	Delivered  int            `json:"delivered"`
+	ByStatus   map[string]int `json:"by_status"`
+}

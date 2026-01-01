@@ -212,6 +212,7 @@ func (s *Server) setupRoutes() {
 			r.Post("/", contactHandler.CreateContact)
 			r.Put("/{id}", contactHandler.UpdateContact)
 			r.Delete("/{id}", contactHandler.DeleteContact)
+			r.Post("/import", contactHandler.ImportContacts)
 		})
 
 		r.Route("/api/contact-lists", func(r chi.Router) {
@@ -233,6 +234,7 @@ func (s *Server) setupRoutes() {
 			r.Get("/{id}", campaignHandler.GetCampaign)
 			r.Delete("/{id}", campaignHandler.DeleteCampaign)
 			r.Post("/{id}/launch", campaignHandler.LaunchCampaign)
+			r.Get("/{id}/analytics", campaignHandler.GetCampaignAnalytics)
 		})
 
 		// Billing

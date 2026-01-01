@@ -22,6 +22,16 @@ export interface CreateCampaignRequest {
   scheduled_at?: string;
 }
 
+export interface CampaignAnalytics {
+  campaign_id: number;
+  total: number;
+  sent: number;
+  failed: number;
+  pending: number;
+  delivered: number;
+  by_status: Record<string, number>;
+}
+
 export const listCampaigns = async (): Promise<Campaign[]> => {
   const { data } = await api.get("/campaigns");
   return data;
@@ -29,6 +39,11 @@ export const listCampaigns = async (): Promise<Campaign[]> => {
 
 export const getCampaign = async (id: number): Promise<Campaign> => {
   const { data } = await api.get(`/campaigns/${id}`);
+  return data;
+};
+
+export const getCampaignAnalytics = async (id: number): Promise<CampaignAnalytics> => {
+  const { data } = await api.get(`/campaigns/${id}/analytics`);
   return data;
 };
 

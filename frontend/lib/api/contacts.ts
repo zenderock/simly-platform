@@ -79,3 +79,18 @@ export async function addContactsToList(listId: number, contactIds: number[]) {
 export async function removeContactFromList(listId: number, memberId: number) {
   await api.delete(`/contact-lists/${listId}/members/${memberId}`);
 }
+
+export async function importContacts(file: File, listId?: number) {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (listId) {
+    formData.append("list_id", listId.toString());
+  }
+
+  const { data } = await api.post("/contacts/import", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+  return data;
+}

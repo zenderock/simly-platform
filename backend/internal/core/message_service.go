@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
+	"strings"
 	"time"
 
 	"github.com/zenderock/simly-backend/internal/model"
@@ -119,7 +121,22 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 	var targetDevice *model.Device
 	var err error
 
-	// 0. Rate Limiting Check
+	// 0. Fetch Org to check plan for Branding
+	org, err := s.store.GetOrganizationByID(ctx, orgID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get organization: %w", err)
+	}
+
+	// Append signature for free plan
+	body := req.Body
+	if org.Plan == model.PlanFree {
+		signature := "\n\nSent via Simly"
+		if !strings.HasSuffix(body, signature) {
+			body += signature
+		}
+	}
+
+	// 1. Rate Limiting Check
 	if req.ApplicationID != nil {
 		if err := s.rateLimiter.AllowRequest(ctx, *req.ApplicationID, orgID); err != nil {
 			return nil, err
@@ -133,14 +150,11 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 				fakeStatus = "failed"
 			}
 
-			// Capture a fake message ID from DB for logs
-			// We store it but mark as delivered immediately.
-			// No Device Needed.
 			msg := &model.Message{
 				OrganizationID: orgID,
 				ApplicationID:  req.ApplicationID,
 				ToNumber:       req.To,
-				Body:           req.Body,
+				Body:           body,
 				Status:         fakeStatus,
 				Direction:      "outbound",
 				Priority:       req.Priority,
@@ -149,14 +163,10 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 			if err := s.store.CreateMessage(ctx, msg); err != nil {
 				return nil, err
 			}
-			// Don't call Push. Don't find device.
-			// Rate limit increments? Yes, usually Sandbox still has limits to prevent abuse.
 			_ = s.rateLimiter.IncrementUsage(ctx, *req.ApplicationID, orgID)
 
 			return msg, nil
 		}
-	} else {
-		// ... existing logic ...
 	}
 
 	// 1. Device Selection (Smart Routing) - SKIP IF SCHEDULED
@@ -187,17 +197,18 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 		return nil, errors.New("device has no valid push token")
 	}
 
-	// 2. Create Message Record
+	// 3. Create Message Record
 	msg := &model.Message{
 		OrganizationID: orgID,
 		ApplicationID:  req.ApplicationID,
 		ToNumber:       req.To,
-		Body:           req.Body,
+		Body:           body,
 		Status:         "pending",
 		Direction:      "outbound",
 		Priority:       req.Priority,
 		RequiredTags:   req.Tags,
 		ScheduledAt:    req.ScheduledAt,
+		MaxRetries:     3, // Default retries
 	}
 
 	if targetDevice != nil {
@@ -226,8 +237,7 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 		}
 	}
 
-	// 4. Increment Usage (Fire and forget, or handle error?)
-	// Ideally async, but sync is safer for quota integrity.
+	// 5. Increment Usage
 	if req.ApplicationID != nil {
 		_ = s.rateLimiter.IncrementUsage(ctx, *req.ApplicationID, orgID)
 	}
@@ -273,28 +283,52 @@ func logNotificationError(msgID int, err error) {
 }
 
 func (s *MessageService) UpdateStatus(ctx context.Context, msgID int, status string) error {
-	// 1. Get Message info (to find Org)
+	// 1. Get Message info
 	msg, err := s.store.GetMessageByID(ctx, msgID)
 	if err != nil {
 		return err
 	}
 
-	// 2. Update Status
+	// 2. Handle Retries for Failures
+	if status == "failed" {
+		if msg.RetryCount < msg.MaxRetries {
+			newRetryCount := msg.RetryCount + 1
+			log.Printf("Message %d failed, retrying (%d/%d)...\n", msgID, newRetryCount, msg.MaxRetries)
+
+			// Update retry count and reset to pending
+			// We clear the LastSeenAt? No, but we notify device maybe again.
+			if err := s.store.UpdateMessageRetry(ctx, msgID, newRetryCount, "Last delivery attempt failed", "pending"); err != nil {
+				return fmt.Errorf("failed to update message retry: %w", err)
+			}
+
+			// Prepare message for notification (Update model with latest retry count)
+			msg.RetryCount = newRetryCount
+			msg.Status = "pending"
+
+			// Trigger new push - Late binding/Smart routing will pick a potentially different device if needed
+			// Note: If msg had a fixed DeviceID, we might want to try to clear it or let NotifyDevice handle it.
+			// Currently NotifyDevice respects msg.DeviceID if set.
+			return s.NotifyDevice(ctx, msg)
+		}
+	}
+
+	// 3. Update Status Normally (Success or Terminal Failure)
 	if err := s.store.UpdateMessageStatus(ctx, msgID, status); err != nil {
 		return err
 	}
 
-	// 3. Trigger Alert if Failed
+	// 4. Trigger Alert if Fail in terminal state
 	if status == "failed" {
 		title := "Message Delivery Failed"
-		message := fmt.Sprintf("Message to %s failed to deliver. Content: %s", msg.ToNumber, msg.Body)
+		message := fmt.Sprintf("Message to %s failed to deliver after %d retries. Content: %s", msg.ToNumber, msg.RetryCount, msg.Body)
 		s.alertService.NotifyOrganization(ctx, msg.OrganizationID, "message_failed", title, message, "warning")
 	}
 
-	// 4. Dispatch Webhook
+	// 5. Dispatch Webhook
 	s.webhook.DispatchEvent(msg.OrganizationID, msg.ApplicationID, "sms.status_updated", map[string]interface{}{
-		"message_id": msgID,
-		"status":     status,
+		"message_id":  msgID,
+		"status":      status,
+		"retry_count": msg.RetryCount,
 	})
 
 	return nil

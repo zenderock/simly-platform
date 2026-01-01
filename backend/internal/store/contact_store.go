@@ -271,3 +271,61 @@ func (s *Store) GetContactsInList(ctx context.Context, listID int) ([]model.Cont
 	}
 	return contacts, nil
 }
+func (s *Store) BulkCreateContacts(ctx context.Context, orgID int, contacts []model.Contact) ([]int, error) {
+	if len(contacts) == 0 {
+		return nil, nil
+	}
+
+	var insertedIDs []int
+
+	err := s.ExecTx(ctx, func(tx *Store) error {
+		// Chunk size 500
+		const chunkSize = 500
+
+		for i := 0; i < len(contacts); i += chunkSize {
+			end := i + chunkSize
+			if end > len(contacts) {
+				end = len(contacts)
+			}
+
+			batch := contacts[i:end]
+
+			query := "INSERT INTO contacts (organization_id, first_name, last_name, phone_number, email, tags, created_at, updated_at) VALUES "
+			vals := []interface{}{}
+
+			for j, c := range batch {
+				n := j * 6
+				query += fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, NOW(), NOW())", n+1, n+2, n+3, n+4, n+5, n+6)
+				vals = append(vals, orgID, c.FirstName, c.LastName, c.PhoneNumber, c.Email, c.Tags)
+
+				if j < len(batch)-1 {
+					query += ","
+				}
+			}
+
+			query += " ON CONFLICT (organization_id, phone_number) DO UPDATE SET first_name = EXCLUDED.first_name, last_name = EXCLUDED.last_name, email = EXCLUDED.email, updated_at = NOW() RETURNING id"
+
+			rows, err := tx.db.Query(ctx, query, vals...)
+			if err != nil {
+				return fmt.Errorf("failed to bulk insert contacts batch %d: %w", i, err)
+			}
+
+			for rows.Next() {
+				var id int
+				if err := rows.Scan(&id); err != nil {
+					rows.Close()
+					return err
+				}
+				insertedIDs = append(insertedIDs, id)
+			}
+			rows.Close()
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return insertedIDs, nil
+}

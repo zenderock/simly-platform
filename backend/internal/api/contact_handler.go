@@ -265,3 +265,44 @@ func (h *ContactHandler) RemoveMember(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNoContent)
 }
+func (h *ContactHandler) ImportContacts(w http.ResponseWriter, r *http.Request) {
+	orgID, err := GetActiveOrgID(r, h.orgService)
+	if err != nil {
+		http.Error(w, "Organization required", http.StatusForbidden)
+		return
+	}
+
+	// Max 10MB
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		http.Error(w, "Failed to parse multipart form", http.StatusBadRequest)
+		return
+	}
+
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		http.Error(w, "File is required", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	var listIDPtr *int
+	listIDStr := r.FormValue("list_id")
+	if listIDStr != "" {
+		id, err := strconv.Atoi(listIDStr)
+		if err == nil {
+			listIDPtr = &id
+		}
+	}
+
+	count, err := h.service.ImportContacts(r.Context(), orgID, listIDPtr, file)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"message": "Import successful",
+		"count":   count,
+	})
+}

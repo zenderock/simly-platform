@@ -35,6 +35,7 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { Separator } from "@/components/ui/separator";
 import { CreateContactDialog } from "./create-contact-dialog";
+import { ImportContactsDialog } from "./import-contacts-dialog";
 import  LoaderQuater  from "@/components/loader";
 
 export default function ContactsPage() {
@@ -102,10 +103,7 @@ export default function ContactsPage() {
           <p className="text-sm text-muted-foreground">Manage your audience and campaigns</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <FileDown className="mr-2 size-4" />
-            Import CSV
-          </Button>
+          <ImportContactsDialog />
           <CreateContactDialog onOpenChange={() => {}} />
         </div>
       </div>
