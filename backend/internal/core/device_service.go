@@ -83,9 +83,9 @@ func (s *DeviceService) ListDevices(ctx context.Context, orgID int) ([]model.Dev
 	return s.store.GetDevicesByOrganizationID(ctx, orgID)
 }
 
-func (s *DeviceService) Heartbeat(ctx context.Context, deviceID int, battery, signal int) error {
+func (s *DeviceService) Heartbeat(ctx context.Context, deviceID int, battery, signal int) ([]model.Message, error) {
 	if battery > 0 && battery < 15 {
-		// Fetch device to get OrgID and Name (we could optimize this if we had orgID in heartbeat)
+		// Fetch device to get OrgID and Name
 		device, err := s.store.GetDeviceByID(ctx, deviceID)
 		if err == nil {
 			title := fmt.Sprintf("Low Battery: %s", device.Name)
@@ -93,7 +93,11 @@ func (s *DeviceService) Heartbeat(ctx context.Context, deviceID int, battery, si
 			s.alertService.NotifyOrganization(ctx, device.OrganizationID, "low_battery", title, message, "warning")
 		}
 	}
-	return s.store.UpdateDeviceHealth(ctx, deviceID, battery, signal, "online")
+	if err := s.store.UpdateDeviceHealth(ctx, deviceID, battery, signal, "online"); err != nil {
+		return nil, err
+	}
+
+	return s.store.GetPendingMessagesByDeviceID(ctx, deviceID)
 }
 
 func (s *DeviceService) DeleteDevice(ctx context.Context, deviceID, orgID int) error {

@@ -1,0 +1,26 @@
+# IDEs
+.vscode/
+.idea/
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Sensitive files
+.env
+*-firebase-adminsdk-*.json
+google-services.json
+
+# Build and dependencies
+node_modules/
+dist/
+build/
+bin/
+.dart_tool/
+.gradle/
+*.iml
+*.ipr
+*.iws

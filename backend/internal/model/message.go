@@ -25,6 +25,7 @@ type Message struct {
 	RetryCount      int                    `json:"retry_count"`
 	MaxRetries      int                    `json:"max_retries"`
 	LastError       *string                `json:"last_error,omitempty"`
+	SimSlot         *int                   `json:"sim_slot,omitempty"` // 0 or 1
 	Metadata        map[string]interface{} `json:"metadata,omitempty"`
 }
 
@@ -36,4 +37,5 @@ type SendMessageRequest struct {
 	Priority      string     `json:"priority,omitempty"`  // Default: normal
 	Tags          []string   `json:"tags,omitempty"`      // Routing requirements
 	ScheduledAt   *time.Time `json:"scheduled_at,omitempty"`
+	SimSlot       *int       `json:"sim_slot,omitempty"` // Optional: 0 or 1
 }

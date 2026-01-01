@@ -8,18 +8,19 @@ import (
 )
 
 type Config struct {
-	DatabaseURL          string
-	Port                 string
-	JWTSecret            string
-	SandboxSuccessNumber string
-	SandboxFailureNumber string
-	ResendAPIKey         string
-	ResendFromEmail      string
-	StripeSecretKey      string
-	StripePublishableKey string
-	StripeWebhookSecret  string
-	StripePricePro       string
-	StripePriceAgency    string
+	DatabaseURL            string
+	Port                   string
+	JWTSecret              string
+	SandboxSuccessNumber   string
+	SandboxFailureNumber   string
+	ResendAPIKey           string
+	ResendFromEmail        string
+	StripeSecretKey        string
+	StripePublishableKey   string
+	StripeWebhookSecret    string
+	StripePricePro         string
+	StripePriceAgency      string
+	FirebaseServiceAccount string
 }
 
 func Load() *Config {
@@ -29,18 +30,19 @@ func Load() *Config {
 	}
 
 	return &Config{
-		Port:                 getEnv("PORT", "8080"),
-		DatabaseURL:          getEnv("DATABASE_URL", "postgres://user:password@localhost:5432/simly?sslmode=disable"),
-		JWTSecret:            getEnv("JWT_SECRET", "super-secret-key"),
-		SandboxSuccessNumber: getEnv("SANDBOX_SUCCESS_NUMBER", "+15550000000"),
-		SandboxFailureNumber: getEnv("SANDBOX_FAILURE_NUMBER", "+15550000001"),
-		ResendAPIKey:         getEnv("RESEND_API_KEY", ""),
-		ResendFromEmail:      getEnv("RESEND_FROM_EMAIL", "onboarding@resend.dev"),
-		StripeSecretKey:      getEnv("STRIPE_SECRET_KEY", ""),
-		StripePublishableKey: getEnv("STRIPE_PUBLISHABLE_KEY", ""),
-		StripeWebhookSecret:  getEnv("STRIPE_WEBHOOK_SECRET", ""),
-		StripePricePro:       getEnv("STRIPE_PRICE_PRO", "price_pro_default"),
-		StripePriceAgency:    getEnv("STRIPE_PRICE_AGENCY", "price_agency_default"),
+		Port:                   getEnv("PORT", "8080"),
+		DatabaseURL:            getEnv("DATABASE_URL", "postgres://user:password@localhost:5432/simly?sslmode=disable"),
+		JWTSecret:              getEnv("JWT_SECRET", "super-secret-key"),
+		SandboxSuccessNumber:   getEnv("SANDBOX_SUCCESS_NUMBER", "+15550000000"),
+		SandboxFailureNumber:   getEnv("SANDBOX_FAILURE_NUMBER", "+15550000001"),
+		ResendAPIKey:           getEnv("RESEND_API_KEY", ""),
+		ResendFromEmail:        getEnv("RESEND_FROM_EMAIL", "onboarding@resend.dev"),
+		StripeSecretKey:        getEnv("STRIPE_SECRET_KEY", ""),
+		StripePublishableKey:   getEnv("STRIPE_PUBLISHABLE_KEY", ""),
+		StripeWebhookSecret:    getEnv("STRIPE_WEBHOOK_SECRET", ""),
+		StripePricePro:         getEnv("STRIPE_PRICE_PRO", "price_pro_default"),
+		StripePriceAgency:      getEnv("STRIPE_PRICE_AGENCY", "price_agency_default"),
+		FirebaseServiceAccount: getEnv("FIREBASE_SERVICE_ACCOUNT", ""),
 	}
 }
 

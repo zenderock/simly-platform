@@ -9,8 +9,8 @@ import (
 
 func (s *Store) CreateMessage(ctx context.Context, msg *model.Message) error {
 	query := `
-		INSERT INTO messages (organization_id, application_id, device_id, to_number, body, status, direction, priority, required_tags, created_at, updated_at, scheduled_at, processed_at, retry_count, max_retries, metadata)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW(), $10, $11, $12, $13, $14)
+		INSERT INTO messages (organization_id, application_id, device_id, to_number, body, status, direction, priority, required_tags, created_at, updated_at, scheduled_at, processed_at, retry_count, max_retries, metadata, sim_slot)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW(), $10, $11, $12, $13, $14, $15)
 		RETURNING id, created_at, updated_at
 	`
 
@@ -49,6 +49,7 @@ func (s *Store) CreateMessage(ctx context.Context, msg *model.Message) error {
 		msg.RetryCount,
 		maxRetries,
 		metadata,
+		msg.SimSlot,
 	).Scan(&msg.ID, &msg.CreatedAt, &msg.UpdatedAt)
 
 	if err != nil {
@@ -60,7 +61,7 @@ func (s *Store) CreateMessage(ctx context.Context, msg *model.Message) error {
 func (s *Store) GetMessagesByOrganizationID(ctx context.Context, orgID int, appID *int) ([]model.Message, error) {
 	query := `
 		SELECT 
-			m.id, m.organization_id, m.application_id, m.device_id, m.to_number, m.body, m.status, m.direction, m.priority, m.required_tags, m.created_at, m.updated_at, m.scheduled_at, m.processed_at, m.retry_count, m.max_retries, m.last_error, m.metadata,
+			m.id, m.organization_id, m.application_id, m.device_id, m.to_number, m.body, m.status, m.direction, m.priority, m.required_tags, m.created_at, m.updated_at, m.scheduled_at, m.processed_at, m.retry_count, m.max_retries, m.last_error, m.metadata, m.sim_slot,
 			a.name as application_name,
 			d.name as device_name
 		FROM messages m
@@ -104,6 +105,7 @@ func (s *Store) GetMessagesByOrganizationID(ctx context.Context, orgID int, appI
 			&m.MaxRetries,
 			&m.LastError,
 			&m.Metadata,
+			&m.SimSlot,
 			&m.ApplicationName,
 			&m.DeviceName,
 		); err != nil {
@@ -129,7 +131,7 @@ func (s *Store) GetMessageByID(ctx context.Context, msgID int) (*model.Message, 
 	var m model.Message
 	var reqTags []string
 	err := s.db.QueryRow(ctx, query, msgID).Scan(
-		&m.ID, &m.OrganizationID, &m.ApplicationID, &m.DeviceID, &m.ToNumber, &m.Body, &m.Status, &m.Direction, &m.Priority, &reqTags, &m.CreatedAt, &m.UpdatedAt, &m.ScheduledAt, &m.ProcessedAt, &m.RetryCount, &m.MaxRetries, &m.LastError, &m.Metadata,
+		&m.ID, &m.OrganizationID, &m.ApplicationID, &m.DeviceID, &m.ToNumber, &m.Body, &m.Status, &m.Direction, &m.Priority, &reqTags, &m.CreatedAt, &m.UpdatedAt, &m.ScheduledAt, &m.ProcessedAt, &m.RetryCount, &m.MaxRetries, &m.LastError, &m.Metadata, &m.SimSlot,
 	)
 	m.RequiredTags = reqTags
 	return &m, err
@@ -138,16 +140,35 @@ func (s *Store) GetMessageByID(ctx context.Context, msgID int) (*model.Message, 
 func (s *Store) UpdateMessageRetry(ctx context.Context, msgID int, retryCount int, lastError string, status string) error {
 	query := `
 		UPDATE messages 
-		SET retry_count = $1, last_error = $2, status = $3, updated_at = NOW() 
+		SET retry_count = $1, last_error = $2, status = $3, device_id = NULL, updated_at = NOW() 
 		WHERE id = $4
 	`
 	_, err := s.db.Exec(ctx, query, retryCount, lastError, status, msgID)
 	return err
 }
 
+func (s *Store) UpdateMessageDevice(ctx context.Context, msgID int, deviceID int) error {
+	query := `UPDATE messages SET device_id = $1, updated_at = NOW() WHERE id = $2`
+	_, err := s.db.Exec(ctx, query, deviceID, msgID)
+	return err
+}
+
+func (s *Store) RequeueMessagesByDeviceID(ctx context.Context, deviceID int) (int64, error) {
+	query := `
+		UPDATE messages 
+		SET status = 'pending', device_id = NULL, updated_at = NOW() 
+		WHERE device_id = $1 AND status = 'pending'
+	`
+	result, err := s.db.Exec(ctx, query, deviceID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
 func (s *Store) GetDueScheduledMessages(ctx context.Context) ([]model.Message, error) {
 	query := `
-		SELECT id, organization_id, application_id, device_id, to_number, body, status, direction, priority, required_tags, created_at, updated_at, scheduled_at, processed_at, retry_count, max_retries, last_error, metadata
+		SELECT id, organization_id, application_id, device_id, to_number, body, status, direction, priority, required_tags, created_at, updated_at, scheduled_at, processed_at, retry_count, max_retries, last_error, metadata, sim_slot
 		FROM messages
 		WHERE status = 'scheduled' AND scheduled_at <= NOW()
 		ORDER BY scheduled_at ASC
@@ -182,8 +203,37 @@ func (s *Store) GetDueScheduledMessages(ctx context.Context) ([]model.Message, e
 			&m.MaxRetries,
 			&m.LastError,
 			&m.Metadata,
+			&m.SimSlot,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan due message: %w", err)
+		}
+		m.RequiredTags = reqTags
+		messages = append(messages, m)
+	}
+	return messages, nil
+}
+func (s *Store) GetPendingMessagesByDeviceID(ctx context.Context, deviceID int) ([]model.Message, error) {
+	query := `
+		SELECT id, organization_id, application_id, device_id, to_number, body, status, direction, priority, required_tags, created_at, updated_at, scheduled_at, processed_at, retry_count, max_retries, last_error, metadata, sim_slot
+		FROM messages
+		WHERE device_id = $1 AND status = 'pending'
+		ORDER BY priority DESC, created_at ASC
+		LIMIT 20
+	`
+	rows, err := s.db.Query(ctx, query, deviceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query pending messages: %w", err)
+	}
+	defer rows.Close()
+
+	var messages []model.Message
+	for rows.Next() {
+		var m model.Message
+		var reqTags []string
+		if err := rows.Scan(
+			&m.ID, &m.OrganizationID, &m.ApplicationID, &m.DeviceID, &m.ToNumber, &m.Body, &m.Status, &m.Direction, &m.Priority, &reqTags, &m.CreatedAt, &m.UpdatedAt, &m.ScheduledAt, &m.ProcessedAt, &m.RetryCount, &m.MaxRetries, &m.LastError, &m.Metadata, &m.SimSlot,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan pending message: %w", err)
 		}
 		m.RequiredTags = reqTags
 		messages = append(messages, m)

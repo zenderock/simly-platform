@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/zenderock/simly-backend/internal/core"
 	"github.com/zenderock/simly-backend/internal/model"
 )
@@ -99,4 +100,27 @@ func (h *MessageHandler) ListMessages(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(messages)
+}
+func (h *MessageHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
+	msgIDStr := chi.URLParam(r, "id")
+	msgID, err := strconv.Atoi(msgIDStr)
+	if err != nil {
+		http.Error(w, "Invalid message ID", http.StatusBadRequest)
+		return
+	}
+
+	var req struct {
+		Status string `json:"status"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.service.UpdateStatus(r.Context(), msgID, req.Status); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }

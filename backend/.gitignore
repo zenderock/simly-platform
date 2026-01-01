@@ -32,3 +32,7 @@ Thumbs.db
 /bin/
 /dist/
 simly-backend
+
+# Firebase secrets
+*-firebase-adminsdk-*.json
+service-account.json

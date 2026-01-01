@@ -12,14 +12,16 @@ import (
 type MonitoringService struct {
 	store        *store.Store
 	alertService *AlertService
+	messages     *MessageService
 	interval     time.Duration
 	threshold    time.Duration
 }
 
-func NewMonitoringService(s *store.Store, alertService *AlertService) *MonitoringService {
+func NewMonitoringService(s *store.Store, alertService *AlertService, messages *MessageService) *MonitoringService {
 	return &MonitoringService{
 		store:        s,
 		alertService: alertService,
+		messages:     messages,
 		interval:     1 * time.Minute,
 		threshold:    10 * time.Minute,
 	}
@@ -57,6 +59,11 @@ func (s *MonitoringService) CheckDevices(ctx context.Context) {
 		if err := s.store.UpdateDeviceStatus(ctx, d.ID, "offline"); err != nil {
 			log.Printf("Monitoring: Failed to update device %d status to offline: %v", d.ID, err)
 			continue
+		}
+
+		// 2. Requeue all pending messages from this device (Failover)
+		if err := s.messages.RequeueDeviceMessages(ctx, d.ID); err != nil {
+			log.Printf("Monitoring: Failed to requeue messages for device %d: %v", d.ID, err)
 		}
 
 		// 2. Trigger Alert

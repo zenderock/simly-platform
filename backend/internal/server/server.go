@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -51,7 +52,27 @@ func (s *Server) setupRoutes() {
 	jwtSecret := []byte(s.Config.JWTSecret)
 
 	// Dependency Injection
-	notificationProvider := &core.LogNotificationProvider{}
+	var notificationProvider core.NotificationProvider = &core.LogNotificationProvider{}
+	if s.Config.FirebaseServiceAccount != "" {
+		saJSON := []byte(s.Config.FirebaseServiceAccount)
+		// Check if it's a file path (doesn't start with '{')
+		if len(saJSON) > 0 && saJSON[0] != '{' {
+			content, err := os.ReadFile(s.Config.FirebaseServiceAccount)
+			if err == nil {
+				saJSON = content
+			} else {
+				log.Printf("Warning: Failed to read Firebase service account file at %s: %v", s.Config.FirebaseServiceAccount, err)
+			}
+		}
+
+		fcm, err := core.NewFCMProvider(context.Background(), saJSON)
+		if err == nil {
+			notificationProvider = fcm
+			log.Println("FCM Provider initialized")
+		} else {
+			log.Printf("Failed to initialize FCM Provider: %v", err)
+		}
+	}
 	emailProvider := core.NewResendEmailProvider(s.Config.ResendAPIKey, s.Config.ResendFromEmail)
 	alertService := core.NewAlertService(s.DB, emailProvider)
 
@@ -70,7 +91,7 @@ func (s *Server) setupRoutes() {
 	scheduler := core.NewSchedulerService(s.DB, messageService)
 	go scheduler.Start(context.Background())
 
-	monitoringService := core.NewMonitoringService(s.DB, alertService)
+	monitoringService := core.NewMonitoringService(s.DB, alertService, messageService)
 	go monitoringService.Start(context.Background())
 
 	// Handlers
@@ -158,6 +179,7 @@ func (s *Server) setupRoutes() {
 			r.Get("/", messageHandler.ListMessages)
 			r.Post("/send", messageHandler.SendSMS)
 			r.Post("/inbound", messageHandler.InternalReceiveSMS)
+			r.Post("/{id}/status", messageHandler.UpdateStatus)
 		})
 
 		// Webhooks

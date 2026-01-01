@@ -80,12 +80,14 @@ func (h *DeviceHandler) Heartbeat(w http.ResponseWriter, r *http.Request) {
 		// If body is empty, we just treat it as a presence heartbeat
 	}
 
-	if err := h.service.Heartbeat(r.Context(), deviceID, req.BatteryLevel, req.SignalStrength); err != nil {
+	messages, err := h.service.Heartbeat(r.Context(), deviceID, req.BatteryLevel, req.SignalStrength)
+	if err != nil {
 		http.Error(w, "Heartbeat failed: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(messages)
 }
 
 func (h *DeviceHandler) DeleteDevice(w http.ResponseWriter, r *http.Request) {

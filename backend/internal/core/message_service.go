@@ -67,8 +67,8 @@ func (s *MessageService) ReceiveSMS(ctx context.Context, orgID int, fromNumber s
 	return nil
 }
 
-// selectBestDevice finds the best ONLINE device matching tags
-func (s *MessageService) selectBestDevice(ctx context.Context, orgID int, requiredTags []string) (*model.Device, error) {
+// selectBestDevice finds the best ONLINE device matching tags, optionally excluding one
+func (s *MessageService) selectBestDevice(ctx context.Context, orgID int, requiredTags []string, excludeDeviceID *int) (*model.Device, error) {
 	devices, err := s.store.GetDevicesByOrganizationID(ctx, orgID)
 	if err != nil || len(devices) == 0 {
 		return nil, errors.New("no gateways configured")
@@ -77,31 +77,46 @@ func (s *MessageService) selectBestDevice(ctx context.Context, orgID int, requir
 	var candidates []model.Device
 	for _, d := range devices {
 		if d.Status == "online" {
+			if excludeDeviceID != nil && d.ID == *excludeDeviceID {
+				continue
+			}
 			candidates = append(candidates, d)
 		}
 	}
 
 	if len(candidates) == 0 {
-		return nil, errors.New("no online devices available")
+		return nil, errors.New("no online devices available (or all candidates excluded)")
 	}
 
 	// Filter by Tags if required
+	var filtered []model.Device
 	if len(requiredTags) > 0 {
-		var matched []model.Device
 		for _, d := range candidates {
 			if hasAllTags(d.Tags, requiredTags) {
-				matched = append(matched, d)
+				filtered = append(filtered, d)
 			}
 		}
-		if len(matched) == 0 {
+		if len(filtered) == 0 {
 			return nil, fmt.Errorf("no online devices found matching tags: %v", requiredTags)
 		}
-		// Load Balancing: Just pick first one for now (Round Robin optional enhancement)
-		return &matched[0], nil
+	} else {
+		filtered = candidates
 	}
 
-	// Default: Pick first available
-	return &candidates[0], nil
+	// Intelligent Selection: Score devices based on Signal & Battery
+	// Score = (Signal * 15) + (BatteryLevel / 2) -> Signal is more important
+	var bestDevice *model.Device
+	maxScore := -1
+
+	for i := range filtered {
+		score := (filtered[i].SignalStrength * 15) + (filtered[i].BatteryLevel / 2)
+		if score > maxScore {
+			maxScore = score
+			bestDevice = &filtered[i]
+		}
+	}
+
+	return bestDevice, nil
 }
 
 func hasAllTags(deviceTags, requiredTags []string) bool {
@@ -187,7 +202,7 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 		targetDevice = device
 	} else {
 		// Smart Selection based on Tags
-		targetDevice, err = s.selectBestDevice(ctx, orgID, req.Tags)
+		targetDevice, err = s.selectBestDevice(ctx, orgID, req.Tags, nil)
 		if err != nil {
 			return nil, err
 		}
@@ -209,6 +224,7 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 		RequiredTags:   req.Tags,
 		ScheduledAt:    req.ScheduledAt,
 		MaxRetries:     3, // Default retries
+		SimSlot:        req.SimSlot,
 	}
 
 	if targetDevice != nil {
@@ -246,17 +262,24 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 }
 
 func (s *MessageService) NotifyDevice(ctx context.Context, msg *model.Message) error {
-	// If deviceID is missing, we need to find one now (Late Binding for Scheduled Messages)
+	return s.NotifyDeviceWithExclusion(ctx, msg, nil)
+}
+
+func (s *MessageService) NotifyDeviceWithExclusion(ctx context.Context, msg *model.Message, excludeID *int) error {
+	// If deviceID is missing, we need to find one now (Late Binding for Scheduled Messages or Failover)
 	var device *model.Device
 	var err error
 
 	if msg.DeviceID != nil {
 		device, err = s.store.GetDeviceByID(ctx, *msg.DeviceID)
 	} else {
-		device, err = s.selectBestDevice(ctx, msg.OrganizationID, msg.RequiredTags)
+		device, err = s.selectBestDevice(ctx, msg.OrganizationID, msg.RequiredTags, excludeID)
 		if err == nil {
 			// Update message with selected device
-			// s.store.UpdateMessageDevice(ctx, msg.ID, device.ID) // TODO: Implement if needed
+			if updateErr := s.store.UpdateMessageDevice(ctx, msg.ID, device.ID); updateErr != nil {
+				log.Printf("Warning: failed to update message %d with device %d: %v\n", msg.ID, device.ID, updateErr)
+			}
+			msg.DeviceID = &device.ID
 		}
 	}
 
@@ -273,6 +296,10 @@ func (s *MessageService) NotifyDevice(ctx context.Context, msg *model.Message) e
 		"to":         msg.ToNumber,
 		"body":       msg.Body,
 		"priority":   msg.Priority,
+	}
+
+	if msg.SimSlot != nil {
+		pushData["sim_slot"] = fmt.Sprintf("%d", *msg.SimSlot)
 	}
 
 	return s.notifications.SendPush(ctx, device.FCMToken, "Action Required", "New SMS to send", pushData)
@@ -293,22 +320,22 @@ func (s *MessageService) UpdateStatus(ctx context.Context, msgID int, status str
 	if status == "failed" {
 		if msg.RetryCount < msg.MaxRetries {
 			newRetryCount := msg.RetryCount + 1
-			log.Printf("Message %d failed, retrying (%d/%d)...\n", msgID, newRetryCount, msg.MaxRetries)
+			log.Printf("Message %d failed, retrying (%d/%d) with failover...\n", msgID, newRetryCount, msg.MaxRetries)
 
-			// Update retry count and reset to pending
-			// We clear the LastSeenAt? No, but we notify device maybe again.
+			// 1. Clear device assignment and increment retry in DB
 			if err := s.store.UpdateMessageRetry(ctx, msgID, newRetryCount, "Last delivery attempt failed", "pending"); err != nil {
 				return fmt.Errorf("failed to update message retry: %w", err)
 			}
 
-			// Prepare message for notification (Update model with latest retry count)
+			// 2. Refresh message model for notification
 			msg.RetryCount = newRetryCount
 			msg.Status = "pending"
+			// IMPORTANT: Clear DeviceID in model so NotifyDevice performs Late Binding / Smart Routing again
+			oldDeviceID := msg.DeviceID
+			msg.DeviceID = nil
 
-			// Trigger new push - Late binding/Smart routing will pick a potentially different device if needed
-			// Note: If msg had a fixed DeviceID, we might want to try to clear it or let NotifyDevice handle it.
-			// Currently NotifyDevice respects msg.DeviceID if set.
-			return s.NotifyDevice(ctx, msg)
+			// 3. Trigger new routing & notification
+			return s.NotifyDeviceWithExclusion(ctx, msg, oldDeviceID)
 		}
 	}
 
@@ -336,4 +363,15 @@ func (s *MessageService) UpdateStatus(ctx context.Context, msgID int, status str
 
 func (s *MessageService) ListMessages(ctx context.Context, orgID int, appID *int) ([]model.Message, error) {
 	return s.store.GetMessagesByOrganizationID(ctx, orgID, appID)
+}
+
+func (s *MessageService) RequeueDeviceMessages(ctx context.Context, deviceID int) error {
+	count, err := s.store.RequeueMessagesByDeviceID(ctx, deviceID)
+	if err != nil {
+		return err
+	}
+	if count > 0 {
+		log.Printf("Failover: Released %d messages from offline device %d\n", count, deviceID)
+	}
+	return nil
 }
