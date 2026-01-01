@@ -193,7 +193,7 @@ func (s *Store) GetDeviceLinkToken(ctx context.Context, token string) (*model.De
 		&t.ID, &t.OrganizationID, &t.Token, &t.ExpiresAt, &t.UsedAt, &t.DeviceID, &t.CreatedAt,
 	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get device link token: %w", err)
+		return nil, fmt.Errorf("failed to get device link token '%s': %w", token, err)
 	}
 	return &t, nil
 }

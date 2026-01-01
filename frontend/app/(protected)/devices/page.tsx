@@ -71,7 +71,7 @@ export default function DevicesPage() {
           </p>
         </div>
         
-        <ConnectDeviceDialog />
+        <ConnectDeviceDialog disabled={limitReached} />
       </div>
 
       {/* Stats / Limit info */}
@@ -187,7 +187,7 @@ export default function DevicesPage() {
               Start by connecting an Android phone to send SMS from your local SIM cards.
             </p>
             <div className="mt-6">
-              <ConnectDeviceDialog />
+              <ConnectDeviceDialog disabled={limitReached} />
             </div>
           </div>
         )}

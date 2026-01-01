@@ -3,13 +3,12 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'app/routes/app_pages.dart';
-import 'app/data/services/auth_service.dart';
 import 'app/data/services/background_handler.dart';
+import 'app/data/services/auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase (Required for FCM)
   try {
     await Firebase.initializeApp();
   } catch (e) {
@@ -21,7 +20,7 @@ void main() async {
   await GetStorage.init();
   await BackgroundHandler.initializeService();
 
-  final authService = Get.put(AuthService());
+  Get.put(AuthService());
 
   runApp(
     GetMaterialApp(

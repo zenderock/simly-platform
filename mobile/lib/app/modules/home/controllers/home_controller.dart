@@ -22,7 +22,7 @@ class HomeController extends GetxController {
 
   RxBool get isAuthenticated => _authService.isAuthenticated;
 
-  late StreamSubscription<ConnectivityResult> _connectivitySubscription;
+  StreamSubscription? _connectivitySubscription;
   Timer? _heartbeatTimer;
   Timer? _statTimer;
 
@@ -61,7 +61,7 @@ class HomeController extends GetxController {
 
   @override
   void onClose() {
-    _connectivitySubscription.cancel();
+    _connectivitySubscription?.cancel();
     _heartbeatTimer?.cancel();
     _statTimer?.cancel();
     super.onClose();

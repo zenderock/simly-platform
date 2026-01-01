@@ -11,10 +11,18 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
     <application
         android:label="mobile"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        
+        <service 
+            android:name="id.flutter.flutter_background_service.BackgroundService" 
+            android:foregroundServiceType="dataSync" 
+        />
+        
         <activity
             android:name=".MainActivity"
             android:exported="true"

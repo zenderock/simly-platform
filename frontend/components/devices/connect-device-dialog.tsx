@@ -21,7 +21,11 @@ interface LinkToken {
   expires_at: string;
 }
 
-export function ConnectDeviceDialog() {
+interface ConnectDeviceDialogProps {
+  disabled?: boolean;
+}
+
+export function ConnectDeviceDialog({ disabled }: ConnectDeviceDialogProps) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(1);
   const [linkToken, setLinkToken] = useState<LinkToken | null>(null);
@@ -67,7 +71,10 @@ export function ConnectDeviceDialog() {
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogTrigger asChild>
-        <Button className="shrink-0 gap-2 bg-[#6e3ff3] hover:bg-[#5b32cc] text-white border-none shadow-lg shadow-[#6e3ff3]/20">
+        <Button 
+          disabled={disabled}
+          className="shrink-0 gap-2 bg-[#6e3ff3] hover:bg-[#5b32cc] text-white border-none shadow-lg shadow-[#6e3ff3]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
           <Plus className="size-4" />
           Add a Device
         </Button>
