@@ -69,3 +69,59 @@ func (s *Store) GetUsersByOrganizationID(ctx context.Context, orgID int) ([]mode
 	}
 	return users, nil
 }
+func (s *Store) GetUserByID(ctx context.Context, userID int) (*model.User, error) {
+	query := `
+		SELECT id, email, password_hash, name, avatar_url, created_at, updated_at
+		FROM users
+		WHERE id = $1
+	`
+	user := &model.User{}
+	err := s.db.QueryRow(ctx, query, userID).Scan(
+		&user.ID,
+		&user.Email,
+		&user.PasswordHash,
+		&user.Name,
+		&user.AvatarURL,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("user not found")
+		}
+		return nil, fmt.Errorf("failed to get user: %w", err)
+	}
+	return user, nil
+}
+
+func (s *Store) UpdateUser(ctx context.Context, userID int, name, email, avatarURL string) error {
+	query := `
+		UPDATE users 
+		SET name = $1, email = $2, avatar_url = $3, updated_at = NOW()
+		WHERE id = $4
+	`
+	result, err := s.db.Exec(ctx, query, name, email, avatarURL, userID)
+	if err != nil {
+		return fmt.Errorf("failed to update user: %w", err)
+	}
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("user not found")
+	}
+	return nil
+}
+
+func (s *Store) UpdateUserPassword(ctx context.Context, userID int, passwordHash string) error {
+	query := `
+		UPDATE users 
+		SET password_hash = $1, updated_at = NOW()
+		WHERE id = $2
+	`
+	result, err := s.db.Exec(ctx, query, passwordHash, userID)
+	if err != nil {
+		return fmt.Errorf("failed to update password: %w", err)
+	}
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("user not found")
+	}
+	return nil
+}

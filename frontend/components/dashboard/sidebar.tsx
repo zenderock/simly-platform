@@ -32,7 +32,6 @@ import {
   LayoutGrid,
   Mail,
   FileText,
-  Settings,
   ChevronRight,
   ChevronDown,
   Atom,
@@ -43,11 +42,12 @@ import {
   Smartphone,
   Key,
   MoreHorizontal,
-  HelpCircle,
   Globe,
   ShieldAlert,
   ShieldCheck,
   Plus,
+  Crown,
+  ArrowUp,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useApplicationStore } from "@/store/application-store";
@@ -81,9 +81,10 @@ export function DashboardSidebar({
 }: React.ComponentProps<typeof Sidebar>) {
   const [appsOpen, setAppsOpen] = React.useState(true);
   const pathname = usePathname();
-  const { user, logout } = useAuth();
+  const { user, logout, organizations, organizationId } = useAuth();
   const { applications, activeAppId, setActiveAppId, getActiveApp } = useApplicationStore();
   const activeApp = getActiveApp();
+  const currentOrg = organizations.find((org) => org.id === organizationId);
 
   return (
     <Sidebar collapsible="offcanvas" className="lg:border-r-0!" {...props}>
@@ -97,24 +98,31 @@ export function DashboardSidebar({
       <SidebarContent className="px-3 sm:px-4 lg:px-5">
         {/* Active Application Context */}
         <div className="flex items-center gap-2 sm:gap-3 rounded-lg border bg-card p-2 sm:p-3 mb-3 sm:mb-4 mt-4">
-          <div className={`flex size-8 sm:size-[34px] items-center justify-center rounded-lg shrink-0 ${activeApp?.is_sandbox ? "bg-orange-500 text-white" : "bg-primary text-primary-foreground"}`}>
-            {activeApp?.is_sandbox ? <ShieldAlert className="size-4 sm:size-5" /> : <Folder className="size-4 sm:size-5" />}
+          <div className={`flex size-8 sm:size-[34px] items-center justify-center rounded-lg shrink-0 ${activeApp ? (activeApp.is_sandbox ? "bg-orange-500 text-white" : "bg-primary text-primary-foreground") : "bg-muted text-muted-foreground"}`}>
+            {activeApp ? (activeApp.is_sandbox ? <ShieldAlert className="size-4 sm:size-5" /> : <Folder className="size-4 sm:size-5" />) : <Folder className="size-4 sm:size-5" />}
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-xs sm:text-sm truncate">{activeApp?.name || "No App Selected"}</p>
-            <div className="flex items-center gap-1 text-muted-foreground">
-              {activeApp?.is_sandbox ? (
-                <>
-                  <ShieldAlert className="size-3 text-orange-500" />
-                  <span className="text-[10px] sm:text-xs font-bold text-orange-500">Sandbox</span>
-                </>
-              ) : (
-                <>
-                  <ShieldCheck className="size-3 text-emerald-500" />
-                  <span className="text-[10px] sm:text-xs font-bold text-emerald-500">Production</span>
-                </>
-              )}
-            </div>
+            {activeApp && (
+              <div className="flex items-center gap-1 text-muted-foreground">
+                {activeApp.is_sandbox ? (
+                  <>
+                    <ShieldAlert className="size-3 text-orange-500" />
+                    <span className="text-[10px] sm:text-xs font-bold text-orange-500">Sandbox</span>
+                  </>
+                ) : (
+                  <>
+                    <ShieldCheck className="size-3 text-emerald-500" />
+                    <span className="text-[10px] sm:text-xs font-bold text-emerald-500">Production</span>
+                  </>
+                )}
+              </div>
+            )}
+            {!activeApp && (
+              <p className="text-[10px] sm:text-xs text-muted-foreground">
+                Select an application to get started
+              </p>
+            )}
           </div>
         </div>
 
@@ -198,24 +206,26 @@ export function DashboardSidebar({
       </SidebarContent>
 
       <SidebarFooter className="px-3 sm:px-4 lg:px-5 pb-3 sm:pb-4 lg:pb-5">
-        <SidebarMenu className="mb-4">
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild className="h-9 sm:h-[38px]">
-              <Link href="#">
-                <HelpCircle className="size-4 sm:size-5" />
-                <span className="text-sm">Help Center</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton asChild className="h-9 sm:h-[38px]">
-              <Link href="/settings">
-                <Settings className="size-4 sm:size-5" />
-                <span className="text-sm">Settings</span>
-              </Link>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        {/* Upgrade Card */}
+        {currentOrg && currentOrg.plan !== "enterprise" && (
+          <div className="mb-4 p-3 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 dark:from-blue-950/50 dark:to-indigo-950/50 dark:border-blue-800">
+            <div className="flex items-center gap-2 mb-2">
+              <Crown className="size-4 text-blue-600 dark:text-blue-400" />
+              <span className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                Upgrade Plan
+              </span>
+            </div>
+            <p className="text-xs text-blue-700 dark:text-blue-300 mb-3">
+              Get more SMS, devices, and premium features
+            </p>
+            <Link href="/organization/plans">
+              <button className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium py-2 px-3 rounded-md transition-colors flex items-center justify-center gap-1">
+                <ArrowUp className="size-3" />
+                View Plans
+              </button>
+            </Link>
+          </div>
+        )}
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -234,13 +244,11 @@ export function DashboardSidebar({
             </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-[200px]">
-            <DropdownMenuItem>
-              <UserCircle className="size-4 mr-2" />
-              Profile
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <CreditCard className="size-4 mr-2" />
-              Billing
+            <DropdownMenuItem asChild>
+              <Link href="/profile">
+                <UserCircle className="size-4 mr-2" />
+                Profile
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="text-destructive font-medium" onClick={() => logout()}>

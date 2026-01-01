@@ -183,40 +183,7 @@ export default function PlansPage() {
         })}
       </div>
 
-      {/* Additional Info */}
-      <div className="max-w-4xl mx-auto">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-center">All Plans Include</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-6 md:grid-cols-3 text-center">
-              <div className="space-y-2">
-                <Shield className="size-8 mx-auto text-blue-500" />
-                <h3 className="font-semibold">Enterprise Security</h3>
-                <p className="text-sm text-muted-foreground">
-                  End-to-end encryption and secure API access
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Zap className="size-8 mx-auto text-yellow-500" />
-                <h3 className="font-semibold">99.9% Uptime</h3>
-                <p className="text-sm text-muted-foreground">
-                  Reliable infrastructure with global redundancy
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Headphones className="size-8 mx-auto text-green-500" />
-                <h3 className="font-semibold">Expert Support</h3>
-                <p className="text-sm text-muted-foreground">
-                  Get help from our SMS infrastructure experts
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
+   
       {/* FAQ or Contact */}
       <div className="text-center space-y-4">
         <h2 className="text-2xl font-bold">Need a Custom Plan?</h2>

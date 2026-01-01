@@ -18,6 +18,7 @@ import api from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Alert } from "@/types";
 import Link from "next/link";
+import BellIcon from "./bell-icon";
 
 interface AlertSeverityConfig {
   icon: React.ComponentType<{ className?: string }>;
@@ -109,7 +110,7 @@ export function NotificationDropdown() {
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg hover:bg-accent/50 relative">
-          <Bell className="size-4" />
+          <BellIcon isActive={unreadCount > 0} />
           {unreadCount > 0 && (
             <Badge 
               variant="destructive" 

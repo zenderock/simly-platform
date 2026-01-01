@@ -58,14 +58,16 @@ func (s *Server) setupRoutes() {
 	appService := core.NewApplicationService(s.DB)
 	apiKeyService := core.NewAPIKeyService(s.DB)
 	webhookService := core.NewWebhookService(s.DB)
-	userService := core.NewUserService(s.DB, orgService, string(jwtSecret))
+	authUserService := core.NewUserService(s.DB, orgService, string(jwtSecret))
+	userProfileService := core.NewUserProfileService(s.DB)
 	deviceService := core.NewDeviceService(s.DB, alertService)
 	rateLimitService := core.NewRateLimitService(s.DB)
 	auditService := core.NewAuditService(s.DB)
 	messageService := core.NewMessageService(s.DB, webhookService, notificationProvider, rateLimitService, appService, s.Config.SandboxSuccessNumber, s.Config.SandboxFailureNumber, alertService)
 
 	// Handlers
-	authHandler := api.NewAuthHandler(userService)
+	authHandler := api.NewAuthHandler(authUserService)
+	userHandler := api.NewUserHandler(userProfileService, auditService)
 	appHandler := api.NewApplicationHandler(appService, orgService, auditService)
 	apiKeyHandler := api.NewAPIKeyHandler(apiKeyService, appService, orgService, auditService)
 	deviceHandler := api.NewDeviceHandler(deviceService, orgService, auditService)
@@ -164,6 +166,13 @@ func (s *Server) setupRoutes() {
 			r.Post("/", orgHandler.CreateOrganization)
 			r.Post("/members", orgHandler.AddMember)
 			r.Delete("/members/{userID}", orgHandler.RemoveMember)
+		})
+
+		// User Profile
+		r.Route("/api/user", func(r chi.Router) {
+			r.Get("/profile", userHandler.GetProfile)
+			r.Put("/profile", userHandler.UpdateProfile)
+			r.Put("/password", userHandler.ChangePassword)
 		})
 
 		// Alerts
