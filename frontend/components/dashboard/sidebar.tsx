@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   Sidebar,
   SidebarContent,
@@ -274,6 +275,10 @@ export function DashboardSidebar({
                 Profile
               </Link>
             </DropdownMenuItem>
+            <div className="px-2 py-1.5 flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Theme</span>
+              <ThemeToggle />
+            </div>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="text-destructive font-medium" onClick={() => logout()}>
               <LogOut className="size-4 mr-2" />

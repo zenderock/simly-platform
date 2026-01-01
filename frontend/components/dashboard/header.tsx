@@ -2,7 +2,6 @@
 
 import React, { useEffect } from "react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { ThemeToggle } from "@/components/theme-toggle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +25,7 @@ import { CreateOrgDialog } from "@/components/dashboard/create-org-dialog";
 import { NotificationDropdown } from "@/components/dashboard/notifications";
 import { GlobalSearch } from "@/components/dashboard/global-search";
 import Link from "next/link";
+import { IconBuilding } from "@tabler/icons-react";
 
 export function DashboardHeader() {
   const { organizationId, organizations, setOrganizations, setOrganizationId } = useAuth();
@@ -59,7 +59,7 @@ export function DashboardHeader() {
               className="flex items-center gap-2 px-2 hover:bg-accent/50 h-9 transition-colors"
             >
               <div className="size-6 rounded bg-primary/10 flex items-center justify-center text-primary">
-                 <Building2 className="size-3.5" />
+                 <IconBuilding className="size-3.5" />
               </div>
               <span className="font-bold text-sm truncate max-w-[120px] sm:max-w-[200px]">{activeOrg?.name || "Organization"}</span>
               <ChevronsUpDown className="size-3.5 text-muted-foreground opacity-50" />
@@ -75,7 +75,7 @@ export function DashboardHeader() {
                 onSelect={() => setOrganizationId(org.id)}
               >
                 <div className="flex items-center gap-2">
-                  <Building2 className="size-4 text-muted-foreground" />
+                  <IconBuilding className="size-4 text-muted-foreground" />
                   <span className={cn(
                     "text-sm font-semibold",
                     org.id === organizationId ? "text-primary" : "text-foreground"
@@ -110,8 +110,6 @@ export function DashboardHeader() {
 
       <div className="flex items-center gap-2 sm:gap-3">
         <NotificationDropdown />
-        <div className="h-4 w-px bg-border mx-1" />
-        <ThemeToggle />
       </div>
 
       <CreateOrgDialog open={createOrgOpen} onOpenChange={setCreateOrgOpen} />
