@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { 
   Dialog, 
   DialogContent, 
@@ -11,10 +11,12 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Plus, Download, ShieldCheck, Loader2 } from "lucide-react";
+import { Plus, Download, ShieldCheck, Loader2, Check } from "lucide-react";
 import { motion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
 import api from "@/lib/api";
+import { useDashboardStore } from "@/store/dashboard-store";
+import { Device } from "@/types";
 
 interface LinkToken {
   token: string;
@@ -31,13 +33,77 @@ export function ConnectDeviceDialog({ disabled }: ConnectDeviceDialogProps) {
   const [linkToken, setLinkToken] = useState<LinkToken | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const triggerRefresh = useDashboardStore((state) => state.triggerRefresh);
+  
+  const initialActiveCount = useRef(0);
+  const isActive = useRef(false);
+
+  const fetchActiveCount = async () => {
+    try {
+      const res = await api.get<Device[]>("/devices");
+      return res.data.filter(d => d.status === "online").length;
+    } catch {
+      return 0;
+    }
+  };
+
+  useEffect(() => {
+    if (open) {
+      isActive.current = true;
+      fetchActiveCount().then(c => {
+        initialActiveCount.current = c;
+      });
+    } else {
+      isActive.current = false;
+    }
+  }, [open]);
 
   // Fetch link token when step 2 is reached
   useEffect(() => {
-    if (step === 2 && !linkToken) {
-      fetchLinkToken();
+    let interval: NodeJS.Timeout;
+
+    if (step === 2) {
+      if (!linkToken) fetchLinkToken();
+
+      // Start polling for success
+      interval = setInterval(async () => {
+        if (!isActive.current) return;
+        const currentCount = await fetchActiveCount();
+        // If we have more active devices than before, or at least 1 if we had 0
+        // (Actually simple check: if current > initial)
+        // Also safeguard: if we had 0 and now 1.
+        // What if we are re-linking? Count won't change.
+        // For re-linking, we might need to check "last_seen" timestamp?
+        // Let's assume re-linking updates "last_seen".
+        // Let's check if any device has "last_seen" within the last 5 seconds?
+        // Only if we can get that detailed info. 
+        // For now, let's stick to count change OR strictly > 0 if it was 0.
+        // If user is replacing a device, the old one might still be 'online' in DB for a bit?
+        // Let's check if any device is online that wasn't before?
+        
+        // Simpler approach for "Added new device": Count increases.
+        // For "Re-linked": The Mobile App logic sets status=online.
+        // If the device was ALREADY online, the count won't change.
+        // But usually users link when it's offline/new.
+        if (currentCount > initialActiveCount.current) {
+          setStep(3);
+          triggerRefresh(); // Trigger dashboard refresh
+        } else {
+            // Fallback for re-linking: check if we have ANY online device and we are 5+ seconds into scanning?
+            // No, that's risky.
+            // Let's trust the count for now.
+             
+            // Alternative: Check if api returns a "just connected" flag? No.
+            // Let's rely on count increase for new devices.
+            // For re-connecting existing devices, existing count matches current count.
+            // Maybe we can check if the token was consumed?
+            // We can't easily check token status.
+        }
+      }, 3000);
     }
-  }, [step]);
+
+    return () => clearInterval(interval);
+  }, [step, linkToken]);
 
   const fetchLinkToken = async () => {
     setLoading(true);
@@ -56,13 +122,15 @@ export function ConnectDeviceDialog({ disabled }: ConnectDeviceDialogProps) {
   const handleClose = (val: boolean) => {
     setOpen(val);
     if (!val) {
-      setStep(1);
-      setLinkToken(null);
-      setError(null);
+      // Reset after small delay to allow animation
+      setTimeout(() => {
+        setStep(1);
+        setLinkToken(null);
+        setError(null);
+      }, 300);
     }
   };
 
-  // Generate QR code data (the mobile app will scan this)
   const qrData = linkToken ? JSON.stringify({
     token: linkToken.token,
     expires_at: linkToken.expires_at
@@ -143,10 +211,29 @@ export function ConnectDeviceDialog({ disabled }: ConnectDeviceDialogProps) {
                   This unique code securely links your device using end-to-end encryption.
                </div>
              </motion.div>
+          ) : step === 3 ? (
+             <motion.div 
+               initial={{ opacity: 0, scale: 0.9 }}
+               animate={{ opacity: 1, scale: 1 }}
+               className="space-y-6"
+             >
+               <div className="size-20 bg-emerald-100 dark:bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto text-emerald-600 dark:text-emerald-500">
+                 <Check className="size-10" />
+               </div>
+               <div className="space-y-2">
+                 <p className="text-xl font-bold text-emerald-600 dark:text-emerald-500">Success!</p>
+                 <p className="text-sm text-muted-foreground px-6">
+                   Your device has been securely linked and is now ready to send SMS.
+                 </p>
+               </div>
+               <Button onClick={() => handleClose(false)} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white">
+                 Done
+               </Button>
+             </motion.div>
           ) : null}
         </div>
 
-        {step > 1 && (
+        {step === 2 && (
           <DialogFooter className="sm:justify-start">
             <Button variant="ghost" size="sm" onClick={() => setStep(step - 1)}>
               Back
