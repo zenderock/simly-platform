@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/zenderock/simly-backend/internal/model"
 	"github.com/zenderock/simly-backend/internal/store"
 )
@@ -23,10 +24,11 @@ var (
 type DeviceService struct {
 	store        *store.Store
 	alertService *AlertService
+	jwtSecret    string
 }
 
-func NewDeviceService(store *store.Store, alertService *AlertService) *DeviceService {
-	return &DeviceService{store: store, alertService: alertService}
+func NewDeviceService(store *store.Store, alertService *AlertService, jwtSecret string) *DeviceService {
+	return &DeviceService{store: store, alertService: alertService, jwtSecret: jwtSecret}
 }
 
 func (s *DeviceService) RegisterDevice(ctx context.Context, orgID int, req model.RegisterDeviceRequest) (*model.Device, error) {
@@ -47,6 +49,17 @@ func (s *DeviceService) RegisterDevice(ctx context.Context, orgID int, req model
 	}
 
 	now := time.Now()
+	existingDevice, err := s.store.GetDeviceByName(ctx, orgID, req.Name)
+	if err == nil {
+		existingDevice.FCMToken = req.FCMToken
+		existingDevice.Status = "online"
+		existingDevice.LastSeenAt = &now
+		if err := s.store.UpdateDevice(ctx, existingDevice); err != nil {
+			return nil, fmt.Errorf("failed to update device: %w", err)
+		}
+		return existingDevice, nil
+	}
+
 	device := &model.Device{
 		OrganizationID: orgID,
 		Name:           req.Name,
@@ -146,7 +159,7 @@ func (s *DeviceService) GenerateLinkToken(ctx context.Context, orgID int) (*mode
 }
 
 // LinkDevice links a device using a token (called by mobile app)
-func (s *DeviceService) LinkDevice(ctx context.Context, req model.LinkDeviceRequest) (*model.Device, error) {
+func (s *DeviceService) LinkDevice(ctx context.Context, req model.LinkDeviceRequest) (*model.LinkDeviceResponse, error) {
 	// Get and validate token
 	tokenData, err := s.store.GetDeviceLinkToken(ctx, req.Token)
 	if err != nil {
@@ -198,7 +211,25 @@ func (s *DeviceService) LinkDevice(ctx context.Context, req model.LinkDeviceRequ
 		fmt.Printf("Warning: failed to mark token as used: %v\n", err)
 	}
 
-	return device, nil
+	// Generate JWT for device
+	claims := jwt.MapClaims{
+		"sub":    device.ID,
+		"org_id": device.OrganizationID,
+		"type":   "device",
+		"exp":    time.Now().Add(time.Hour * 24 * 365).Unix(), // 1 year for devices
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString([]byte(s.jwtSecret))
+	if err != nil {
+		return nil, fmt.Errorf("failed to generate device token: %w", err)
+	}
+
+	return &model.LinkDeviceResponse{
+		ID:             device.ID,
+		OrganizationID: device.OrganizationID,
+		Token:          tokenString,
+		FCMToken:       device.FCMToken,
+	}, nil
 }
 
 // VerifyDeviceOwnership checks if a device belongs to an organization

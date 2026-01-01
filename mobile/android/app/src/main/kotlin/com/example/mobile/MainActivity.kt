@@ -70,7 +70,6 @@ class MainActivity : FlutterActivity() {
                     SmsManager.RESULT_ERROR_NO_SERVICE -> "NO_SERVICE"
                     SmsManager.RESULT_ERROR_NULL_PDU -> "NULL_PDU"
                     SmsManager.RESULT_ERROR_RADIO_OFF -> "RADIO_OFF"
-                    SmsManager.RESULT_LIMIT_EXCEEDED -> "LIMIT_EXCEEDED"
                     else -> null
                 }
                 

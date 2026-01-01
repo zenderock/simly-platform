@@ -17,6 +17,7 @@ class AuthView extends GetView<AuthController> {
               final List<Barcode> barcodes = capture.barcodes;
               for (final barcode in barcodes) {
                 if (barcode.rawValue != null) {
+                  print("Scanner detected: ${barcode.rawValue}");
                   controller.linkDevice(barcode.rawValue!);
                   break;
                 }

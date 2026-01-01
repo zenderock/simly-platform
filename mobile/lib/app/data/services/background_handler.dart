@@ -116,7 +116,7 @@ class BackgroundHandler {
       } catch (_) {}
 
       final response = await dio.post(
-        '/devices/$deviceId/heartbeat',
+        'devices/$deviceId/heartbeat',
         data: {
           'battery_level': battery,
           'signal_strength': signal,
@@ -147,7 +147,7 @@ class BackgroundHandler {
             });
 
             await dio.post(
-              '/messages/$msgId/status',
+              'messages/$msgId/status',
               data: {'status': 'sent'},
               options: Options(
                 headers: {'Authorization': 'Bearer $deviceToken'},
@@ -161,7 +161,7 @@ class BackgroundHandler {
             });
 
             await dio.post(
-              '/messages/$msgId/status',
+              'messages/$msgId/status',
               data: {
                 'status': 'failed',
                 'error_code': e.code,
@@ -179,7 +179,7 @@ class BackgroundHandler {
             });
 
             await dio.post(
-              '/messages/$msgId/status',
+              'messages/$msgId/status',
               data: {'status': 'failed', 'error_message': e.toString()},
               options: Options(
                 headers: {'Authorization': 'Bearer $deviceToken'},

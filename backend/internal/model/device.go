@@ -66,3 +66,11 @@ type LinkDeviceRequest struct {
 	Model    string `json:"model"`
 	FCMToken string `json:"fcm_token"`
 }
+
+// LinkDeviceResponse is returned to the mobile app after successful linking
+type LinkDeviceResponse struct {
+	ID             int    `json:"id"`
+	OrganizationID int    `json:"organization_id"`
+	Token          string `json:"token"`
+	FCMToken       string `json:"fcm_token"`
+}

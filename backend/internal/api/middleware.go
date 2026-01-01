@@ -54,6 +54,17 @@ func AuthMiddleware(jwtSecret []byte, apiKeyService *core.APIKeyService) func(ht
 				return
 			}
 
+			// Handle Device Token
+			if tokenType, ok := claims["type"].(string); ok && tokenType == "device" {
+				deviceID, _ := claims["sub"].(float64)
+				orgID, _ := claims["org_id"].(float64)
+
+				ctx := context.WithValue(r.Context(), userIDKey, int(deviceID))
+				ctx = context.WithValue(ctx, orgIDKey, int(orgID))
+				next.ServeHTTP(w, r.WithContext(ctx))
+				return
+			}
+
 			userID, ok := claims["sub"].(float64)
 			if !ok {
 				http.Error(w, "Unauthorized: Invalid user ID", http.StatusUnauthorized)

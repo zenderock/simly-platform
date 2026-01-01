@@ -109,7 +109,7 @@ class HomeController extends GetxController {
     if (!_authService.isAuthenticated.value) return;
 
     try {
-      await _apiProvider.post('/devices/${_authService.deviceId}/heartbeat', {
+      await _apiProvider.post('devices/${_authService.deviceId}/heartbeat', {
         'battery_level': batteryLevel.value,
         'signal_strength': signalStrength.value,
         'status': 'online',

@@ -127,8 +127,8 @@ func (s *UserService) Login(ctx context.Context, req model.LoginRequest) (*model
 
 func (s *UserService) generateToken(userID int) (string, error) {
 	claims := jwt.MapClaims{
-		"user_id": userID,
-		"exp":     time.Now().Add(time.Hour * 24 * 7).Unix(), // 7 days
+		"sub": userID,
+		"exp": time.Now().Add(time.Hour * 24 * 7).Unix(), // 7 days
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

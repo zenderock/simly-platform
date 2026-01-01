@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -136,11 +137,14 @@ func (h *DeviceHandler) GenerateLinkToken(w http.ResponseWriter, r *http.Request
 
 // LinkDevice links a device using a token (called by mobile app - public endpoint)
 func (h *DeviceHandler) LinkDevice(w http.ResponseWriter, r *http.Request) {
+	log.Println("LinkDevice called")
 	var req model.LinkDeviceRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("LinkDevice: failed to decode body: %v", err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
+	log.Printf("LinkDevice: token=%s, name=%s", req.Token, req.Name)
 
 	device, err := h.service.LinkDevice(r.Context(), req)
 	if err != nil {

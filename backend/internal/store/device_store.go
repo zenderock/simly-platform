@@ -245,3 +245,32 @@ func (s *Store) UpdateDeviceStatus(ctx context.Context, id int, status string) e
 	_, err := s.db.Exec(ctx, query, status, id)
 	return err
 }
+func (s *Store) GetDeviceByName(ctx context.Context, orgID int, name string) (*model.Device, error) {
+	query := `
+		SELECT id, organization_id, name, model, fcm_token, status, battery_level, signal_strength, tags, last_seen_at, created_at, updated_at
+		FROM devices
+		WHERE organization_id = $1 AND name = $2
+	`
+	var d model.Device
+	var tags []string
+	err := s.db.QueryRow(ctx, query, orgID, name).Scan(&d.ID, &d.OrganizationID, &d.Name, &d.Model, &d.FCMToken, &d.Status, &d.BatteryLevel, &d.SignalStrength, &tags, &d.LastSeenAt, &d.CreatedAt, &d.UpdatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get device: %w", err)
+	}
+	d.Tags = tags
+	return &d, nil
+}
+
+func (s *Store) UpdateDevice(ctx context.Context, d *model.Device) error {
+	query := `
+		UPDATE devices 
+		SET organization_id=$1, name=$2, model=$3, fcm_token=$4, status=$5, battery_level=$6, signal_strength=$7, tags=$8, last_seen_at=$9, updated_at=NOW()
+		WHERE id=$10
+	`
+	tags := d.Tags
+	if tags == nil {
+		tags = []string{}
+	}
+	_, err := s.db.Exec(ctx, query, d.OrganizationID, d.Name, d.Model, d.FCMToken, d.Status, d.BatteryLevel, d.SignalStrength, tags, d.LastSeenAt, d.ID)
+	return err
+}

@@ -82,7 +82,7 @@ func (s *Server) setupRoutes() {
 	webhookService := core.NewWebhookService(s.DB)
 	authUserService := core.NewUserService(s.DB, orgService, appService, string(jwtSecret))
 	userProfileService := core.NewUserProfileService(s.DB)
-	deviceService := core.NewDeviceService(s.DB, alertService)
+	deviceService := core.NewDeviceService(s.DB, alertService, s.Config.JWTSecret)
 	rateLimitService := core.NewRateLimitService(s.DB)
 	auditService := core.NewAuditService(s.DB)
 	messageService := core.NewMessageService(s.DB, webhookService, notificationProvider, rateLimitService, appService, s.Config.SandboxSuccessNumber, s.Config.SandboxFailureNumber, alertService)
