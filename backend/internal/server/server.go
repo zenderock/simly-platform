@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -64,6 +65,10 @@ func (s *Server) setupRoutes() {
 	rateLimitService := core.NewRateLimitService(s.DB)
 	auditService := core.NewAuditService(s.DB)
 	messageService := core.NewMessageService(s.DB, webhookService, notificationProvider, rateLimitService, appService, s.Config.SandboxSuccessNumber, s.Config.SandboxFailureNumber, alertService)
+
+	// Start Scheduler
+	scheduler := core.NewSchedulerService(s.DB, messageService)
+	go scheduler.Start(context.Background())
 
 	// Handlers
 	authHandler := api.NewAuthHandler(authUserService)

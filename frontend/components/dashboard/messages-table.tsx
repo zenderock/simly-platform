@@ -151,6 +151,7 @@ export function MessagesTable() {
       case "Delivered": return "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/10 border-none font-bold";
       case "Failed": return "bg-destructive/10 text-destructive hover:bg-destructive/10 border-none font-bold";
       case "Pending": return "bg-amber-500/10 text-amber-500 hover:bg-amber-500/10 border-none font-bold";
+      case "Scheduled": return "bg-blue-500/10 text-blue-500 hover:bg-blue-500/10 border-none font-bold";
       default: return "bg-primary/10 text-primary hover:bg-primary/10 border-none font-bold";
     }
   };
@@ -355,13 +356,18 @@ export function MessagesTable() {
                     {msg.device_name || "Unknown"}
                   </TableCell>
                   <TableCell className="text-right text-[10px] text-muted-foreground italic">
-                    {new Date(msg.created_at).toLocaleDateString('en-US', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: '2-digit',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
+                    {msg.scheduled_at ? (
+                      <div className="flex items-center justify-end gap-1 text-blue-500">
+                        <Clock className="size-3" />
+                         {new Date(msg.scheduled_at).toLocaleDateString('en-US', {
+                          day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit'
+                        })}
+                      </div>
+                    ) : (
+                      new Date(msg.created_at).toLocaleDateString('en-US', {
+                        day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit'
+                      })
+                    )}
                   </TableCell>
                   <TableCell>
                     <DropdownMenu>

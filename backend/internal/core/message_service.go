@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/zenderock/simly-backend/internal/model"
 	"github.com/zenderock/simly-backend/internal/store"
@@ -157,8 +158,10 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 		// ... existing logic ...
 	}
 
-	// 1. Device Selection (Smart Routing)
-	if req.DeviceID != nil {
+	// 1. Device Selection (Smart Routing) - SKIP IF SCHEDULED
+	if req.ScheduledAt != nil && req.ScheduledAt.After(time.Now()) {
+		// Valid Scheduled Message
+	} else if req.DeviceID != nil {
 		// Specific Device Requested
 		device, err := s.store.GetDeviceByID(ctx, *req.DeviceID)
 		if err != nil {
@@ -179,7 +182,7 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 		}
 	}
 
-	if targetDevice.FCMToken == "" {
+	if targetDevice != nil && targetDevice.FCMToken == "" {
 		return nil, errors.New("device has no valid push token")
 	}
 
@@ -187,14 +190,23 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 	msg := &model.Message{
 		OrganizationID: orgID,
 		ApplicationID:  req.ApplicationID,
-		DeviceID:       &targetDevice.ID,
 		ToNumber:       req.To,
 		Body:           req.Body,
 		Status:         "pending",
 		Direction:      "outbound",
 		Priority:       req.Priority,
 		RequiredTags:   req.Tags,
+		ScheduledAt:    req.ScheduledAt,
 	}
+
+	if targetDevice != nil {
+		msg.DeviceID = &targetDevice.ID
+	}
+
+	if req.ScheduledAt != nil && req.ScheduledAt.After(time.Now()) {
+		msg.Status = "scheduled"
+	}
+
 	if msg.Priority == "" {
 		msg.Priority = "normal"
 	}
@@ -206,17 +218,11 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 		return nil, err
 	}
 
-	// 3. Trigger FCM Push
-	pushData := map[string]string{
-		"message_id": fmt.Sprintf("%d", msg.ID),
-		"to":         msg.ToNumber,
-		"body":       msg.Body,
-		"priority":   msg.Priority, // Send priority to phone too
-	}
-
-	err = s.notifications.SendPush(ctx, targetDevice.FCMToken, "Action Required", "New SMS to send", pushData)
-	if err != nil {
-		logNotificationError(msg.ID, err)
+	// 3. Trigger FCM Push (ONLY IF NOT SCHEDULED)
+	if msg.Status == "pending" && targetDevice != nil {
+		if err := s.NotifyDevice(ctx, msg); err != nil {
+			logNotificationError(msg.ID, err)
+		}
 	}
 
 	// 4. Increment Usage (Fire and forget, or handle error?)
@@ -226,6 +232,39 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 	}
 
 	return msg, nil
+}
+
+func (s *MessageService) NotifyDevice(ctx context.Context, msg *model.Message) error {
+	// If deviceID is missing, we need to find one now (Late Binding for Scheduled Messages)
+	var device *model.Device
+	var err error
+
+	if msg.DeviceID != nil {
+		device, err = s.store.GetDeviceByID(ctx, *msg.DeviceID)
+	} else {
+		device, err = s.selectBestDevice(ctx, msg.OrganizationID, msg.RequiredTags)
+		if err == nil {
+			// Update message with selected device
+			// s.store.UpdateMessageDevice(ctx, msg.ID, device.ID) // TODO: Implement if needed
+		}
+	}
+
+	if err != nil {
+		return fmt.Errorf("failed to find device for notification: %w", err)
+	}
+
+	if device.FCMToken == "" {
+		return errors.New("device has no valid push token")
+	}
+
+	pushData := map[string]string{
+		"message_id": fmt.Sprintf("%d", msg.ID),
+		"to":         msg.ToNumber,
+		"body":       msg.Body,
+		"priority":   msg.Priority,
+	}
+
+	return s.notifications.SendPush(ctx, device.FCMToken, "Action Required", "New SMS to send", pushData)
 }
 
 func logNotificationError(msgID int, err error) {

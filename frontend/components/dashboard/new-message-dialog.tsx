@@ -41,6 +41,7 @@ export function NewMessageDialog() {
     to: "",
     body: "",
     device_id: "auto",
+    scheduled_at: "",
   });
 
   // Fetch devices when dialog opens
@@ -73,6 +74,10 @@ export function NewMessageDialog() {
         payload.device_id = parseInt(formData.device_id);
       }
 
+      if (formData.scheduled_at) {
+        payload.scheduled_at = new Date(formData.scheduled_at).toISOString();
+      }
+
       await api.post("/messages/send", payload);
 
       toast({
@@ -83,7 +88,7 @@ export function NewMessageDialog() {
 
       triggerRefresh();
       setOpen(false);
-      setFormData({ to: "", body: "", device_id: "auto" });
+      setFormData({ to: "", body: "", device_id: "auto", scheduled_at: "" });
       
       // Optional: Refresh messages table here? 
       // We might need a global refresh trigger or just let SWR/Polling handle it later.

@@ -48,6 +48,7 @@ import {
   Plus,
   Crown,
   ArrowUp,
+  Webhook,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useApplicationStore } from "@/store/application-store";
@@ -73,6 +74,11 @@ const menuItems = [
     title: "API Keys",
     icon: Key,
     href: "/api-keys",
+  },
+  {
+    title: "Webhooks",
+    icon: Webhook,
+    href: "/webhooks",
   },
 ];
 

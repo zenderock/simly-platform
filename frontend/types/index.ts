@@ -74,6 +74,8 @@ export interface Message {
   priority: string;
   application_name?: string;
   device_name?: string;
+  scheduled_at?: string;
+  processed_at?: string;
   created_at: string;
   updated_at: string;
 }
@@ -101,5 +103,15 @@ export interface Alert {
   title: string;
   message: string;
   is_read: boolean;
+  created_at: string;
+}
+
+export interface Webhook {
+  id: number;
+  organization_id: number;
+  application_id?: number;
+  url: string;
+  secret: string;
+  event_types: string;
   created_at: string;
 }
