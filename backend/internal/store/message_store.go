@@ -116,15 +116,15 @@ func (s *Store) GetMessagesByOrganizationID(ctx context.Context, orgID int, appI
 	}
 	return messages, nil
 }
-func (s *Store) UpdateMessageStatus(ctx context.Context, msgID int, status string) error {
-	query := `UPDATE messages SET status = $1, updated_at = NOW() WHERE id = $2`
-	_, err := s.db.Exec(ctx, query, status, msgID)
+func (s *Store) UpdateMessageStatus(ctx context.Context, msgID int, status string, lastError string) error {
+	query := `UPDATE messages SET status = $1, last_error = $2, updated_at = NOW() WHERE id = $3`
+	_, err := s.db.Exec(ctx, query, status, lastError, msgID)
 	return err
 }
 
 func (s *Store) GetMessageByID(ctx context.Context, msgID int) (*model.Message, error) {
 	query := `
-		SELECT id, organization_id, application_id, device_id, to_number, body, status, direction, priority, required_tags, created_at, updated_at, scheduled_at, processed_at, retry_count, max_retries, last_error, metadata
+		SELECT id, organization_id, application_id, device_id, to_number, body, status, direction, priority, required_tags, created_at, updated_at, scheduled_at, processed_at, retry_count, max_retries, last_error, metadata, sim_slot
 		FROM messages 
 		WHERE id = $1
 	`

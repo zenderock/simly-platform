@@ -26,6 +26,7 @@ func (s *CampaignService) CreateCampaign(ctx context.Context, orgID int, req mod
 		Name:           req.Name,
 		TemplateBody:   req.TemplateBody,
 		Status:         model.CampaignStatusDraft,
+		SimSlot:        req.SimSlot,
 		ScheduledAt:    req.ScheduledAt,
 	}
 
@@ -109,6 +110,7 @@ func (s *CampaignService) LaunchCampaign(ctx context.Context, id, orgID int) err
 		messages = append(messages, model.Message{
 			ToNumber: contact.PhoneNumber,
 			Body:     body,
+			SimSlot:  c.SimSlot,
 		})
 	}
 

@@ -46,6 +46,7 @@ const schema = z.object({
   template_body: z.string().min(1, "Message template is required"),
   list_id: z.string().min(1, "Contact list is required"), // Select is string usually
   device_id: z.string().min(1, "Device is required"),
+  sim_slot: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -66,6 +67,7 @@ export default function CreateCampaignPage() {
       template_body: "",
       list_id: "",
       device_id: "",
+      sim_slot: "auto",
     },
     mode: "onChange",
   });
@@ -121,6 +123,7 @@ export default function CreateCampaignPage() {
         template_body: data.template_body,
         list_id: parseInt(data.list_id),
         device_id: parseInt(data.device_id),
+        sim_slot: data.sim_slot === "auto" ? null : parseInt(data.sim_slot || "0"),
     });
   };
 
@@ -281,6 +284,30 @@ export default function CreateCampaignPage() {
                                                     </SelectContent>
                                                 </Select>
                                                 <FormDescription>Only online devices are available.</FormDescription>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                     <FormField
+                                        control={form.control}
+                                        name="sim_slot"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>SIM Slot (Optional)</FormLabel>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                    <FormControl>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder="Automatic Selection" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        <SelectItem value="auto">Automatic (Best SIM)</SelectItem>
+                                                        <SelectItem value="0">SIM Slot 1</SelectItem>
+                                                        <SelectItem value="1">SIM Slot 2</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormDescription>Choose a specific SIM slot if needed.</FormDescription>
                                                 <FormMessage />
                                             </FormItem>
                                         )}

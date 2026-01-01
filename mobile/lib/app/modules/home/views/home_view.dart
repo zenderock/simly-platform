@@ -117,13 +117,50 @@ class HomeView extends GetView<HomeController> {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    isRunning ? 'Transmitting data' : 'Not processing messages',
-                    style: TextStyle(
-                      color: Colors.black.withOpacity(0.4),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color:
+                              (controller.notificationMode.value.contains(
+                                        'Push',
+                                      )
+                                      ? Colors.blue
+                                      : Colors.orange)
+                                  .withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          controller.notificationMode.value.toUpperCase(),
+                          style: TextStyle(
+                            color:
+                                controller.notificationMode.value.contains(
+                                  'Push',
+                                )
+                                ? Colors.blue[700]
+                                : Colors.orange[700],
+                            fontSize: 9,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        controller.lastPushReceivedAt.value != null
+                            ? 'Synced ${_formatTime(controller.lastPushReceivedAt.value!)}'
+                            : 'Syncing...',
+                        style: TextStyle(
+                          color: Colors.black.withOpacity(0.3),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -199,6 +236,10 @@ class HomeView extends GetView<HomeController> {
     final String name = result.toString().split('.').last;
     if (name == 'none') return 'Offline';
     return name[0].toUpperCase() + name.substring(1);
+  }
+
+  String _formatTime(DateTime time) {
+    return '${time.hour}:${time.minute.toString().padLeft(2, '0')}';
   }
 
   Widget _buildStatItem(

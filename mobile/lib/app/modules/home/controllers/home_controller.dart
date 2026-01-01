@@ -17,6 +17,8 @@ class HomeController extends GetxController {
   final signalStrength = 0.obs; // 0-4
   final isGatewayRunning = false.obs;
   final logs = <Map<String, dynamic>>[].obs;
+  final notificationMode = "Polling".obs;
+  final lastPushReceivedAt = Rxn<DateTime>();
 
   late StreamSubscription<ConnectivityResult> _connectivitySubscription;
   Timer? _heartbeatTimer;
@@ -37,6 +39,17 @@ class HomeController extends GetxController {
         logs.insert(0, event);
         if (logs.length > 50) logs.removeLast();
       }
+    });
+
+    FlutterBackgroundService().on('updateNotificationMode').listen((event) {
+      if (event != null && event['mode'] != null) {
+        notificationMode.value = event['mode'];
+      }
+    });
+
+    FlutterBackgroundService().on('onPushReceived').listen((event) {
+      lastPushReceivedAt.value = DateTime.now();
+      notificationMode.value = "Push (FCM)";
     });
   }
 

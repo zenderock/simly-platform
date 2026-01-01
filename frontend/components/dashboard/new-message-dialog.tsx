@@ -42,6 +42,7 @@ export function NewMessageDialog() {
     to: "",
     body: "",
     device_id: "auto",
+    sim_slot: "auto",
     scheduled_at: "",
   });
 
@@ -75,6 +76,10 @@ export function NewMessageDialog() {
         payload.device_id = parseInt(formData.device_id);
       }
 
+      if (formData.sim_slot !== "auto") {
+        payload.sim_slot = parseInt(formData.sim_slot);
+      }
+
       if (formData.scheduled_at) {
         payload.scheduled_at = new Date(formData.scheduled_at).toISOString();
       }
@@ -89,7 +94,7 @@ export function NewMessageDialog() {
 
       triggerRefresh();
       setOpen(false);
-      setFormData({ to: "", body: "", device_id: "auto", scheduled_at: "" });
+      setFormData({ to: "", body: "", device_id: "auto", sim_slot: "auto", scheduled_at: "" });
       
       // Optional: Refresh messages table here? 
       // We might need a global refresh trigger or just let SWR/Polling handle it later.
@@ -155,6 +160,35 @@ export function NewMessageDialog() {
                       {device.name} <span className="text-muted-foreground text-xs ml-1">({device.model})</span>
                     </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid gap-2.5">
+              <Label htmlFor="sim_slot" className="text-sm font-semibold text-foreground/80">SIM Slot (Optional)</Label>
+              <Select
+                value={formData.sim_slot}
+                onValueChange={(val) => setFormData({ ...formData, sim_slot: val })}
+              >
+                <SelectTrigger className="h-10 w-full bg-background border-input/60 text-base sm:text-sm focus:ring-1 focus:ring-primary/20 focus:border-primary/50 shadow-sm transition-all [&>span]:line-clamp-1">
+                  <SelectValue placeholder="Select SIM" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="auto">
+                    <div className="flex items-center gap-2">
+                       <span className="font-medium text-emerald-600">Automatic</span>
+                    </div>
+                  </SelectItem>
+                   <SelectItem value="0">
+                    <div className="flex items-center gap-2">
+                       <span className="font-medium">SIM 1</span>
+                    </div>
+                  </SelectItem>
+                   <SelectItem value="1">
+                    <div className="flex items-center gap-2">
+                       <span className="font-medium">SIM 2</span>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>

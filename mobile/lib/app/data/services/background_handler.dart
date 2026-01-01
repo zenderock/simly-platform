@@ -8,6 +8,7 @@ import 'package:get_storage/get_storage.dart';
 import 'package:battery_plus/battery_plus.dart';
 import 'package:flutter_signal_strength/flutter_signal_strength.dart';
 import 'package:dio/dio.dart';
+import 'package:mobile/app/data/config.dart';
 
 class BackgroundHandler {
   static const _channel = MethodChannel('com.simly.gateway/sms');
@@ -46,7 +47,7 @@ class BackgroundHandler {
 
     final dio = Dio(
       BaseOptions(
-        baseUrl: 'https://server-simly.servelink.space/api',
+        baseUrl: Config.baseUrl,
         connectTimeout: const Duration(seconds: 10),
       ),
     );
@@ -68,6 +69,7 @@ class BackgroundHandler {
     // FCM Integration for real-time triggers
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       print("FCM Message received: ${message.data}");
+      service.invoke('onPushReceived');
       _pollMessages(dio, storage, service);
     });
 
@@ -75,8 +77,14 @@ class BackgroundHandler {
 
     // Polling Logic for SMS & Heartbeat (Fallback)
     Timer.periodic(const Duration(seconds: 30), (timer) async {
+      service.invoke('updateNotificationMode', {
+        'mode': 'Push (FCM)',
+      }); // Re-confirm mode
       _pollMessages(dio, storage, service);
     });
+
+    // Initial mode broadcast
+    service.invoke('updateNotificationMode', {'mode': 'Push (FCM)'});
   }
 
   @pragma('vm:entry-point')
@@ -145,16 +153,34 @@ class BackgroundHandler {
                 headers: {'Authorization': 'Bearer $deviceToken'},
               ),
             );
-          } catch (e) {
+          } on PlatformException catch (e) {
             service.invoke('onLog', {
               'to': to,
-              'status': 'failed',
+              'status': 'failed (${e.code})',
               'time': DateTime.now().toIso8601String(),
             });
 
             await dio.post(
               '/messages/$msgId/status',
-              data: {'status': 'failed'},
+              data: {
+                'status': 'failed',
+                'error_code': e.code,
+                'error_message': e.message,
+              },
+              options: Options(
+                headers: {'Authorization': 'Bearer $deviceToken'},
+              ),
+            );
+          } catch (e) {
+            service.invoke('onLog', {
+              'to': to,
+              'status': 'error',
+              'time': DateTime.now().toIso8601String(),
+            });
+
+            await dio.post(
+              '/messages/$msgId/status',
+              data: {'status': 'failed', 'error_message': e.toString()},
               options: Options(
                 headers: {'Authorization': 'Bearer $deviceToken'},
               ),

@@ -110,14 +110,16 @@ func (h *MessageHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var req struct {
-		Status string `json:"status"`
+		Status       string `json:"status"`
+		ErrorCode    string `json:"error_code"`
+		ErrorMessage string `json:"error_message"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	if err := h.service.UpdateStatus(r.Context(), msgID, req.Status); err != nil {
+	if err := h.service.UpdateStatus(r.Context(), msgID, req.Status, req.ErrorCode, req.ErrorMessage); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

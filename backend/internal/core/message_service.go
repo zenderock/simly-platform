@@ -309,7 +309,7 @@ func logNotificationError(msgID int, err error) {
 	fmt.Printf("[ALERT] Push failed for message %d: %v\n", msgID, err)
 }
 
-func (s *MessageService) UpdateStatus(ctx context.Context, msgID int, status string) error {
+func (s *MessageService) UpdateStatus(ctx context.Context, msgID int, status string, errorCode string, errorMessage string) error {
 	// 1. Get Message info
 	msg, err := s.store.GetMessageByID(ctx, msgID)
 	if err != nil {
@@ -340,7 +340,14 @@ func (s *MessageService) UpdateStatus(ctx context.Context, msgID int, status str
 	}
 
 	// 3. Update Status Normally (Success or Terminal Failure)
-	if err := s.store.UpdateMessageStatus(ctx, msgID, status); err != nil {
+	fullError := ""
+	if errorCode != "" {
+		fullError = fmt.Sprintf("%s: %s", errorCode, errorMessage)
+	} else if errorMessage != "" {
+		fullError = errorMessage
+	}
+
+	if err := s.store.UpdateMessageStatus(ctx, msgID, status, fullError); err != nil {
 		return err
 	}
 

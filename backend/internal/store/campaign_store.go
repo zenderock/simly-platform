@@ -9,8 +9,8 @@ import (
 
 func (s *Store) CreateCampaign(ctx context.Context, c *model.Campaign) error {
 	query := `
-		INSERT INTO campaigns (organization_id, name, template_body, list_id, device_id, status, scheduled_at, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+		INSERT INTO campaigns (organization_id, name, template_body, list_id, device_id, sim_slot, status, scheduled_at, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
 		RETURNING id, created_at, updated_at
 	`
 	err := s.db.QueryRow(ctx, query,
@@ -19,6 +19,7 @@ func (s *Store) CreateCampaign(ctx context.Context, c *model.Campaign) error {
 		c.TemplateBody,
 		c.ListID,
 		c.DeviceID,
+		c.SimSlot,
 		c.Status,
 		c.ScheduledAt,
 	).Scan(&c.ID, &c.CreatedAt, &c.UpdatedAt)
@@ -32,14 +33,15 @@ func (s *Store) CreateCampaign(ctx context.Context, c *model.Campaign) error {
 func (s *Store) UpdateCampaign(ctx context.Context, c *model.Campaign) error {
 	query := `
 		UPDATE campaigns
-		SET name = $1, template_body = $2, list_id = $3, device_id = $4, status = $5, scheduled_at = $6, updated_at = NOW()
-		WHERE id = $7 AND organization_id = $8
+		SET name = $1, template_body = $2, list_id = $3, device_id = $4, sim_slot = $5, status = $6, scheduled_at = $7, updated_at = NOW()
+		WHERE id = $8 AND organization_id = $9
 	`
 	result, err := s.db.Exec(ctx, query,
 		c.Name,
 		c.TemplateBody,
 		c.ListID,
 		c.DeviceID,
+		c.SimSlot,
 		c.Status,
 		c.ScheduledAt,
 		c.ID,
@@ -56,7 +58,7 @@ func (s *Store) UpdateCampaign(ctx context.Context, c *model.Campaign) error {
 
 func (s *Store) GetCampaignByID(ctx context.Context, id int) (*model.Campaign, error) {
 	query := `
-		SELECT id, organization_id, name, template_body, list_id, device_id, status, scheduled_at, total_messages, sent_messages, failed_messages, created_at, updated_at
+		SELECT id, organization_id, name, template_body, list_id, device_id, sim_slot, status, scheduled_at, total_messages, sent_messages, failed_messages, created_at, updated_at
 		FROM campaigns
 		WHERE id = $1
 	`
@@ -68,6 +70,7 @@ func (s *Store) GetCampaignByID(ctx context.Context, id int) (*model.Campaign, e
 		&c.TemplateBody,
 		&c.ListID,
 		&c.DeviceID,
+		&c.SimSlot,
 		&c.Status,
 		&c.ScheduledAt,
 		&c.TotalMessages,
@@ -84,7 +87,7 @@ func (s *Store) GetCampaignByID(ctx context.Context, id int) (*model.Campaign, e
 
 func (s *Store) ListCampaigns(ctx context.Context, orgID int) ([]model.Campaign, error) {
 	query := `
-		SELECT id, organization_id, name, template_body, list_id, device_id, status, scheduled_at, total_messages, sent_messages, failed_messages, created_at, updated_at
+		SELECT id, organization_id, name, template_body, list_id, device_id, sim_slot, status, scheduled_at, total_messages, sent_messages, failed_messages, created_at, updated_at
 		FROM campaigns
 		WHERE organization_id = $1
 		ORDER BY created_at DESC
@@ -105,6 +108,7 @@ func (s *Store) ListCampaigns(ctx context.Context, orgID int) ([]model.Campaign,
 			&c.TemplateBody,
 			&c.ListID,
 			&c.DeviceID,
+			&c.SimSlot,
 			&c.Status,
 			&c.ScheduledAt,
 			&c.TotalMessages,
@@ -202,13 +206,13 @@ func (s *Store) BulkCreateMessagesForCampaign(ctx context.Context, campaignID, o
 			}
 
 			// Build Query
-			query := "INSERT INTO messages (organization_id, device_id, to_number, body, status, direction, campaign_id, created_at, updated_at) VALUES "
+			query := "INSERT INTO messages (organization_id, device_id, sim_slot, to_number, body, status, direction, campaign_id, created_at, updated_at) VALUES "
 			vals := []interface{}{}
 
 			for j, m := range batch {
 				n := j * 7
-				query += fmt.Sprintf("($%d, $%d, $%d, $%d, 'pending', 'outbound', $%d, NOW(), NOW())", n+1, n+2, n+3, n+4, n+5)
-				vals = append(vals, orgID, deviceID, m.ToNumber, m.Body, campaignID)
+				query += fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, 'pending', 'outbound', $%d, NOW(), NOW())", n+1, n+2, n+3, n+4, n+5, n+6)
+				vals = append(vals, orgID, deviceID, m.SimSlot, m.ToNumber, m.Body, campaignID)
 
 				if j < len(batch)-1 {
 					query += ","

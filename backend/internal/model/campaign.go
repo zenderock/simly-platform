@@ -18,6 +18,7 @@ type Campaign struct {
 	TemplateBody   string     `json:"template_body"`
 	ListID         *int       `json:"list_id"`
 	DeviceID       *int       `json:"device_id"`
+	SimSlot        *int       `json:"sim_slot"`
 	Status         string     `json:"status"`
 	ScheduledAt    *time.Time `json:"scheduled_at"`
 	TotalMessages  int        `json:"total_messages"`
@@ -32,6 +33,7 @@ type CreateCampaignRequest struct {
 	TemplateBody string     `json:"template_body"`
 	ListID       int        `json:"list_id"`
 	DeviceID     int        `json:"device_id"`
+	SimSlot      *int       `json:"sim_slot"`
 	ScheduledAt  *time.Time `json:"scheduled_at"`
 }
 type CampaignAnalytics struct {

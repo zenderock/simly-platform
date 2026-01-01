@@ -6,6 +6,7 @@ export interface Campaign {
   template_body: string;
   list_id: number | null;
   device_id: number | null;
+  sim_slot: number | null;
   status: "draft" | "scheduled" | "queued" | "processing" | "completed" | "failed";
   scheduled_at: string | null;
   total_messages: number;
@@ -19,6 +20,7 @@ export interface CreateCampaignRequest {
   template_body: string;
   list_id: number;
   device_id: number;
+  sim_slot?: number | null;
   scheduled_at?: string;
 }
 
