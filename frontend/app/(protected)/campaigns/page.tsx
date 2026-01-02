@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { listCampaigns, deleteCampaign, launchCampaign } from "@/lib/api/campaigns";
 import { Button } from "@/components/ui/button";
-import { Plus, Megaphone, Play, Trash2, StopCircle } from "lucide-react";
+import { Plus, Megaphone, Play, Trash2, Eye } from "lucide-react";
 import Link from "next/link";
 import {
   Table,
@@ -108,15 +108,22 @@ export default function CampaignsPage() {
                             </TableCell>
                         </TableRow>
                     ) : (
-                        campaigns?.map((campaign) => (
+                        campaigns?.map((campaign) => {
+                            const formattedCampaignId = `sy-c-${String(campaign.id).padStart(2, '0')}-${campaign.id}`;
+                            return (
                             <TableRow key={campaign.id}>
                                 <TableCell className="font-medium">
-                                    <Link href={`/campaigns/${campaign.id}`} className="hover:underline flex items-center gap-2">
+                                    <Link href={`/campaigns/${formattedCampaignId}`} className="hover:underline flex items-center gap-2">
                                         <Megaphone className="size-4 text-muted-foreground" />
                                         {campaign.name}
                                     </Link>
-                                    <div className="text-xs text-muted-foreground mt-0.5 truncate max-w-[300px]">
-                                        {campaign.template_body}
+                                    <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2">
+                                        <span className="font-mono text-xs bg-secondary/50 px-1.5 py-0.5 rounded">
+                                            {formattedCampaignId}
+                                        </span>
+                                        <span className="truncate max-w-[200px]">
+                                            {campaign.template_body}
+                                        </span>
                                     </div>
                                 </TableCell>
                                 <TableCell>{getStatusBadge(campaign.status)}</TableCell>
@@ -153,6 +160,12 @@ export default function CampaignsPage() {
                                                     Launch Now
                                                 </DropdownMenuItem>
                                             )}
+                                            <DropdownMenuItem asChild>
+                                                <Link href={`/campaigns/${formattedCampaignId}`} className="flex items-center">
+                                                    <Eye className="mr-2 size-4" />
+                                                    View Details
+                                                </Link>
+                                            </DropdownMenuItem>
                                             <DropdownMenuItem className="text-destructive" onClick={() => deleteMutation.mutate(campaign.id)}>
                                                 <Trash2 className="mr-2 size-4" />
                                                 Delete
@@ -161,7 +174,7 @@ export default function CampaignsPage() {
                                     </DropdownMenu>
                                 </TableCell>
                             </TableRow>
-                        ))
+                        )})
                     )}
                 </TableBody>
             </Table>

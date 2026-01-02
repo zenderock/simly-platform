@@ -197,6 +197,7 @@ func (s *Store) GetDueScheduledMessages(ctx context.Context) ([]model.Message, e
 			&m.ApplicationID,
 			&m.DeviceID,
 			&m.ToNumber,
+			&m.FromNumber,
 			&m.Body,
 			&m.Status,
 			&m.Direction,
@@ -238,7 +239,7 @@ func (s *Store) GetPendingMessagesByDeviceID(ctx context.Context, deviceID int) 
 		var m model.Message
 		var reqTags []string
 		if err := rows.Scan(
-			&m.ID, &m.OrganizationID, &m.ApplicationID, &m.DeviceID, &m.ToNumber, &m.Body, &m.Status, &m.Direction, &m.Priority, &reqTags, &m.CreatedAt, &m.UpdatedAt, &m.ScheduledAt, &m.ProcessedAt, &m.RetryCount, &m.MaxRetries, &m.LastError, &m.Metadata, &m.SimSlot,
+			&m.ID, &m.OrganizationID, &m.ApplicationID, &m.DeviceID, &m.ToNumber, &m.FromNumber, &m.Body, &m.Status, &m.Direction, &m.Priority, &reqTags, &m.CreatedAt, &m.UpdatedAt, &m.ScheduledAt, &m.ProcessedAt, &m.RetryCount, &m.MaxRetries, &m.LastError, &m.Metadata, &m.SimSlot,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan pending message: %w", err)
 		}

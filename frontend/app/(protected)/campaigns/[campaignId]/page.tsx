@@ -32,10 +32,18 @@ import { format } from "date-fns";
 
 export default function CampaignDetailsPage() {
   const params = useParams();
-  const id = parseInt(params.id as string);
+  const campaignId = params.campaignId as string;
   const router = useRouter();
 
-  // Generate formatted campaign ID
+  // Extract numeric ID from formatted campaign ID (sy-c-00-1 -> 1)
+  const extractIdFromFormatted = (formattedId: string): number => {
+    const match = formattedId.match(/sy-c-\d+-(\d+)$/);
+    return match ? parseInt(match[1]) : parseInt(formattedId);
+  };
+
+  const id = extractIdFromFormatted(campaignId);
+  
+  // Generate formatted campaign ID for display
   const formattedCampaignId = `sy-c-${String(id).padStart(2, '0')}-${id}`;
 
   const { data: campaign, isLoading: isLoadingCampaign } = useQuery({
