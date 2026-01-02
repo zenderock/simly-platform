@@ -30,6 +30,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   MessageSquare,
   Search,
   Filter,
@@ -61,7 +68,7 @@ export function MessagesTable() {
   const statusFilter = useDashboardStore((state) => state.statusFilter);
   const appFilter = useDashboardStore((state) => state.appFilter);
   const deviceFilter = useDashboardStore((state) => state.deviceFilter);
-  
+
   const setSearchQuery = useDashboardStore((state) => state.setSearchQuery);
   const setStatusFilter = useDashboardStore((state) => state.setStatusFilter);
   const setAppFilter = useDashboardStore((state) => state.setAppFilter);
@@ -71,7 +78,16 @@ export function MessagesTable() {
   const { data: messages = [], isLoading: loading } = useMessages(activeAppId);
   const [currentPage, setCurrentPage] = React.useState(1);
   const [pageSize, setPageSize] = React.useState(10);
+  const [selectedMessage, setSelectedMessage] = React.useState<any>(null); // Uses any for now as message type is inferred
   const searchParams = useSearchParams();
+
+  const handleCopyId = (id: number) => {
+    navigator.clipboard.writeText(id.toString());
+    toast({
+      title: "Copied!",
+      description: "Message ID copied to clipboard.",
+    });
+  };
 
   React.useEffect(() => {
     const deviceParam = searchParams.get("device");
@@ -84,17 +100,17 @@ export function MessagesTable() {
     statusFilter !== "all" || appFilter !== "all" || deviceFilter !== "all";
 
   const uniqueApps = React.useMemo(() => {
-    const names = messages.map(m => m.application_name || "Direct API");
+    const names = messages.map((m) => m.application_name || "Direct API");
     return Array.from(new Set(names)).sort();
   }, [messages]);
 
   const uniqueDevices = React.useMemo(() => {
-    const names = messages.map(m => m.device_name || "Unknown");
+    const names = messages.map((m) => m.device_name || "Unknown");
     return Array.from(new Set(names)).sort();
   }, [messages]);
 
   const uniqueStatuses = React.useMemo(() => {
-    const s = messages.map(m => m.status.toLowerCase());
+    const s = messages.map((m) => m.status.toLowerCase());
     return Array.from(new Set(s)).sort();
   }, [messages]);
 
@@ -103,11 +119,16 @@ export function MessagesTable() {
       const matchesSearch =
         msg.to.toLowerCase().includes(searchQuery.toLowerCase()) ||
         msg.body.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (msg.application_name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (msg.device_name || "").toLowerCase().includes(searchQuery.toLowerCase());
+        (msg.application_name || "")
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase()) ||
+        (msg.device_name || "")
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase());
 
       const matchesStatus =
-        statusFilter === "all" || msg.status.toLowerCase() === statusFilter.toLowerCase();
+        statusFilter === "all" ||
+        msg.status.toLowerCase() === statusFilter.toLowerCase();
 
       const matchesApp =
         appFilter === "all" || msg.application_name === appFilter;
@@ -137,15 +158,15 @@ export function MessagesTable() {
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
-      case "sent": 
+      case "sent":
         return "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/10 border-none font-bold";
-      case "delivered": 
+      case "delivered":
         return "bg-green-600/10 text-green-600 hover:bg-green-600/10 border-none font-bold";
-      case "failed": 
+      case "failed":
         return "bg-destructive/10 text-destructive hover:bg-destructive/10 border-none font-bold";
-      case "pending": 
+      case "pending":
         return "bg-amber-500/10 text-amber-500 hover:bg-amber-500/10 border-none font-bold";
-      case "scheduled": 
+      case "scheduled":
         return "bg-blue-500/10 text-blue-500 hover:bg-blue-500/10 border-none font-bold";
       case "processing":
         return "bg-purple-500/10 text-purple-500 hover:bg-purple-500/10 border-none font-bold";
@@ -155,7 +176,7 @@ export function MessagesTable() {
         return "bg-gray-500/10 text-gray-500 hover:bg-gray-500/10 border-none font-bold";
       case "expired":
         return "bg-red-800/10 text-red-800 hover:bg-red-800/10 border-none font-bold";
-      default: 
+      default:
         return "bg-slate-500/10 text-slate-500 hover:bg-slate-500/10 border-none font-bold";
     }
   };
@@ -179,7 +200,7 @@ export function MessagesTable() {
         "Status",
         "Device",
         "Date",
-        "Scheduled At"
+        "Scheduled At",
       ];
 
       const rows = filteredMessages.map((msg) => [
@@ -190,19 +211,22 @@ export function MessagesTable() {
         msg.status,
         msg.device_name || "—",
         msg.created_at ? new Date(msg.created_at).toISOString() : "",
-        msg.scheduled_at ? new Date(msg.scheduled_at).toISOString() : ""
+        msg.scheduled_at ? new Date(msg.scheduled_at).toISOString() : "",
       ]);
 
       const csvContent = [
         headers.join(","),
-        ...rows.map((row) => row.join(","))
+        ...rows.map((row) => row.join(",")),
       ].join("\n");
 
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.setAttribute("href", url);
-      link.setAttribute("download", `messages_export_${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute(
+        "download",
+        `messages_export_${new Date().toISOString().split("T")[0]}.csv`
+      );
       link.style.visibility = "hidden";
       document.body.appendChild(link);
       link.click();
@@ -226,11 +250,20 @@ export function MessagesTable() {
     <div className="rounded-xl border bg-card shadow-none">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-3 sm:px-6 sm:py-3.5">
         <div className="flex items-center gap-2 sm:gap-2.5 flex-1">
-          <Button variant="outline" size="icon" className="size-7 sm:size-8 shrink-0 shadow-none">
+          <Button
+            variant="outline"
+            size="icon"
+            className="size-7 sm:size-8 shrink-0 shadow-none"
+          >
             <MessageSquare className="size-4 sm:size-[18px] text-muted-foreground" />
           </Button>
-          <span className="text-sm sm:text-base font-bold italic uppercase tracking-tight">Recent Messages</span>
-          <Badge variant="secondary" className="ml-1 text-[10px] sm:text-xs font-bold bg-muted/50">
+          <span className="text-sm sm:text-base font-bold italic uppercase tracking-tight">
+            Recent Messages
+          </span>
+          <Badge
+            variant="secondary"
+            className="ml-1 text-[10px] sm:text-xs font-bold bg-muted/50"
+          >
             {filteredMessages.length}
           </Badge>
         </div>
@@ -251,7 +284,9 @@ export function MessagesTable() {
               <Button
                 variant="outline"
                 size="sm"
-                className={`h-8 sm:h-9 gap-1.5 sm:gap-2 shadow-none font-semibold ${hasActiveFilters ? "border-primary" : ""}`}
+                className={`h-8 sm:h-9 gap-1.5 sm:gap-2 shadow-none font-semibold ${
+                  hasActiveFilters ? "border-primary" : ""
+                }`}
               >
                 <Filter className="size-3.5 sm:size-4" />
                 <span className="hidden sm:inline">Filter</span>
@@ -302,8 +337,8 @@ export function MessagesTable() {
 
               <DropdownMenuLabel>Filter by Device</DropdownMenuLabel>
               <DropdownMenuCheckboxItem
-                 checked={deviceFilter === "all"}
-                 onCheckedChange={() => setDeviceFilter("all")}
+                checked={deviceFilter === "all"}
+                onCheckedChange={() => setDeviceFilter("all")}
               >
                 All devices
               </DropdownMenuCheckboxItem>
@@ -334,20 +369,24 @@ export function MessagesTable() {
 
           <div className="hidden sm:block w-px h-[22px] bg-border" />
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="h-8 sm:h-9 gap-1.5 sm:gap-2 shadow-none font-semibold">
-                  <FileInput className="size-3.5 sm:size-4" />
-                  <span className="hidden sm:inline">Export</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleExportCSV}>
-                  <FileSpreadsheet className="size-4 mr-2" />
-                  CSV
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 sm:h-9 gap-1.5 sm:gap-2 shadow-none font-semibold"
+              >
+                <FileInput className="size-3.5 sm:size-4" />
+                <span className="hidden sm:inline">Export</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleExportCSV}>
+                <FileSpreadsheet className="size-4 mr-2" />
+                CSV
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -391,7 +430,10 @@ export function MessagesTable() {
               </TableRow>
             ) : (
               paginatedMessages.map((msg, index) => (
-                <TableRow key={msg.id} className="border-muted/50 transition-colors">
+                <TableRow
+                  key={msg.id}
+                  className="border-muted/50 transition-colors"
+                >
                   <TableCell className="font-medium text-xs text-muted-foreground italic">
                     {(currentPage - 1) * pageSize + index + 1}
                   </TableCell>
@@ -402,7 +444,10 @@ export function MessagesTable() {
                     {msg.body}
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline" className="text-[10px] font-semibold bg-muted/30 border-none">
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] font-semibold bg-muted/30 border-none"
+                    >
                       {msg.application_name || "Direct API"}
                     </Badge>
                   </TableCell>
@@ -415,19 +460,33 @@ export function MessagesTable() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-xs font-medium text-muted-foreground">
-                    {msg.device_name || (msg.status === "pending" || msg.status === "scheduled" ? "Auto" : "—")}
+                    {msg.device_name ||
+                      (msg.status === "pending" || msg.status === "scheduled"
+                        ? "Auto"
+                        : "—")}
                   </TableCell>
                   <TableCell className="text-right text-[10px] text-muted-foreground italic">
                     {msg.scheduled_at ? (
                       <div className="flex items-center justify-end gap-1 text-blue-500">
                         <Clock className="size-3" />
-                         {new Date(msg.scheduled_at).toLocaleDateString('en-US', {
-                          day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit'
-                        })}
+                        {new Date(msg.scheduled_at).toLocaleDateString(
+                          "en-US",
+                          {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }
+                        )}
                       </div>
                     ) : (
-                      new Date(msg.created_at).toLocaleDateString('en-US', {
-                        day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit'
+                      new Date(msg.created_at).toLocaleDateString("en-US", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
                       })
                     )}
                   </TableCell>
@@ -443,18 +502,15 @@ export function MessagesTable() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => setSelectedMessage(msg)}
+                        >
                           <Eye className="size-4 mr-2" />
                           Details
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleCopyId(msg.id)}>
                           <Copy className="size-4 mr-2" />
                           Copy ID
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive font-bold">
-                          <Trash2 className="size-4 mr-2" />
-                          Delete
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
@@ -478,14 +534,20 @@ export function MessagesTable() {
             </SelectTrigger>
             <SelectContent>
               {PAGE_SIZE_OPTIONS.map((size) => (
-                <SelectItem key={size} value={size.toString()} className="text-[11px]">
+                <SelectItem
+                  key={size}
+                  value={size.toString()}
+                  className="text-[11px]"
+                >
                   {size}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <span className="text-muted-foreground ml-2">
-            {(currentPage - 1) * pageSize + 1}-{Math.min(currentPage * pageSize, filteredMessages.length)} of {filteredMessages.length}
+            {(currentPage - 1) * pageSize + 1}-
+            {Math.min(currentPage * pageSize, filteredMessages.length)} of{" "}
+            {filteredMessages.length}
           </span>
         </div>
 
@@ -508,7 +570,7 @@ export function MessagesTable() {
           >
             <ChevronLeft className="size-3.5" />
           </Button>
-          
+
           <div className="flex items-center gap-1 mx-1">
             {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
               let pageNum: number;
@@ -521,7 +583,7 @@ export function MessagesTable() {
               } else {
                 pageNum = currentPage - 1 + i;
               }
-              
+
               return (
                 <Button
                   key={pageNum}
@@ -556,6 +618,91 @@ export function MessagesTable() {
           </Button>
         </div>
       </div>
+
+      <Dialog
+        open={!!selectedMessage}
+        onOpenChange={(open) => !open && setSelectedMessage(null)}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Message Details</DialogTitle>
+            <DialogDescription>
+              Message ID:{" "}
+              <code className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-sm">
+                {selectedMessage?.id}
+              </code>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <span className="text-right text-sm font-medium text-muted-foreground">
+                Recipient
+              </span>
+              <span className="col-span-3 text-sm font-semibold">
+                {selectedMessage?.to}
+              </span>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <span className="text-right text-sm font-medium text-muted-foreground">
+                App
+              </span>
+              <span className="col-span-3">
+                <Badge variant="outline" className="bg-muted/50">
+                  {selectedMessage?.application_name || "Direct API"}
+                </Badge>
+              </span>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <span className="text-right text-sm font-medium text-muted-foreground">
+                Status
+              </span>
+              <span className="col-span-3">
+                <Badge
+                  variant="outline"
+                  className={
+                    selectedMessage
+                      ? getStatusColor(selectedMessage.status)
+                      : ""
+                  }
+                >
+                  {selectedMessage?.status}
+                </Badge>
+              </span>
+            </div>
+            {selectedMessage?.device_name && (
+              <div className="grid grid-cols-4 items-center gap-4">
+                <span className="text-right text-sm font-medium text-muted-foreground">
+                  Device
+                </span>
+                <span className="col-span-3 text-sm">
+                  {selectedMessage.device_name}
+                </span>
+              </div>
+            )}
+            <div className="space-y-2 pt-2">
+              <span className="text-sm font-medium text-muted-foreground">
+                Message Body
+              </span>
+              <div className="rounded-md bg-muted/50 p-3 text-sm shadow-inner max-h-[200px] overflow-y-auto whitespace-pre-wrap">
+                {selectedMessage?.body}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4 text-[10px] text-muted-foreground pt-2 border-t">
+              <div>
+                <span className="block font-medium">Created</span>
+                {selectedMessage?.created_at &&
+                  new Date(selectedMessage.created_at).toLocaleString()}
+              </div>
+              {selectedMessage?.scheduled_at && (
+                <div className="text-right">
+                  <span className="block font-medium">Scheduled</span>
+                  {new Date(selectedMessage.scheduled_at).toLocaleString()}
+                </div>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
