@@ -1,10 +1,3 @@
-import type { Metadata } from "next";
-
-export const metadata: Metadata = {
-  title: "Developer Portal - Simly",
-  description: "Access API documentation, test endpoints, and manage your SMS gateway integrations. Get started with code examples and guides.",
-};
-
 "use client";
 
 import { useState } from "react";

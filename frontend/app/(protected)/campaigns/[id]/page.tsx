@@ -1,12 +1,3 @@
-import type { Metadata } from "next";
-
-export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
-  return {
-    title: `Campaign Details - Simly`,
-    description: `View detailed analytics and performance metrics for your SMS campaign. Track delivery rates, engagement, and campaign results.`,
-  };
-}
-
 "use client";
 
 import { useQuery } from "@tanstack/react-query";

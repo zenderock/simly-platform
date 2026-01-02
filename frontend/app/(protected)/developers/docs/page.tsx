@@ -1,10 +1,3 @@
-import type { Metadata } from "next";
-
-export const metadata: Metadata = {
-  title: "API Documentation - Simly",
-  description: "Complete REST API reference for Simly SMS Gateway. Learn how to send messages, manage webhooks, and integrate with your applications.",
-};
-
 "use client";
 
 import { useState } from "react";

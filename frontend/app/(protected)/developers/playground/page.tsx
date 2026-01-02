@@ -1,10 +1,3 @@
-import type { Metadata } from "next";
-
-export const metadata: Metadata = {
-  title: "API Playground - Simly",
-  description: "Test Simly API endpoints interactively. Send test messages, explore responses, and debug your integration in real-time.",
-};
-
 "use client";
 
 import { useState, useEffect } from "react";

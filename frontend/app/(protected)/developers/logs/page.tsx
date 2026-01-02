@@ -1,10 +1,3 @@
-import type { Metadata } from "next";
-
-export const metadata: Metadata = {
-  title: "Request Logs - Simly",
-  description: "Monitor and debug your API requests. View detailed logs, response times, and error details for troubleshooting.",
-};
-
 "use client";
 
 import { useState } from "react";

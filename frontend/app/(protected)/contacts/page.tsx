@@ -1,10 +1,3 @@
-import type { Metadata } from "next";
-
-export const metadata: Metadata = {
-  title: "Contacts - Simly",
-  description: "Manage your contact lists and audience for SMS campaigns. Import, organize, and segment your contacts.",
-};
-
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";

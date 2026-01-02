@@ -1,10 +1,3 @@
-import type { Metadata } from "next";
-
-export const metadata: Metadata = {
-  title: "Devices - Simly",
-  description: "Manage your Android devices connected as SMS gateways. Monitor device status, SIM cards, and connectivity.",
-};
-
 "use client";
 
 import { useState } from "react";

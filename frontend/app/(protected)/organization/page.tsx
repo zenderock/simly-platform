@@ -1,10 +1,3 @@
-import type { Metadata } from "next";
-
-export const metadata: Metadata = {
-  title: "Organization Settings - Simly",
-  description: "Manage your organization settings, view usage statistics, and configure team preferences for your SMS gateway.",
-};
-
 "use client";
 
 import React, { useEffect, useState } from "react";
