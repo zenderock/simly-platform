@@ -4,8 +4,6 @@ import android.content.Context
 import android.os.Build
 import android.telephony.SmsManager
 import android.telephony.SubscriptionManager
-import android.telephony.SubscriptionInfo
-import android.telephony.TelephonyManager
 import android.content.BroadcastReceiver
 import android.content.Intent
 import android.content.IntentFilter
@@ -13,6 +11,7 @@ import android.app.PendingIntent
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import androidx.annotation.NonNull
+import androidx.core.content.ContextCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -44,6 +43,7 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(@NonNull flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "sendSms" -> {
@@ -102,49 +102,36 @@ class MainActivity : FlutterActivity() {
         
         return simCards
     }
-        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
-            if (call.method == "sendSms") {
-                val phoneNumber = call.argument<String>("phoneNumber")
-                val message = call.argument<String>("message")
-                val simSlot = call.argument<Int>("simSlot")
-
-                if (phoneNumber != null && message != null) {
-                    sendSms(phoneNumber, message, simSlot) { error, errorCode ->
-                        if (error == null) {
-                            result.success(null)
-                        } else {
-                            result.error(errorCode ?: "SMS_FAILED", error, null)
-                        }
-                    }
-                } else {
-                    result.error("INVALID_ARGUMENTS", "Phone number and message must not be null", null)
-                }
-            } else {
-                result.notImplemented()
-            }
-        }
-    }
 
     private fun sendSms(phoneNumber: String, message: String, simSlot: Int?, callback: (String?, String?) -> Unit) {
         val smsManager: SmsManager = if (simSlot != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
-            val subscriptionManager = getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE) as SubscriptionManager
-            val activeSubscriptions = subscriptionManager.activeSubscriptionInfoList
-            
-            val subInfo = activeSubscriptions?.find { it.simSlotIndex == simSlot }
-            
-            if (subInfo != null) {
-                SmsManager.getSmsManagerForSubscriptionId(subInfo.subscriptionId)
-            } else {
+            try {
+                val subscriptionManager = getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE) as SubscriptionManager
+                val activeSubscriptions = subscriptionManager.activeSubscriptionInfoList
+                
+                val subInfo = activeSubscriptions?.find { it.simSlotIndex == simSlot }
+                
+                if (subInfo != null) {
+                    SmsManager.getSmsManagerForSubscriptionId(subInfo.subscriptionId)
+                } else {
+                    SmsManager.getDefault()
+                }
+            } catch (e: SecurityException) {
                 SmsManager.getDefault()
             }
         } else {
             SmsManager.getDefault()
         }
 
-        val SENT = "SMS_SENT"
+        val SENT = "SMS_SENT_${System.currentTimeMillis()}"
         val sentPI = PendingIntent.getBroadcast(
-            this, 0, Intent(SENT), 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT else PendingIntent.FLAG_UPDATE_CURRENT
+            this, 
+            System.currentTimeMillis().toInt(), 
+            Intent(SENT), 
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) 
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT 
+            else 
+                PendingIntent.FLAG_UPDATE_CURRENT
         )
 
         val receiver = object : BroadcastReceiver() {
@@ -157,16 +144,26 @@ class MainActivity : FlutterActivity() {
                     else -> null
                 }
                 
-                if (resultCode == FlutterActivity.RESULT_OK) {
+                if (resultCode == RESULT_OK) {
                     callback(null, null)
                 } else {
                     callback("SMS delivery failed with code: $resultCode", errorCode ?: "UNKNOWN_ERROR")
                 }
-                context?.unregisterReceiver(this)
+                
+                try {
+                    context?.unregisterReceiver(this)
+                } catch (e: Exception) {
+                    // Already unregistered
+                }
             }
         }
 
-        registerReceiver(receiver, IntentFilter(SENT))
+        // Use RECEIVER_NOT_EXPORTED for Android 13+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(receiver, IntentFilter(SENT), Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(receiver, IntentFilter(SENT))
+        }
         
         try {
             val parts = smsManager.divideMessage(message)
@@ -178,7 +175,11 @@ class MainActivity : FlutterActivity() {
                 smsManager.sendTextMessage(phoneNumber, null, message, sentPI, null)
             }
         } catch (e: Exception) {
-            unregisterReceiver(receiver)
+            try {
+                unregisterReceiver(receiver)
+            } catch (ex: Exception) {
+                // Already unregistered
+            }
             callback(e.message, "EXCEPTION")
         }
     }

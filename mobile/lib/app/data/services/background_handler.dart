@@ -13,8 +13,6 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:mobile/app/data/config.dart';
 
 class BackgroundHandler {
-  static const _channel = MethodChannel('com.simly.gateway/sms');
-
   static Future<void> initializeService() async {
     // Request notification permission on Android 13+
     final notificationStatus = await Permission.notification.request();
@@ -54,6 +52,9 @@ class BackgroundHandler {
   static void onStart(ServiceInstance service) async {
     DartPluginRegistrant.ensureInitialized();
 
+    // Create a new MethodChannel for this isolate
+    const channel = MethodChannel('com.simly.gateway/sms');
+
     // IMMEDIATELY set as foreground to prevent ANR/Crash on Android 14+
     if (service is AndroidServiceInstance) {
       service.on('setAsForeground').listen((event) {
@@ -87,7 +88,7 @@ class BackgroundHandler {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       debugPrint("FCM Message received: ${message.data}");
       service.invoke('onPushReceived');
-      _pollMessages(dio, storage, service);
+      _pollMessages(dio, storage, service, channel);
     });
 
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
@@ -97,7 +98,7 @@ class BackgroundHandler {
       service.invoke('updateNotificationMode', {
         'mode': 'Push (FCM)',
       }); // Re-confirm mode
-      _pollMessages(dio, storage, service);
+      _pollMessages(dio, storage, service, channel);
     });
 
     // Initial mode broadcast
@@ -118,6 +119,7 @@ class BackgroundHandler {
     Dio dio,
     GetStorage storage,
     ServiceInstance service,
+    MethodChannel channel,
   ) async {
     final deviceToken = storage.read('device_token');
     final deviceId = storage.read('device_id');
@@ -135,9 +137,11 @@ class BackgroundHandler {
       // Get SIM cards info
       List<Map<String, dynamic>> simCards = [];
       try {
-        final result = await _channel.invokeMethod('getSimCards');
+        final result = await channel.invokeMethod('getSimCards');
         if (result is List) {
-          simCards = result.cast<Map<String, dynamic>>();
+          simCards = List<Map<String, dynamic>>.from(
+            result.map((e) => Map<String, dynamic>.from(e as Map)),
+          );
         }
       } catch (e) {
         debugPrint("Failed to get SIM cards: $e");
@@ -163,7 +167,7 @@ class BackgroundHandler {
           final int? simSlot = msg['sim_slot'];
 
           try {
-            await _channel.invokeMethod('sendSms', {
+            await channel.invokeMethod('sendSms', {
               'phoneNumber': to,
               'message': body,
               'simSlot': simSlot,
