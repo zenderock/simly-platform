@@ -29,24 +29,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  ChevronRight,
-  ChevronDown,
-  LogOut,
-  UserCircle,
-  Folder,
-  ShieldAlert,
-  ShieldCheck,
-  Plus,
-  Crown,
-  ArrowUp,
-} from "lucide-react";
+
 import { useAuth } from "@/lib/auth";
 import { useApplicationStore } from "@/store/application-store";
 import Image from "next/image";
 import { CreateAppDialog } from "./create-app-dialog";
 
-import { IconLogs,IconCreditCard,IconHome2,IconMail,IconDeviceMobile,IconKey,IconUsers,IconSpeakerphone } from '@tabler/icons-react';
+import { IconLogs,IconCreditCard,IconHome2,IconMail,IconDeviceMobile,IconKey,IconUsers,IconSpeakerphone, IconShieldHalfFilled, IconCategory2, IconChevronDown, IconChevronRight, IconFolder, IconPlus, IconConfetti, IconEye, IconLogout, IconUserCircle } from '@tabler/icons-react';
 
 const menuItems = [
   {
@@ -114,7 +103,7 @@ export function DashboardSidebar({
         {/* Active Application Context */}
         <div className="flex items-center gap-2 sm:gap-3 rounded-lg border bg-card p-2 sm:p-3 mb-3 sm:mb-4 mt-4">
           <div className={`flex size-8 sm:size-[34px] items-center justify-center rounded-lg shrink-0 ${activeApp ? (activeApp.is_sandbox ? "bg-orange-500 text-white" : "bg-primary text-primary-foreground") : "bg-muted text-muted-foreground"}`}>
-            {activeApp ? (activeApp.is_sandbox ? <ShieldAlert className="size-4 sm:size-5" /> : <Folder className="size-4 sm:size-5" />) : <Folder className="size-4 sm:size-5" />}
+            {activeApp ? (activeApp.is_sandbox ? <IconShieldHalfFilled className="size-4 sm:size-5" /> : <IconCategory2 className="size-4 sm:size-5" />) : <IconFolder className="size-4 sm:size-5" />}
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-xs sm:text-sm truncate">{activeApp?.name || "No App Selected"}</p>
@@ -122,12 +111,12 @@ export function DashboardSidebar({
               <div className="flex items-center gap-1 text-muted-foreground">
                 {activeApp.is_sandbox ? (
                   <>
-                    <ShieldAlert className="size-3 text-orange-500" />
+                    <IconShieldHalfFilled className="size-3 text-orange-500" />
                     <span className="text-[10px] sm:text-xs font-bold text-orange-500">Sandbox</span>
                   </>
                 ) : (
                   <>
-                    <ShieldCheck className="size-3 text-emerald-500" />
+                    <IconCategory2 className="size-3 text-emerald-500" />
                     <span className="text-[10px] sm:text-xs font-bold text-emerald-500">Production</span>
                   </>
                 )}
@@ -155,7 +144,7 @@ export function DashboardSidebar({
                       <item.icon className="size-6 sm:size-6" />
                       <span className="text-sm font-medium">{item.title}</span>
                       {pathname === item.href && (
-                        <ChevronRight className="ml-auto size-4 text-muted-foreground opacity-60" />
+                        <IconChevronRight className="ml-auto size-4 text-muted-foreground opacity-60" />
                       )}
                     </Link>
                   </SidebarMenuButton>
@@ -170,7 +159,7 @@ export function DashboardSidebar({
             <SidebarGroupLabel className="flex items-center justify-between px-0 text-[10px] sm:text-[11px] font-semibold tracking-wider text-muted-foreground">
               <CollapsibleTrigger asChild>
                 <div className="flex items-center gap-1.5 cursor-pointer">
-                  <ChevronDown
+                  <IconChevronDown
                     className={`size-3 sm:size-3.5 transition-transform ${
                       appsOpen ? "" : "-rotate-90"
                     }`}
@@ -179,7 +168,7 @@ export function DashboardSidebar({
                 </div>
               </CollapsibleTrigger>
               <CreateAppDialog>
-                 <Plus className="size-4 cursor-pointer hover:text-foreground transition-colors" />
+                 <IconPlus className="size-4 cursor-pointer hover:text-foreground transition-colors" />
               </CreateAppDialog>
             </SidebarGroupLabel>
             <CollapsibleContent>
@@ -192,7 +181,7 @@ export function DashboardSidebar({
                         className="h-9 sm:h-[38px]"
                         onClick={() => setActiveAppId(app.id)}
                       >
-                        <Folder className={`size-4 sm:size-5 ${activeAppId === app.id ? "text-primary" : "text-muted-foreground"}`} />
+                        <IconCategory2 className={`size-4 sm:size-5 ${activeAppId === app.id ? "text-primary" : "text-muted-foreground"}`} />
                         <span className={`flex-1 text-sm truncate ${activeAppId === app.id ? "font-bold" : "text-muted-foreground"}`}>
                           {app.name}
                         </span>
@@ -208,7 +197,7 @@ export function DashboardSidebar({
                   <SidebarMenuItem>
                      <CreateAppDialog>
                          <SidebarMenuButton className="h-9 sm:h-[38px] border-zinc-200/50 text-muted-foreground hover:text-primary">
-                               <Plus className="size-4" />
+                               <IconPlus className="size-4" />
                                <span className="text-xs">Create New App</span>
                          </SidebarMenuButton>
                      </CreateAppDialog>
@@ -225,7 +214,7 @@ export function DashboardSidebar({
         {currentOrg && currentOrg.plan !== "enterprise" && (
           <div className="mb-4 p-3 rounded-lg bg-linear-to-r from-purple-50 to-gray-50 border border-purple-200 dark:from-purple-950/50 dark:to-gray-950/50 dark:border-purple-800">
             <div className="flex items-center gap-2 mb-2">
-              <Crown className="size-4 text-purple-600 dark:text-purple-400" />
+              <IconConfetti className="size-4 text-purple-600 dark:text-purple-400" />
               <span className="text-sm font-semibold text-purple-900 dark:text-purple-100">
                 Upgrade Plan
               </span>
@@ -235,7 +224,7 @@ export function DashboardSidebar({
             </p>
             <Link href="/organization/plans">
               <button className="w-full bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium py-2 px-3 rounded-md transition-colors flex items-center justify-center gap-1">
-                <ArrowUp className="size-3" />
+                <IconEye className="size-3" />
                 View Plans
               </button>
             </Link>
@@ -255,13 +244,13 @@ export function DashboardSidebar({
                    {user?.email}
                 </p>
               </div>
-              <ChevronDown className="size-4 text-muted-foreground shrink-0" />
+              <IconChevronDown className="size-4 text-muted-foreground shrink-0" />
             </div>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-[200px]">
             <DropdownMenuItem asChild>
               <Link href="/profile">
-                <UserCircle className="size-4 mr-2" />
+                <IconUserCircle className="size-4 mr-2" />
                 Profile
               </Link>
             </DropdownMenuItem>
@@ -271,7 +260,7 @@ export function DashboardSidebar({
             </div>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="text-destructive font-medium" onClick={() => logout()}>
-              <LogOut className="size-4 mr-2" />
+              <IconLogout className="size-4 mr-2" />
               Sign out
             </DropdownMenuItem>
           </DropdownMenuContent>
