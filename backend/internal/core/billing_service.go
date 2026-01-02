@@ -39,10 +39,8 @@ func NewBillingService(store *store.Store, stripeSecretKey, webhookSecret, front
 // CreateCheckoutSession creates a Stripe checkout session
 func (s *BillingService) CreateCheckoutSession(ctx context.Context, orgID int, priceID string, userEmail string) (string, error) {
 	// Determine mode based on price type (subscription vs one-time)
-	// For pay-per-use, we might be setting up a subscription with metered billing
 	params := &stripe.CheckoutSessionParams{
-		CustomerEmail: stripe.String(userEmail),
-		Mode:          stripe.String(string(stripe.CheckoutSessionModeSubscription)),
+		Mode: stripe.String(string(stripe.CheckoutSessionModeSubscription)),
 		LineItems: []*stripe.CheckoutSessionLineItemParams{
 			{
 				Price:    stripe.String(priceID),
@@ -54,6 +52,10 @@ func (s *BillingService) CreateCheckoutSession(ctx context.Context, orgID int, p
 		Metadata: map[string]string{
 			"organization_id": fmt.Sprintf("%d", orgID),
 		},
+	}
+
+	if userEmail != "" {
+		params.CustomerEmail = stripe.String(userEmail)
 	}
 
 	sess, err := session.New(params)
