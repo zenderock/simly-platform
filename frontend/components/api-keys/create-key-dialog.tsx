@@ -23,6 +23,7 @@ import {
 import { Application, APIKey } from "@/types";
 import api from "@/lib/api";
 import { useToast } from "@/components/ui/use-toast";
+import { useCreateApiKey } from "@/hooks/use-api-keys";
 import {  IconCopy, IconKey, IconPlus, IconShieldCheck, IconShieldX } from "@tabler/icons-react";
 import LoaderQuater from "../loader";
 import { EyeOff, Eye, Check } from "lucide-react";
@@ -34,10 +35,10 @@ interface CreateKeyDialogProps {
 
 export function CreateKeyDialog({ applications, onCreated }: CreateKeyDialogProps) {
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [newKey, setNewKey] = useState<APIKey | null>(null);
   const [showKey, setShowKey] = useState(false);
   const { toast } = useToast();
+  const createKeyMutation = useCreateApiKey();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -46,22 +47,19 @@ export function CreateKeyDialog({ applications, onCreated }: CreateKeyDialogProp
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     try {
-      const res = await api.post<APIKey>("/api-keys", {
+      const result = await createKeyMutation.mutateAsync({
         name: formData.name,
         application_id: parseInt(formData.application_id),
       });
-      setNewKey(res.data);
-      onCreated();
+      setNewKey(result);
+      onCreated(); // Still call the callback for any additional logic
     } catch (error) {
       toast({
         title: "Error",
         description: "Failed to create API key.",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -76,7 +74,7 @@ export function CreateKeyDialog({ applications, onCreated }: CreateKeyDialogProp
 
   return (
     <Dialog open={open} onOpenChange={(val) => {
-        if (!loading) setOpen(val);
+        if (!createKeyMutation.isPending) setOpen(val);
         if (!val) handleReset();
     }}>
       <DialogTrigger asChild>
@@ -137,8 +135,8 @@ export function CreateKeyDialog({ applications, onCreated }: CreateKeyDialogProp
               )}
             </div>
             <DialogFooter>
-              <Button type="submit" className="w-full font-bold h-11" disabled={loading}>
-                {loading ? <LoaderQuater className="mr-2 size-4" /> : <IconKey className="mr-2 size-4" />}
+              <Button type="submit" className="w-full font-bold h-11" disabled={createKeyMutation.isPending}>
+                {createKeyMutation.isPending ? <LoaderQuater className="mr-2 size-4" /> : <IconKey className="mr-2 size-4" />}
                 Generate Secret Key
               </Button>
             </DialogFooter>

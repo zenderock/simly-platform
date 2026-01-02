@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/lib/pq"
 	"github.com/zenderock/simly-backend/internal/model"
 )
 
@@ -85,7 +86,7 @@ func (s *Store) GetMessagesByOrganizationID(ctx context.Context, orgID int, appI
 	var messages []model.Message
 	for rows.Next() {
 		var m model.Message
-		var reqTags []string
+		var reqTags pq.StringArray
 		if err := rows.Scan(
 			&m.ID,
 			&m.OrganizationID,
@@ -111,7 +112,7 @@ func (s *Store) GetMessagesByOrganizationID(ctx context.Context, orgID int, appI
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan message: %w", err)
 		}
-		m.RequiredTags = reqTags
+		m.RequiredTags = []string(reqTags)
 		messages = append(messages, m)
 	}
 	return messages, nil
@@ -129,12 +130,17 @@ func (s *Store) GetMessageByID(ctx context.Context, msgID int) (*model.Message, 
 		WHERE id = $1
 	`
 	var m model.Message
-	var reqTags []string
+	var reqTags pq.StringArray
 	err := s.db.QueryRow(ctx, query, msgID).Scan(
-		&m.ID, &m.OrganizationID, &m.ApplicationID, &m.DeviceID, &m.ToNumber, &m.Body, &m.Status, &m.Direction, &m.Priority, &reqTags, &m.CreatedAt, &m.UpdatedAt, &m.ScheduledAt, &m.ProcessedAt, &m.RetryCount, &m.MaxRetries, &m.LastError, &m.Metadata, &m.SimSlot,
+		&m.ID, &m.OrganizationID, &m.ApplicationID, &m.DeviceID, &m.ToNumber, &m.Body, &m.Status, &m.Direction, &m.Priority,
+		&reqTags,
+		&m.CreatedAt, &m.UpdatedAt, &m.ScheduledAt, &m.ProcessedAt, &m.RetryCount, &m.MaxRetries, &m.LastError, &m.Metadata, &m.SimSlot,
 	)
-	m.RequiredTags = reqTags
-	return &m, err
+	if err != nil {
+		return nil, err
+	}
+	m.RequiredTags = []string(reqTags)
+	return &m, nil
 }
 
 func (s *Store) UpdateMessageRetry(ctx context.Context, msgID int, retryCount int, lastError string, status string) error {

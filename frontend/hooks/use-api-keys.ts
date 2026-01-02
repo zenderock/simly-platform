@@ -17,7 +17,7 @@ export function useApiKeysByApp(appId: number) {
       return res.data || [];
     },
     enabled: !!appId,
-    staleTime: 60000, // API keys don't change often
+    staleTime: 60000, 
   });
 }
 
@@ -31,6 +31,21 @@ export function useRevokeApiKey() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: apiKeyKeys.all });
+    },
+  });
+}
+
+export function useCreateApiKey() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: { name: string; application_id: number }) => {
+      const res = await api.post<APIKey>("/api-keys", data);
+      return res.data;
+    },
+    onSuccess: (newKey) => {
+      queryClient.invalidateQueries({ queryKey: apiKeyKeys.all });
+      queryClient.invalidateQueries({ queryKey: apiKeyKeys.byApp(newKey.application_id) });
     },
   });
 }

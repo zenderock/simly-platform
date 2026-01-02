@@ -49,7 +49,7 @@ export function APIKeysContent() {
   };
 
   const handleKeyCreated = () => {
-    queryClient.invalidateQueries({ queryKey: apiKeyKeys.all });
+    // Invalidation is handled automatically by the useCreateApiKey hook
   };
 
   return (
