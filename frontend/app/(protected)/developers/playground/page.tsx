@@ -71,6 +71,7 @@ interface APIResponse {
 export default function PlaygroundPage() {
   const { data: apps = [], isLoading: appsLoading } = useApplications();
   const [selectedKeyId, setSelectedKeyId] = useState<string>("");
+  const [manualApiKey, setManualApiKey] = useState<string>("");
   const [selectedEndpoint, setSelectedEndpoint] = useState(ENDPOINTS[0]);
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -134,8 +135,8 @@ export default function PlaygroundPage() {
   };
 
   const executeRequest = async () => {
-    if (!selectedKey) {
-      setError({ code: "no_api_key", message: "Please select an API key to make requests" });
+    if (!manualApiKey.trim()) {
+      setError({ code: "no_api_key", message: "Please enter your API key to make requests" });
       return;
     }
 
@@ -148,7 +149,7 @@ export default function PlaygroundPage() {
     try {
       const url = buildUrl();
       const headers: Record<string, string> = {
-        "Authorization": `Bearer ${selectedKey.prefix}`,
+        "Authorization": `Bearer ${manualApiKey.trim()}`,
         "Content-Type": "application/json",
       };
 
@@ -246,49 +247,66 @@ export default function PlaygroundPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Request Builder */}
         <div className="space-y-4">
-          {/* API Key Selector */}
+          {/* API Key Input */}
           <Card className="shadow-none">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Authentication</CardTitle>
-              <CardDescription>Select an API key to authenticate your requests</CardDescription>
+              <CardDescription>Enter your API key to authenticate requests</CardDescription>
             </CardHeader>
-            <CardContent>
-              {loading ? (
-                <Skeleton className="h-9 w-full" />
-              ) : allKeys.length > 0 ? (
-                <Select value={selectedKeyId} onValueChange={setSelectedKeyId}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select an API key..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {allKeys.map((key) => (
-                      <SelectItem key={key.id} value={key.id.toString()}>
-                        <span className="flex items-center gap-2">
-                          <span
-                            className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
-                              key.isSandbox
-                                ? "bg-orange-500/10 text-orange-600"
-                                : "bg-green-500/10 text-green-600"
-                            }`}
-                          >
-                            {key.isSandbox ? "TEST" : "LIVE"}
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="api-key">API Key</Label>
+                <Input
+                  id="api-key"
+                  type="password"
+                  placeholder="sk_live_... or sk_test_..."
+                  value={manualApiKey}
+                  onChange={(e) => setManualApiKey(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enter the full API key you received when creating it. Keys are only shown once at creation.
+                </p>
+              </div>
+              
+              {/* Quick select from existing keys (shows prefix only) */}
+              {!loading && allKeys.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Or select a key to see its prefix:</Label>
+                  <Select value={selectedKeyId} onValueChange={(id) => {
+                    setSelectedKeyId(id);
+                    const key = allKeys.find((k) => k.id.toString() === id);
+                    if (key) {
+                      // Just show the prefix as a hint, user still needs to enter full key
+                      setManualApiKey(key.prefix + "...");
+                    }
+                  }}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select to see prefix..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {allKeys.map((key) => (
+                        <SelectItem key={key.id} value={key.id.toString()}>
+                          <span className="flex items-center gap-2">
+                            <span
+                              className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                                key.isSandbox
+                                  ? "bg-orange-500/10 text-orange-600"
+                                  : "bg-green-500/10 text-green-600"
+                              }`}
+                            >
+                              {key.isSandbox ? "TEST" : "LIVE"}
+                            </span>
+                            {key.name} ({key.prefix}...)
                           </span>
-                          {key.name}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              ) : (
-                <div className="text-center py-4">
-                  <p className="text-sm text-muted-foreground mb-2">No API keys found</p>
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href="/api-keys">Create API Key</Link>
-                  </Button>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
-              {selectedKey?.isSandbox && (
-                <p className="text-xs text-orange-600 mt-2 flex items-center gap-1">
+              
+              {manualApiKey.startsWith("sk_test_") && (
+                <p className="text-xs text-orange-600 flex items-center gap-1">
                   <IconAlertTriangle className="size-3" />
                   Sandbox mode: Messages will be simulated, no real SMS sent
                 </p>
@@ -413,7 +431,7 @@ export default function PlaygroundPage() {
           {/* Execute Button */}
           <Button
             onClick={executeRequest}
-            disabled={isLoading || !selectedKey}
+            disabled={isLoading || !manualApiKey.trim()}
             className="w-full"
             size="lg"
           >
