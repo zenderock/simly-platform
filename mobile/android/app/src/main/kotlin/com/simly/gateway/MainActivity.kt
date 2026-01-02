@@ -1,4 +1,4 @@
-package com.example.mobile
+package com.simly.gateway
 
 import android.content.Context
 import android.os.Build
@@ -11,7 +11,6 @@ import android.app.PendingIntent
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import androidx.annotation.NonNull
-import androidx.core.content.ContextCompat
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel

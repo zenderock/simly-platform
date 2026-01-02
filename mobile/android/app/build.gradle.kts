@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.mobile"
+    namespace = "com.simly.gateway"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 

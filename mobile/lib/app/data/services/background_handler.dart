@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:get_storage/get_storage.dart';
@@ -12,6 +11,7 @@ import 'package:dio/dio.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:mobile/app/data/config.dart';
 
+@pragma('vm:entry-point')
 class BackgroundHandler {
   static Future<void> initializeService() async {
     // Request notification permission on Android 13+
@@ -52,9 +52,6 @@ class BackgroundHandler {
   static void onStart(ServiceInstance service) async {
     DartPluginRegistrant.ensureInitialized();
 
-    // Create a new MethodChannel for this isolate
-    const channel = MethodChannel('com.simly.gateway/sms');
-
     // IMMEDIATELY set as foreground to prevent ANR/Crash on Android 14+
     if (service is AndroidServiceInstance) {
       service.on('setAsForeground').listen((event) {
@@ -88,21 +85,22 @@ class BackgroundHandler {
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       debugPrint("FCM Message received: ${message.data}");
       service.invoke('onPushReceived');
-      _pollMessages(dio, storage, service, channel);
+      _pollMessages(dio, storage, service);
     });
 
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
     // Polling Logic for SMS & Heartbeat (Fallback)
     Timer.periodic(const Duration(seconds: 30), (timer) async {
-      service.invoke('updateNotificationMode', {
-        'mode': 'Push (FCM)',
-      }); // Re-confirm mode
-      _pollMessages(dio, storage, service, channel);
+      service.invoke('updateNotificationMode', {'mode': 'Push (FCM)'});
+      _pollMessages(dio, storage, service);
     });
 
     // Initial mode broadcast
     service.invoke('updateNotificationMode', {'mode': 'Push (FCM)'});
+
+    // Initial poll
+    _pollMessages(dio, storage, service);
   }
 
   @pragma('vm:entry-point')
@@ -119,7 +117,6 @@ class BackgroundHandler {
     Dio dio,
     GetStorage storage,
     ServiceInstance service,
-    MethodChannel channel,
   ) async {
     final deviceToken = storage.read('device_token');
     final deviceId = storage.read('device_id');
@@ -134,91 +131,31 @@ class BackgroundHandler {
         signal = s.toInt();
       } catch (_) {}
 
-      // Get SIM cards info
-      List<Map<String, dynamic>> simCards = [];
-      try {
-        final result = await channel.invokeMethod('getSimCards');
-        if (result is List) {
-          simCards = List<Map<String, dynamic>>.from(
-            result.map((e) => Map<String, dynamic>.from(e as Map)),
-          );
-        }
-      } catch (e) {
-        debugPrint("Failed to get SIM cards: $e");
-      }
-
       final response = await dio.post(
         'devices/$deviceId/heartbeat',
         data: {
           'battery_level': battery,
           'signal_strength': signal,
           'status': 'online',
-          'sim_cards': simCards,
         },
         options: Options(headers: {'Authorization': 'Bearer $deviceToken'}),
       );
 
-      if (response.statusCode == 200) {
-        final List messages = response.data;
+      if (response.statusCode == 200 && response.data != null) {
+        final List messages = response.data is List ? response.data : [];
         for (var msg in messages) {
           final String to = msg['to'];
           final String body = msg['body'];
           final int msgId = msg['id'];
           final int? simSlot = msg['sim_slot'];
 
-          try {
-            await channel.invokeMethod('sendSms', {
-              'phoneNumber': to,
-              'message': body,
-              'simSlot': simSlot,
-            });
-
-            service.invoke('onLog', {
-              'to': to,
-              'status': 'sent',
-              'time': DateTime.now().toIso8601String(),
-            });
-
-            await dio.post(
-              'messages/$msgId/status',
-              data: {'status': 'sent'},
-              options: Options(
-                headers: {'Authorization': 'Bearer $deviceToken'},
-              ),
-            );
-          } on PlatformException catch (e) {
-            service.invoke('onLog', {
-              'to': to,
-              'status': 'failed (${e.code})',
-              'time': DateTime.now().toIso8601String(),
-            });
-
-            await dio.post(
-              'messages/$msgId/status',
-              data: {
-                'status': 'failed',
-                'error_code': e.code,
-                'error_message': e.message,
-              },
-              options: Options(
-                headers: {'Authorization': 'Bearer $deviceToken'},
-              ),
-            );
-          } catch (e) {
-            service.invoke('onLog', {
-              'to': to,
-              'status': 'error',
-              'time': DateTime.now().toIso8601String(),
-            });
-
-            await dio.post(
-              'messages/$msgId/status',
-              data: {'status': 'failed', 'error_message': e.toString()},
-              options: Options(
-                headers: {'Authorization': 'Bearer $deviceToken'},
-              ),
-            );
-          }
+          // Request SMS send via main isolate
+          service.invoke('sendSms', {
+            'to': to,
+            'body': body,
+            'msgId': msgId,
+            'simSlot': simSlot,
+          });
         }
       }
     } catch (e) {

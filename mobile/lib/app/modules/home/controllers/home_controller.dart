@@ -65,6 +65,63 @@ class HomeController extends GetxController {
       lastPushReceivedAt.value = DateTime.now();
       notificationMode.value = "Push (FCM)";
     });
+
+    // Listen for SMS send requests from background service
+    FlutterBackgroundService().on('sendSms').listen((event) async {
+      if (event != null) {
+        await _handleSendSms(event);
+      }
+    });
+  }
+
+  Future<void> _handleSendSms(Map<String, dynamic> event) async {
+    final String to = event['to'];
+    final String body = event['body'];
+    final int msgId = event['msgId'];
+    final int? simSlot = event['simSlot'];
+
+    try {
+      await _channel.invokeMethod('sendSms', {
+        'phoneNumber': to,
+        'message': body,
+        'simSlot': simSlot,
+      });
+
+      logs.insert(0, {
+        'to': to,
+        'status': 'sent',
+        'time': DateTime.now().toIso8601String(),
+      });
+      if (logs.length > 50) logs.removeLast();
+
+      // Update status on backend
+      await _apiProvider.post('messages/$msgId/status', {'status': 'sent'});
+    } on PlatformException catch (e) {
+      logs.insert(0, {
+        'to': to,
+        'status': 'failed (${e.code})',
+        'time': DateTime.now().toIso8601String(),
+      });
+      if (logs.length > 50) logs.removeLast();
+
+      await _apiProvider.post('messages/$msgId/status', {
+        'status': 'failed',
+        'error_code': e.code,
+        'error_message': e.message,
+      });
+    } catch (e) {
+      logs.insert(0, {
+        'to': to,
+        'status': 'error',
+        'time': DateTime.now().toIso8601String(),
+      });
+      if (logs.length > 50) logs.removeLast();
+
+      await _apiProvider.post('messages/$msgId/status', {
+        'status': 'failed',
+        'error_message': e.toString(),
+      });
+    }
   }
 
   Future<void> _checkServiceStatus() async {

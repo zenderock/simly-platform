@@ -1,12 +1,15 @@
-package com.example.mobile
+package com.simly.gateway
 
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
+import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.embedding.engine.FlutterEngineCache
+import io.flutter.plugin.common.PluginRegistry
 
-class MainApplication : Application() {
+class MainApplication : Application(), PluginRegistry.PluginRegistrantCallback {
     companion object {
         const val NOTIFICATION_CHANNEL_ID = "simly_gateway_v2"
     }
@@ -14,6 +17,14 @@ class MainApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+    }
+
+    override fun registerWith(registry: PluginRegistry) {
+        // Register the SMS plugin for background isolate
+        SmsService.registerWith(
+            (registry as io.flutter.embedding.engine.FlutterEngine),
+            applicationContext
+        )
     }
 
     private fun createNotificationChannel() {

@@ -15,7 +15,7 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
-        android:label="mobile"
+        android:label="SIMLY Gateway"
         android:name=".MainApplication"
         android:icon="@mipmap/ic_launcher">
         
