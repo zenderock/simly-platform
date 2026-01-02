@@ -16,6 +16,7 @@ import { useAuth } from "@/lib/auth";
 import api from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import LoaderQuater from "../loader";
 
 interface SearchResult {
   id: string;
@@ -230,7 +231,7 @@ export function GlobalSearch() {
         <CommandList>
           {loading && (
             <div className="flex items-center justify-center py-6">
-              <Loader2 className="size-4 animate-spin" />
+              <LoaderQuater className="size-4 " />
             </div>
           )}
           

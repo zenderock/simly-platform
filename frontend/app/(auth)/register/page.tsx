@@ -3,11 +3,11 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Atom, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import LoaderQuater from "@/components/loader";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -98,7 +98,7 @@ export default function RegisterPage() {
           </p>
         </div>
         <Button type="submit" className="w-full h-11 mt-2" disabled={isLoading}>
-          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {isLoading && <LoaderQuater className="mr-2 h-4 w-4" />}
           Create Account
         </Button>
       </form>

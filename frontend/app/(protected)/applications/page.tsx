@@ -4,9 +4,9 @@ import { useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Phone, Settings, Plus } from 'lucide-react'
 import Link from 'next/link'
 import { useApplicationStore } from '@/store/application-store'
+import { IconPlus, IconSettings, IconPhone } from '@tabler/icons-react'
 
 export default function ApplicationsPage() {
   const { applications, fetchApplications } = useApplicationStore()
@@ -25,7 +25,7 @@ export default function ApplicationsPage() {
           </p>
         </div>
         <Button>
-          <Plus className="h-4 w-4 mr-2" />
+          <IconPlus className="h-4 w-4 mr-2" />
           New Application
         </Button>
       </div>
@@ -33,13 +33,13 @@ export default function ApplicationsPage() {
       {applications.length === 0 ? (
         <Card className="border-border">
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <Settings className="h-12 w-12 text-muted-foreground mb-4" />
+            <IconSettings className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">No applications found</h3>
             <p className="text-muted-foreground text-center mb-4">
               Create your first application to start managing SMS routing.
             </p>
             <Button>
-              <Plus className="h-4 w-4 mr-2" />
+              <IconPlus className="h-4 w-4 mr-2" />
               Create Application
             </Button>
           </CardContent>
@@ -68,13 +68,13 @@ export default function ApplicationsPage() {
                 <div className="flex gap-2">
                   <Button asChild variant="outline" size="sm" className="flex-1">
                     <Link href={`/applications/${app.id}/numbers`}>
-                      <Phone className="h-4 w-4 mr-2" />
+                      <IconPhone className="h-4 w-4 mr-2" />
                       Numbers
                     </Link>
                   </Button>
                   <Button asChild variant="outline" size="sm" className="flex-1">
                     <Link href={`/applications/${app.id}/settings`}>
-                      <Settings className="h-4 w-4 mr-2" />
+                      <IconSettings className="h-4 w-4 mr-2" />
                       Settings
                     </Link>
                   </Button>

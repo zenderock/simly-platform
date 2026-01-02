@@ -19,6 +19,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import LoaderQuater from "../loader";
 
 interface WebhookCardProps {
   webhook: Webhook;
@@ -204,7 +205,7 @@ export function WebhookCard({ webhook, onDelete }: WebhookCardProps) {
             className="gap-1.5"
           >
             {isTesting ? (
-              <Loader2 className="size-3 animate-spin" />
+              <LoaderQuater className="size-3" />
             ) : (
               <Play className="size-3" />
             )}

@@ -5,9 +5,9 @@ import { useParams } from 'next/navigation'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Plus, Phone, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { AssignNumberDialog } from '@/components/applications/assign-number-dialog'
+import { IconPlus, IconPhone, IconTrash } from '@tabler/icons-react'
 
 interface AppDID {
   id: number
@@ -139,7 +139,7 @@ export default function ApplicationNumbersPage() {
           </p>
         </div>
         <Button onClick={() => setShowAssignDialog(true)}>
-          <Plus className="h-4 w-4 mr-2" />
+          <IconPlus className="h-4 w-4 mr-2" />
           Assign Number
         </Button>
       </div>
@@ -147,13 +147,13 @@ export default function ApplicationNumbersPage() {
       {numbers.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <Phone className="h-12 w-12 text-muted-foreground mb-4" />
+            <IconPhone className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">No numbers assigned</h3>
             <p className="text-muted-foreground text-center mb-4">
               Assign physical phone numbers from your devices to route incoming SMS to this application.
             </p>
             <Button onClick={() => setShowAssignDialog(true)}>
-              <Plus className="h-4 w-4 mr-2" />
+              <IconPlus className="h-4 w-4 mr-2" />
               Assign First Number
             </Button>
           </CardContent>
@@ -164,7 +164,7 @@ export default function ApplicationNumbersPage() {
             <Card key={number.id}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <div className="flex items-center space-x-3">
-                  <Phone className="h-5 w-5 text-muted-foreground" />
+                  <IconPhone className="h-5 w-5 text-muted-foreground" />
                   <div>
                     <CardTitle className="text-lg">{number.did_number}</CardTitle>
                     {number.description && (
@@ -182,7 +182,7 @@ export default function ApplicationNumbersPage() {
                     onClick={() => handleUnassignNumber(number.id)}
                     className="text-destructive hover:text-destructive"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <IconTrash className="h-4 w-4" />
                   </Button>
                 </div>
               </CardHeader>

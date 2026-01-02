@@ -3,7 +3,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { listCampaigns, deleteCampaign, launchCampaign } from "@/lib/api/campaigns";
 import { Button } from "@/components/ui/button";
-import { Plus, Megaphone, Play, Trash2, Eye } from "lucide-react";
 import Link from "next/link";
 import {
   Table,
@@ -23,7 +22,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal } from "lucide-react";
+import { IconPlus, IconDots, IconPlayerPlay, IconEye, IconTrash, IconSpeakerphone } from "@tabler/icons-react";
 
 
 export default function CampaignsPage() {
@@ -76,7 +75,7 @@ export default function CampaignsPage() {
         </div>
         <Link href="/campaigns/create">
             <Button>
-            <Plus className="mr-2 size-4" />
+            <IconPlus className="mr-2 size-4" />
             Create Campaign
             </Button>
         </Link>
@@ -114,7 +113,7 @@ export default function CampaignsPage() {
                             <TableRow key={campaign.id}>
                                 <TableCell className="font-medium">
                                     <Link href={`/campaigns/${formattedCampaignId}`} className="hover:underline flex items-center gap-2">
-                                        <Megaphone className="size-4 text-muted-foreground" />
+                                        <IconSpeakerphone className="size-4 text-muted-foreground" />
                                         {campaign.name}
                                     </Link>
                                     <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2">
@@ -150,24 +149,24 @@ export default function CampaignsPage() {
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
                                             <Button variant="ghost" size="icon" className="size-8">
-                                                <MoreHorizontal className="size-4" />
+                                                <IconDots className="size-4" />
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end">
                                             {campaign.status === 'draft' && (
                                                 <DropdownMenuItem onClick={() => launchMutation.mutate(campaign.id)}>
-                                                    <Play className="mr-2 size-4" />
+                                                    <IconPlayerPlay className="mr-2 size-4" />
                                                     Launch Now
                                                 </DropdownMenuItem>
                                             )}
                                             <DropdownMenuItem asChild>
                                                 <Link href={`/campaigns/${formattedCampaignId}`} className="flex items-center">
-                                                    <Eye className="mr-2 size-4" />
+                                                    <IconEye className="mr-2 size-4" />
                                                     View Details
                                                 </Link>
                                             </DropdownMenuItem>
                                             <DropdownMenuItem className="text-destructive" onClick={() => deleteMutation.mutate(campaign.id)}>
-                                                <Trash2 className="mr-2 size-4" />
+                                                <IconTrash className="mr-2 size-4" />
                                                 Delete
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>

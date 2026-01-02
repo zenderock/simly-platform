@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Device } from "@/types";
 import { useUpdateDevice } from "@/hooks/use-devices";
 import { Loader2 } from "lucide-react";
+import LoaderQuater from "../loader";
 
 interface DeviceSettingsDialogProps {
   device: Device | null;
@@ -78,7 +79,7 @@ export function DeviceSettingsDialog({ device, open, onOpenChange }: DeviceSetti
               Cancel
             </Button>
             <Button type="submit" disabled={updateDevice.isPending}>
-              {updateDevice.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
+              {updateDevice.isPending && <LoaderQuater className="mr-2 size-4" />}
               Save Changes
             </Button>
           </DialogFooter>

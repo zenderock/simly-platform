@@ -1,5 +1,5 @@
 
-import { CheckCircle, Star } from "lucide-react"
+import { IconCircleCheck, IconStar } from "@tabler/icons-react"
 import Image from "next/image"
 import Link from "next/link"
 
@@ -44,15 +44,15 @@ export default function AuthLayout({
             
             <div className="flex items-center gap-8 text-blue-100">
               <div className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5" />
+                <IconCircleCheck className="h-5 w-5" />
                 <span>99.9% Uptime</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5" />
+                <IconCircleCheck className="h-5 w-5" />
                 <span>Real-time alerts</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5" />
+                <IconCircleCheck className="h-5 w-5" />
                 <span>Enterprise security</span>
               </div>
             </div>
@@ -63,7 +63,7 @@ export default function AuthLayout({
             <div className="flex items-center gap-2">
               <div className="flex">
                 {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                  <IconStar key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
                 ))}
               </div>
               <span className="text-sm text-blue-100">Trusted by 500+ developers</span>

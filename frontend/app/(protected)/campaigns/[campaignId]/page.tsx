@@ -6,19 +6,8 @@ import { getCampaign, getCampaignAnalytics } from "@/lib/api/campaigns";
 import { listDevices } from "@/lib/api/devices";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
-import { 
-    ArrowLeft, 
-    BarChart3, 
-    CheckCircle2, 
-    XCircle, 
-    Clock, 
-    RefreshCw,
-    Share2,
-    Calendar,
-    Megaphone
-} from "lucide-react";
+
 import { Badge } from "@/components/ui/badge";
-import Link from "next/link";
 import { 
     PieChart, 
     Pie, 
@@ -29,6 +18,7 @@ import {
 } from "recharts";
 import LoaderQuater from "@/components/loader";
 import { format } from "date-fns";
+import { IconArrowLeft, IconCalendarFilled, IconRotateClockwise2, IconChartBar, IconClockHour10, IconSpeakerphone, IconCircleCheck, IconCircleX, IconShare3 } from "@tabler/icons-react";
 
 export default function CampaignDetailsPage() {
   const params = useParams();
@@ -108,7 +98,7 @@ export default function CampaignDetailsPage() {
       <div className="flex items-center justify-between border-b px-6 py-4 bg-background sticky top-0 z-10">
         <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={() => router.back()}>
-                <ArrowLeft className="size-4" />
+                <IconArrowLeft className="size-4" />
             </Button>
             <div>
                 <div className="flex items-center gap-2">
@@ -116,14 +106,14 @@ export default function CampaignDetailsPage() {
                     {getStatusBadge(campaign.status)}
                 </div>
                 <p className="text-sm text-muted-foreground flex items-center gap-2">
-                    <Calendar className="size-3" />
+                    <IconCalendarFilled className="size-3" />
                     {formattedCampaignId} • Created {format(new Date(campaign.created_at), "MMM d, yyyy HH:mm")}
                 </p>
             </div>
         </div>
         <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => refetchAnalytics()}>
-                <RefreshCw className="mr-2 size-4" />
+                <IconRotateClockwise2 className="mr-2 size-4" />
                 Refresh
             </Button>
             {/* Future action buttons like Export PDF could go here */}
@@ -135,7 +125,7 @@ export default function CampaignDetailsPage() {
         <Card className="md:col-span-1 shadow-none">
             <CardHeader pb-0>
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <BarChart3 className="size-4 text-muted-foreground" />
+                    <IconChartBar className="size-4 text-muted-foreground" />
                     Delivery Summary
                 </CardTitle>
             </CardHeader>
@@ -164,7 +154,7 @@ export default function CampaignDetailsPage() {
                     </ResponsiveContainer>
                 ) : (
                     <div className="h-full flex flex-col items-center justify-center text-muted-foreground text-sm">
-                        <Clock className="size-12 mb-2 opacity-20" />
+                        <IconClockHour10 className="size-12 mb-2 opacity-20" />
                         No delivery data yet
                     </div>
                 )}
@@ -181,7 +171,7 @@ export default function CampaignDetailsPage() {
                             <h2 className="text-2xl font-bold">{analytics.total}</h2>
                         </div>
                         <div className="p-2 bg-primary/10 rounded-full">
-                            <Megaphone className="size-5 text-primary" />
+                            <IconSpeakerphone className="size-5 text-primary" />
                         </div>
                     </div>
                 </CardContent>
@@ -195,7 +185,7 @@ export default function CampaignDetailsPage() {
                             <h2 className="text-2xl font-bold">{analytics.sent}</h2>
                         </div>
                         <div className="p-2 bg-success/10 rounded-full">
-                            <Share2 className="size-5 text-success" />
+                            <IconShare3 className="size-5 text-success" />
                         </div>
                     </div>
                     <div className="mt-4 h-1.5 w-full bg-secondary rounded-full overflow-hidden">
@@ -215,7 +205,7 @@ export default function CampaignDetailsPage() {
                             <h2 className="text-2xl font-bold">{analytics.delivered}</h2>
                         </div>
                         <div className="p-2 bg-success/10 rounded-full">
-                            <CheckCircle2 className="size-5 text-success" />
+                            <IconCircleCheck className="size-5 text-success" />
                         </div>
                     </div>
                     <p className="text-xs text-muted-foreground mt-2">
@@ -232,7 +222,7 @@ export default function CampaignDetailsPage() {
                             <h2 className="text-2xl font-bold">{analytics.failed}</h2>
                         </div>
                         <div className="p-2 bg-danger/10 rounded-full">
-                            <XCircle className="size-5 text-danger" />
+                            <IconCircleX className="size-5 text-danger" />
                         </div>
                     </div>
                     <p className="text-xs text-muted-foreground mt-2">

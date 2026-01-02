@@ -11,28 +11,19 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import LoaderQuater from "@/components/loader";
 
+import { useWebhooks, webhookKeys } from "@/hooks/use-webhooks";
+import { useQueryClient } from "@tanstack/react-query";
+
 export default function WebhooksPage() {
   const { organizationId } = useAuth();
-  const [webhooks, setWebhooks] = useState<Webhook[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: webhooks = [], isLoading: loading } = useWebhooks(organizationId);
 
-  const fetchWebhooks = async () => {
-    if (!organizationId) return;
-    
-    setLoading(true);
-    try {
-      const response = await api.get(`/webhooks`);
-      setWebhooks(response.data || []);
-    } catch (error) {
-      console.error("Failed to fetch webhooks", error);
-    } finally {
-      setLoading(false);
-    }
+  const refreshWebhooks = () => {
+    queryClient.invalidateQueries({ queryKey: webhookKeys.list(organizationId) });
   };
 
-  useEffect(() => {
-    fetchWebhooks();
-  }, [organizationId]);
+
 
   if (loading) {
     return (
@@ -54,7 +45,7 @@ export default function WebhooksPage() {
             Configure webhooks to receive real-time notifications about inbound SMS and message status updates.
           </p>
         </div>
-        <CreateWebhookDialog onCreated={fetchWebhooks} />
+        <CreateWebhookDialog onCreated={refreshWebhooks} />
       </div>
 
       <div className="grid gap-4">
@@ -67,12 +58,12 @@ export default function WebhooksPage() {
             </AlertDescription>
           </Alert>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
              {webhooks.map((webhook) => (
                 <WebhookCard 
                   key={webhook.id} 
                   webhook={webhook} 
-                  onDelete={fetchWebhooks} 
+                  onDelete={refreshWebhooks} 
                 />
              ))}
           </div>

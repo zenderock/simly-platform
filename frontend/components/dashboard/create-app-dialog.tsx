@@ -18,6 +18,7 @@ import { Checkbox } from "@/components/ui/checkbox"; // Assuming we have checkbo
 import api from "@/lib/api";
 import { useApplicationStore } from "@/store/application-store";
 import { useToast } from "@/components/ui/use-toast";
+import LoaderQuater from "../loader";
 
 interface CreateAppDialogProps {
   children?: React.ReactNode;
@@ -96,7 +97,7 @@ export function CreateAppDialog({ children, open: controlledOpen, onOpenChange: 
               Cancel
             </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isLoading && <LoaderQuater className="mr-2 h-4 w-4" />}
               Create
             </Button>
           </DialogFooter>

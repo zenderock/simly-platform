@@ -17,6 +17,7 @@ import { QRCodeSVG } from "qrcode.react";
 import api from "@/lib/api";
 import { useDashboardStore } from "@/store/dashboard-store";
 import { Device } from "@/types";
+import LoaderQuater from "../loader";
 
 interface LinkToken {
   token: string;
@@ -144,7 +145,7 @@ export function ConnectDeviceDialog({ disabled }: ConnectDeviceDialogProps) {
              >
                <div className="size-48 bg-white border rounded-xl flex items-center justify-center mx-auto p-4 relative">
                  {loading ? (
-                   <Loader2 className="size-8 text-zinc-400 animate-spin" />
+                   <LoaderQuater className="size-8 text-zinc-400 " />
                  ) : error ? (
                    <div className="text-center">
                      <p className="text-xs text-red-500 mb-2">{error}</p>

@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import api from "@/lib/api";
 import { useToast } from "@/components/ui/use-toast";
+import LoaderQuater from "../loader";
 
 interface CreateApplicationDialogProps {
   onCreated: () => void;
@@ -106,7 +107,7 @@ export function CreateApplicationDialog({ onCreated }: CreateApplicationDialogPr
           </div>
           <DialogFooter>
             <Button type="submit" className="w-full font-bold h-11" disabled={loading}>
-              {loading ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Plus className="mr-2 size-4" />}
+              {loading ? <LoaderQuater className="mr-2 size-4 animate-spin" /> : <Plus className="mr-2 size-4" />}
               Create Application
             </Button>
           </DialogFooter>

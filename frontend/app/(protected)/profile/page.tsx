@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import api from "@/lib/api";
+import LoaderQuater from "@/components/loader";
 
 export default function ProfilePage() {
   const { user, organizations, organizationId, setAuth, token } = useAuth();
@@ -203,7 +204,7 @@ export default function ProfilePage() {
                       <Button type="submit" disabled={loading}>
                         {loading ? (
                           <>
-                            <Loader2 className="size-4 mr-2 animate-spin" />
+                            <LoaderQuater className="size-4 mr-2" />
                             Saving...
                           </>
                         ) : (
@@ -276,7 +277,7 @@ export default function ProfilePage() {
                       <Button type="submit" disabled={passwordLoading}>
                         {passwordLoading ? (
                           <>
-                            <Loader2 className="size-4 mr-2 animate-spin" />
+                            <LoaderQuater className="size-4 mr-2" />
                             Changing...
                           </>
                         ) : (

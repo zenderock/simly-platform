@@ -10,6 +10,7 @@ import api from "@/lib/api";
 import { Plan } from "@/types/plan";
 import { useToast } from "@/components/ui/use-toast";
 import { IconRocket, IconBolt, IconBuilding, IconMessage, IconDeviceMobile, IconUsers, IconCategory2 } from "@tabler/icons-react";
+import LoaderQuater from "@/components/loader";
 
 export default function PlansPage() {
   const { organizations, organizationId, refreshOrganizations } = useAuth();
@@ -92,7 +93,7 @@ export default function PlansPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+        <LoaderQuater className="size-6  text-muted-foreground" />
       </div>
     );
   }
@@ -112,7 +113,7 @@ export default function PlansPage() {
             disabled={upgrading !== null}
             className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1 mt-2"
           >
-            {upgrading === "portal" && <Loader2 className="size-3 animate-spin" />}
+            {upgrading === "portal" && <LoaderQuater className="size-3 " />}
             Manage subscription →
           </button>
         )}
@@ -218,7 +219,7 @@ export default function PlansPage() {
               >
                 {upgrading === plan.stripe_price_id ? (
                   <>
-                    <Loader2 className="size-4 mr-2 animate-spin" />
+                    <LoaderQuater className="size-4 mr-2" />
                     Processing...
                   </>
                 ) : isCurrent ? (

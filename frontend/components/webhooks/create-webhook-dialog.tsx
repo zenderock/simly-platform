@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import api from "@/lib/api";
 import { useToast } from "@/components/ui/use-toast";
+import LoaderQuater from "../loader";
 
 interface CreateWebhookDialogProps {
   onCreated: () => void;
@@ -235,7 +236,7 @@ export function CreateWebhookDialog({ onCreated }: CreateWebhookDialogProps) {
               className="w-full font-bold h-11" 
               disabled={loading || !hasSelectedEvents || !!urlError}
             >
-              {loading ? <Loader2 className="mr-2 size-4 animate-spin" /> : <WebhookIcon className="mr-2 size-4" />}
+              {loading ? <LoaderQuater className="mr-2 size-4" /> : <WebhookIcon className="mr-2 size-4" />}
               Register Webhook
             </Button>
           </DialogFooter>
