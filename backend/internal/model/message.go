@@ -20,6 +20,7 @@ type Message struct {
 	CampaignID      *int           `json:"campaign_id,omitempty"`    // Campaign this message belongs to
 	DeviceID        *int           `json:"device_id,omitempty"`
 	ToNumber        string         `json:"to"`
+	FromNumber      *string        `json:"from,omitempty"` // For inbound messages
 	Body            string         `json:"body"`
 	Status          string         `json:"status"`    // queued, pending, sent, failed, delivered
 	Direction       string         `json:"direction"` // inbound, outbound

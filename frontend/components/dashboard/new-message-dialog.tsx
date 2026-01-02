@@ -188,16 +188,37 @@ export function NewMessageDialog() {
                        <span className="font-medium text-emerald-600">Automatic</span>
                     </div>
                   </SelectItem>
-                   <SelectItem value="0">
-                    <div className="flex items-center gap-2">
-                       <span className="font-medium">SIM 1</span>
-                    </div>
-                  </SelectItem>
-                   <SelectItem value="1">
-                    <div className="flex items-center gap-2">
-                       <span className="font-medium">SIM 2</span>
-                    </div>
-                  </SelectItem>
+                  {(() => {
+                    const selectedDevice = devices.find(d => d.id.toString() === formData.device_id);
+                    if (selectedDevice && selectedDevice.sim_cards) {
+                      return selectedDevice.sim_cards.map((sim, index) => (
+                        <SelectItem key={sim.slot_index} value={sim.slot_index.toString()}>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">SIM {sim.slot_index + 1}</span>
+                            {sim.phone_number && (
+                              <span className="text-muted-foreground text-xs">({sim.phone_number})</span>
+                            )}
+                            {sim.operator && (
+                              <span className="text-muted-foreground text-xs">- {sim.operator}</span>
+                            )}
+                          </div>
+                        </SelectItem>
+                      ));
+                    } else {
+                      return [
+                        <SelectItem key="0" value="0">
+                          <div className="flex items-center gap-2">
+                             <span className="font-medium">SIM 1</span>
+                          </div>
+                        </SelectItem>,
+                        <SelectItem key="1" value="1">
+                          <div className="flex items-center gap-2">
+                             <span className="font-medium">SIM 2</span>
+                          </div>
+                        </SelectItem>
+                      ];
+                    }
+                  })()}
                 </SelectContent>
               </Select>
             </div>

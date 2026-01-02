@@ -69,6 +69,7 @@ import { IconLogs, IconCreditCard, IconHome2, IconMail, IconDeviceMobile, IconKe
 const menuItems = [
   { title: "Dashboard", icon: IconHome2, href: "/dashboard" },
   { title: "Messages", icon: IconMail, href: "/messages" },
+  { title: "Applications", icon: IconCategory2, href: "/applications" },
   { title: "Devices", icon: IconDeviceMobile, href: "/devices" },
   { title: "Contacts", icon: IconUsers, href: "/contacts" },
   { title: "Campaigns", icon: IconSpeakerphone, href: "/campaigns" },

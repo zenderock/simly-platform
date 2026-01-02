@@ -9,8 +9,8 @@ import (
 
 func (s *Store) CreateMessage(ctx context.Context, msg *model.Message) error {
 	query := `
-		INSERT INTO messages (organization_id, application_id, device_id, to_number, body, status, direction, priority, required_tags, created_at, updated_at, scheduled_at, processed_at, retry_count, max_retries, metadata, sim_slot)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW(), $10, $11, $12, $13, $14, $15)
+		INSERT INTO messages (organization_id, application_id, device_id, to_number, from_number, body, status, direction, priority, required_tags, created_at, updated_at, scheduled_at, processed_at, retry_count, max_retries, metadata, sim_slot)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW(), $11, $12, $13, $14, $15, $16)
 		RETURNING id, created_at, updated_at
 	`
 
@@ -39,6 +39,7 @@ func (s *Store) CreateMessage(ctx context.Context, msg *model.Message) error {
 		msg.ApplicationID,
 		msg.DeviceID,
 		msg.ToNumber,
+		msg.FromNumber,
 		msg.Body,
 		msg.Status,
 		msg.Direction,
@@ -61,7 +62,7 @@ func (s *Store) CreateMessage(ctx context.Context, msg *model.Message) error {
 func (s *Store) GetMessagesByOrganizationID(ctx context.Context, orgID int, appID *int) ([]model.Message, error) {
 	query := `
 		SELECT 
-			m.id, m.organization_id, m.application_id, m.device_id, m.to_number, m.body, m.status, m.direction, m.priority, m.required_tags, m.created_at, m.updated_at, m.scheduled_at, m.processed_at, m.retry_count, m.max_retries, m.last_error, m.metadata, m.sim_slot,
+			m.id, m.organization_id, m.application_id, m.device_id, m.to_number, m.from_number, m.body, m.status, m.direction, m.priority, m.required_tags, m.created_at, m.updated_at, m.scheduled_at, m.processed_at, m.retry_count, m.max_retries, m.last_error, m.metadata, m.sim_slot,
 			a.name as application_name,
 			d.name as device_name
 		FROM messages m
@@ -92,6 +93,7 @@ func (s *Store) GetMessagesByOrganizationID(ctx context.Context, orgID int, appI
 			&m.ApplicationID,
 			&m.DeviceID,
 			&m.ToNumber,
+			&m.FromNumber,
 			&m.Body,
 			&m.Status,
 			&m.Direction,
@@ -124,14 +126,14 @@ func (s *Store) UpdateMessageStatus(ctx context.Context, msgID int, status strin
 
 func (s *Store) GetMessageByID(ctx context.Context, msgID int) (*model.Message, error) {
 	query := `
-		SELECT id, organization_id, application_id, device_id, to_number, body, status, direction, priority, required_tags, created_at, updated_at, scheduled_at, processed_at, retry_count, max_retries, last_error, metadata, sim_slot
+		SELECT id, organization_id, application_id, device_id, to_number, from_number, body, status, direction, priority, required_tags, created_at, updated_at, scheduled_at, processed_at, retry_count, max_retries, last_error, metadata, sim_slot
 		FROM messages 
 		WHERE id = $1
 	`
 	var m model.Message
 	var reqTags []string
 	err := s.db.QueryRow(ctx, query, msgID).Scan(
-		&m.ID, &m.OrganizationID, &m.ApplicationID, &m.DeviceID, &m.ToNumber, &m.Body, &m.Status, &m.Direction, &m.Priority,
+		&m.ID, &m.OrganizationID, &m.ApplicationID, &m.DeviceID, &m.ToNumber, &m.FromNumber, &m.Body, &m.Status, &m.Direction, &m.Priority,
 		&reqTags,
 		&m.CreatedAt, &m.UpdatedAt, &m.ScheduledAt, &m.ProcessedAt, &m.RetryCount, &m.MaxRetries, &m.LastError, &m.Metadata, &m.SimSlot,
 	)
@@ -173,7 +175,7 @@ func (s *Store) RequeueMessagesByDeviceID(ctx context.Context, deviceID int) (in
 
 func (s *Store) GetDueScheduledMessages(ctx context.Context) ([]model.Message, error) {
 	query := `
-		SELECT id, organization_id, application_id, device_id, to_number, body, status, direction, priority, required_tags, created_at, updated_at, scheduled_at, processed_at, retry_count, max_retries, last_error, metadata, sim_slot
+		SELECT id, organization_id, application_id, device_id, to_number, from_number, body, status, direction, priority, required_tags, created_at, updated_at, scheduled_at, processed_at, retry_count, max_retries, last_error, metadata, sim_slot
 		FROM messages
 		WHERE status = 'scheduled' AND scheduled_at <= NOW()
 		ORDER BY scheduled_at ASC
@@ -219,7 +221,7 @@ func (s *Store) GetDueScheduledMessages(ctx context.Context) ([]model.Message, e
 }
 func (s *Store) GetPendingMessagesByDeviceID(ctx context.Context, deviceID int) ([]model.Message, error) {
 	query := `
-		SELECT id, organization_id, application_id, device_id, to_number, body, status, direction, priority, required_tags, created_at, updated_at, scheduled_at, processed_at, retry_count, max_retries, last_error, metadata, sim_slot
+		SELECT id, organization_id, application_id, device_id, to_number, from_number, body, status, direction, priority, required_tags, created_at, updated_at, scheduled_at, processed_at, retry_count, max_retries, last_error, metadata, sim_slot
 		FROM messages
 		WHERE device_id = $1 AND status = 'pending'
 		ORDER BY priority DESC, created_at ASC
@@ -363,5 +365,12 @@ func (s *Store) GetQueuedMessagesByOrganization(ctx context.Context, orgID int, 
 func (s *Store) UpdateMessageDeviceAndStatus(ctx context.Context, msgID int, deviceID int, status string) error {
 	query := `UPDATE messages SET device_id = $1, status = $2, updated_at = NOW() WHERE id = $3`
 	_, err := s.db.Exec(ctx, query, deviceID, status, msgID)
+	return err
+}
+
+// UpdateMessageFromNumber updates the from_number field for a message
+func (s *Store) UpdateMessageFromNumber(ctx context.Context, msgID int, fromNumber string) error {
+	query := `UPDATE messages SET from_number = $1, updated_at = NOW() WHERE id = $2`
+	_, err := s.db.Exec(ctx, query, fromNumber, msgID)
 	return err
 }

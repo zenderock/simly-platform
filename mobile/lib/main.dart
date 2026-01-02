@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'app/routes/app_pages.dart';
 import 'app/data/services/background_handler.dart';
 import 'app/data/services/auth_service.dart';
+import 'app/data/services/settings_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,6 +22,7 @@ void main() async {
   await BackgroundHandler.initializeService();
 
   Get.put(AuthService());
+  Get.put(SettingsService());
 
   runApp(
     GetMaterialApp(

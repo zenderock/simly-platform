@@ -20,6 +20,7 @@ type MessageService struct {
 	appService           *ApplicationService
 	alertService         *AlertService
 	devicePoolManager    *DevicePoolManager
+	appDIDService        *AppDIDService
 	sandboxSuccessNumber string
 	sandboxFailureNumber string
 }
@@ -34,6 +35,7 @@ func NewMessageService(
 	sandboxFailureNumber string,
 	alertService *AlertService,
 	devicePoolManager *DevicePoolManager,
+	appDIDService *AppDIDService,
 ) *MessageService {
 	return &MessageService{
 		store:                store,
@@ -43,16 +45,27 @@ func NewMessageService(
 		appService:           appService,
 		alertService:         alertService,
 		devicePoolManager:    devicePoolManager,
+		appDIDService:        appDIDService,
 		sandboxSuccessNumber: sandboxSuccessNumber,
 		sandboxFailureNumber: sandboxFailureNumber,
 	}
 }
 
-func (s *MessageService) ReceiveSMS(ctx context.Context, orgID int, fromNumber string, body string, deviceID int) error {
+func (s *MessageService) ReceiveSMS(ctx context.Context, orgID int, fromNumber string, toNumber string, body string, deviceID int) error {
+	// Resolve application from DID if available - use destination number (toNumber) for routing
+	var applicationID *int
+	if s.appDIDService != nil {
+		if resolvedAppID, err := s.appDIDService.ResolveApplicationFromDID(ctx, toNumber); err == nil && resolvedAppID != nil {
+			applicationID = resolvedAppID
+		}
+	}
+
 	msg := &model.Message{
 		OrganizationID: orgID,
+		ApplicationID:  applicationID, // Now properly resolved from DID
 		DeviceID:       &deviceID,
-		ToNumber:       "me", // Inbound
+		ToNumber:       toNumber,    // Destination SIM number
+		FromNumber:     &fromNumber, // Sender's number
 		Body:           body,
 		Status:         "received",
 		Direction:      "inbound",
@@ -64,9 +77,8 @@ func (s *MessageService) ReceiveSMS(ctx context.Context, orgID int, fromNumber s
 		return err
 	}
 
-	// Dispatch webhook for the specific organization (Global event for now)
-	// TODO: If we implement DID/Virtual Numbers mapped to Apps, we would resolve AppID here.
-	s.webhook.DispatchEvent(orgID, nil, "sms.received", msg)
+	// Dispatch webhook with resolved AppID
+	s.webhook.DispatchEvent(orgID, applicationID, "sms.received", msg)
 	return nil
 }
 
@@ -258,6 +270,16 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 
 	if targetDevice != nil {
 		msg.DeviceID = &targetDevice.ID
+
+		// Set from_number based on selected SIM slot
+		if req.SimSlot != nil {
+			for _, simCard := range targetDevice.SimCards {
+				if simCard.SlotIndex == *req.SimSlot && simCard.PhoneNumber != "" {
+					msg.FromNumber = &simCard.PhoneNumber
+					break
+				}
+			}
+		}
 	}
 
 	// Determine initial status based on dispatch strategy
@@ -322,6 +344,20 @@ func (s *MessageService) NotifyDeviceWithExclusion(ctx context.Context, msg *mod
 				log.Printf("Message %d assigned to device %d (%s)\n", msg.ID, device.ID, device.Name)
 			}
 			msg.DeviceID = &device.ID
+
+			// Set from_number based on selected SIM slot if not already set
+			if msg.FromNumber == nil && msg.SimSlot != nil {
+				for _, simCard := range device.SimCards {
+					if simCard.SlotIndex == *msg.SimSlot && simCard.PhoneNumber != "" {
+						msg.FromNumber = &simCard.PhoneNumber
+						// Update the message in database with from_number
+						if updateErr := s.store.UpdateMessageFromNumber(ctx, msg.ID, simCard.PhoneNumber); updateErr != nil {
+							log.Printf("Warning: failed to update message %d with from_number %s: %v\n", msg.ID, simCard.PhoneNumber, updateErr)
+						}
+						break
+					}
+				}
+			}
 		}
 	}
 

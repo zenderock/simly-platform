@@ -55,7 +55,8 @@ func (h *MessageHandler) InternalReceiveSMS(w http.ResponseWriter, r *http.Reque
 
 	// 2. Parse Payload from Android App
 	var req struct {
-		From     string `json:"from"`
+		From     string `json:"from"` // Sender's phone number
+		To       string `json:"to"`   // Destination SIM number (for DID routing)
 		Body     string `json:"body"`
 		DeviceID int    `json:"device_id"`
 		// Timestamp?
@@ -71,7 +72,7 @@ func (h *MessageHandler) InternalReceiveSMS(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if err := h.service.ReceiveSMS(r.Context(), orgID, req.From, req.Body, req.DeviceID); err != nil {
+	if err := h.service.ReceiveSMS(r.Context(), orgID, req.From, req.To, req.Body, req.DeviceID); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

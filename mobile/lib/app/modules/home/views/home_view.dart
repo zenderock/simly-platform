@@ -106,6 +106,8 @@ class HomeView extends GetView<HomeController> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildStatusCard(),
+              const SizedBox(height: 24),
+              _buildAlwaysActiveCard(),
               const SizedBox(height: 32),
               _buildSectionHeader('Hardware Status', Icons.sensors_outlined),
               const SizedBox(height: 16),
@@ -237,6 +239,179 @@ class HomeView extends GetView<HomeController> {
                 activeTrackColor: Colors.green.withOpacity(0.2),
               ),
             ),
+          ],
+        ),
+      );
+    });
+  }
+
+  Widget _buildAlwaysActiveCard() {
+    return Obx(() {
+      final bool isAlwaysActive = controller.alwaysActiveMode.value;
+      final bool isKeepScreenOn = controller.keepScreenOn.value;
+
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isAlwaysActive
+                ? const Color(0xFF10B981).withOpacity(0.3)
+                : Colors.black.withOpacity(0.06),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color:
+                        (isAlwaysActive
+                                ? const Color(0xFF10B981)
+                                : const Color(0xFF6B7280))
+                            .withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.power_settings_new_rounded,
+                    color: isAlwaysActive
+                        ? const Color(0xFF10B981)
+                        : const Color(0xFF6B7280),
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Stay Online',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                          letterSpacing: -0.3,
+                          color: Color(0xFF1A1A1A),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        isAlwaysActive
+                            ? 'Checks connection every minute'
+                            : 'Checks connection every 5 minutes',
+                        style: TextStyle(
+                          color: Colors.black.withOpacity(0.4),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Transform.scale(
+                  scale: 0.8,
+                  child: Switch.adaptive(
+                    value: isAlwaysActive,
+                    onChanged: (_) => controller.toggleAlwaysActiveMode(),
+                    activeThumbColor: const Color(0xFF10B981),
+                    activeTrackColor: const Color(0xFF10B981).withOpacity(0.2),
+                  ),
+                ),
+              ],
+            ),
+
+            // Show additional options when Always Active is enabled
+            if (isAlwaysActive) ...[
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF9FAFB),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.brightness_high_rounded,
+                      color: isKeepScreenOn
+                          ? const Color(0xFFF59E0B)
+                          : const Color(0xFF9CA3AF),
+                      size: 18,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Keep Screen On',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                              color: Color(0xFF1A1A1A),
+                            ),
+                          ),
+                          Text(
+                            'Prevents device from sleeping',
+                            style: TextStyle(
+                              color: Colors.black.withOpacity(0.4),
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Transform.scale(
+                      scale: 0.7,
+                      child: Switch.adaptive(
+                        value: isKeepScreenOn,
+                        onChanged: (_) => controller.toggleKeepScreenOn(),
+                        activeThumbColor: const Color(0xFFF59E0B),
+                        activeTrackColor: const Color(
+                          0xFFF59E0B,
+                        ).withOpacity(0.2),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF3C7),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.info_outline_rounded,
+                      color: Color(0xFFD97706),
+                      size: 16,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'This mode uses more battery but keeps your device online for faster message delivery.',
+                        style: TextStyle(
+                          color: const Color(0xFF92400E),
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       );

@@ -95,7 +95,10 @@ func (s *Server) setupRoutes() {
 	// Initialize DevicePoolManager early so it can be used by MessageService
 	devicePoolManager := core.NewDevicePoolManager(s.DB)
 
-	messageService := core.NewMessageService(s.DB, webhookService, notificationProvider, rateLimitService, appService, s.Config.SandboxSuccessNumber, s.Config.SandboxFailureNumber, alertService, devicePoolManager)
+	// Initialize AppDIDService for DID/Virtual Number resolution
+	appDIDService := core.NewAppDIDService(s.DB)
+
+	messageService := core.NewMessageService(s.DB, webhookService, notificationProvider, rateLimitService, appService, s.Config.SandboxSuccessNumber, s.Config.SandboxFailureNumber, alertService, devicePoolManager, appDIDService)
 
 	// Start Workers
 	scheduler := core.NewSchedulerService(s.DB, messageService)
@@ -128,6 +131,7 @@ func (s *Server) setupRoutes() {
 	webhookHandler := api.NewWebhookHandler(webhookService, orgService, auditService)
 	orgHandler := api.NewOrganizationHandler(orgService, auditService, s.Config.StripePricePro, s.Config.StripePriceAgency)
 	alertHandler := api.NewAlertHandler(alertService, orgService)
+	appDIDHandler := api.NewAppDIDHandler(appDIDService, orgService)
 
 	// Public API Handlers
 	requestLogService := core.NewRequestLogService(s.DB)
@@ -194,6 +198,20 @@ func (s *Server) setupRoutes() {
 			r.Post("/", appHandler.CreateApplication)
 			r.Put("/{appID}", appHandler.UpdateApplication)
 			r.Delete("/{appID}", appHandler.DeleteApplication)
+
+			// DID (Virtual Numbers) management for applications
+			r.Route("/{applicationId}/dids", func(r chi.Router) {
+				r.Get("/", appDIDHandler.ListAppDIDsByApplication)
+			})
+		})
+
+		// DID (Virtual Numbers) Management
+		r.Route("/api/dids", func(r chi.Router) {
+			r.Get("/", appDIDHandler.ListAppDIDsByOrganization)
+			r.Post("/", appDIDHandler.CreateAppDID)
+			r.Get("/{id}", appDIDHandler.GetAppDID)
+			r.Put("/{id}", appDIDHandler.UpdateAppDID)
+			r.Delete("/{id}", appDIDHandler.DeleteAppDID)
 		})
 
 		// API Keys

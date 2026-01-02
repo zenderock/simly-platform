@@ -4,6 +4,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:get/get.dart';
 import 'package:mobile/app/data/providers/api_provider.dart';
 import 'package:mobile/app/data/services/auth_service.dart';
+import 'package:mobile/app/data/services/settings_service.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_signal_strength/flutter_signal_strength.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -15,6 +16,7 @@ class HomeController extends GetxController {
 
   final _apiProvider = ApiClient();
   final _authService = Get.find<AuthService>();
+  final _settingsService = Get.find<SettingsService>();
 
   final batteryLevel = 0.obs;
   final connectivityStatus = ConnectivityResult.none.obs;
@@ -24,6 +26,10 @@ class HomeController extends GetxController {
   final notificationMode = "Polling".obs;
   final lastPushReceivedAt = Rxn<DateTime>();
   final simCards = <Map<String, dynamic>>[].obs;
+
+  // Settings observables for UI
+  RxBool get alwaysActiveMode => _settingsService.alwaysActiveMode;
+  RxBool get keepScreenOn => _settingsService.keepScreenOn;
 
   RxBool get isAuthenticated => _authService.isAuthenticated;
 
@@ -245,10 +251,37 @@ class HomeController extends GetxController {
   }
 
   void _startHeartbeats() {
-    _heartbeatTimer = Timer.periodic(const Duration(minutes: 5), (timer) {
+    // Cancel existing timer if any
+    _heartbeatTimer?.cancel();
+
+    // Use dynamic interval from settings
+    final interval = _settingsService.heartbeatInterval;
+    debugPrint(
+      "Starting heartbeat timer with interval: ${interval.inSeconds}s (Always Active: ${_settingsService.alwaysActiveMode.value})",
+    );
+
+    _heartbeatTimer = Timer.periodic(interval, (timer) {
       _sendHeartbeat();
     });
     _sendHeartbeat(); // First one immediate
+
+    // Listen for settings changes to restart timer with new interval
+    ever(_settingsService.heartbeatIntervalSeconds, (_) {
+      debugPrint("Heartbeat interval changed, restarting timer...");
+      _startHeartbeats();
+    });
+  }
+
+  /// Toggle Always Active mode
+  void toggleAlwaysActiveMode() {
+    _settingsService.setAlwaysActiveMode(
+      !_settingsService.alwaysActiveMode.value,
+    );
+  }
+
+  /// Toggle Keep Screen On option
+  void toggleKeepScreenOn() {
+    _settingsService.setKeepScreenOn(!_settingsService.keepScreenOn.value);
   }
 
   Future<void> _sendHeartbeat() async {
