@@ -58,13 +58,42 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
 import { useAuth } from "@/lib/auth";
+import { useToast } from "@/components/ui/use-toast";
 import { useApplicationStore } from "@/store/application-store";
-import { useUpdateApplication, useDeleteApplication } from "@/hooks/use-applications";
+import {
+  useUpdateApplication,
+  useDeleteApplication,
+} from "@/hooks/use-applications";
 import Image from "next/image";
-import { CreateAppDialog } from "./create-app-dialog";
+import { CreateApplicationDialog } from "@/components/applications/create-application-dialog";
 import { Application } from "@/types";
 
-import { IconLogs, IconCreditCard, IconHome2, IconMail, IconDeviceMobile, IconKey, IconUsers, IconSpeakerphone, IconShieldHalfFilled, IconCategory2, IconChevronDown, IconChevronRight, IconFolder, IconPlus, IconConfetti, IconEye, IconLogout, IconUserCircle, IconPencil, IconTrash, IconCode, IconBook, IconPlayerPlay, IconList } from '@tabler/icons-react';
+import {
+  IconLogs,
+  IconCreditCard,
+  IconHome2,
+  IconMail,
+  IconDeviceMobile,
+  IconKey,
+  IconUsers,
+  IconSpeakerphone,
+  IconShieldHalfFilled,
+  IconCategory2,
+  IconChevronDown,
+  IconChevronRight,
+  IconFolder,
+  IconPlus,
+  IconConfetti,
+  IconEye,
+  IconLogout,
+  IconUserCircle,
+  IconPencil,
+  IconTrash,
+  IconCode,
+  IconBook,
+  IconPlayerPlay,
+  IconList,
+} from "@tabler/icons-react";
 
 const menuItems = [
   { title: "Dashboard", icon: IconHome2, href: "/dashboard" },
@@ -85,24 +114,38 @@ const developerMenuItems = [
   { title: "Logs", icon: IconList, href: "/developers/logs" },
 ];
 
-export function DashboardSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function DashboardSidebar({
+  ...props
+}: React.ComponentProps<typeof Sidebar>) {
   const [appsOpen, setAppsOpen] = React.useState(true);
   const [developersOpen, setDevelopersOpen] = React.useState(true);
   const pathname = usePathname();
   const { user, logout, organizations, organizationId } = useAuth();
-  const { applications, activeAppId, setActiveAppId, getActiveApp, updateApplication, removeApplication } = useApplicationStore();
+  const {
+    applications,
+    activeAppId,
+    setActiveAppId,
+    getActiveApp,
+    updateApplication,
+    removeApplication,
+  } = useApplicationStore();
   const activeApp = getActiveApp();
   const currentOrg = organizations.find((org) => org.id === organizationId);
-  
+  const { toast } = useToast();
+
   // Rename dialog state
   const [renameDialogOpen, setRenameDialogOpen] = React.useState(false);
-  const [appToRename, setAppToRename] = React.useState<Application | null>(null);
+  const [appToRename, setAppToRename] = React.useState<Application | null>(
+    null
+  );
   const [newAppName, setNewAppName] = React.useState("");
-  
+
   // Delete dialog state
   const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
-  const [appToDelete, setAppToDelete] = React.useState<Application | null>(null);
-  
+  const [appToDelete, setAppToDelete] = React.useState<Application | null>(
+    null
+  );
+
   const updateAppMutation = useUpdateApplication();
   const deleteAppMutation = useDeleteApplication();
 
@@ -117,14 +160,14 @@ export function DashboardSidebar({ ...props }: React.ComponentProps<typeof Sideb
       setRenameDialogOpen(false);
       return;
     }
-    
+
     const trimmedName = newAppName.trim();
     const previousName = appToRename.name;
-    
+
     // Optimistic update on Zustand store
     updateApplication(appToRename.id, trimmedName);
     setRenameDialogOpen(false);
-    
+
     updateAppMutation.mutate(
       { id: appToRename.id, name: trimmedName },
       {
@@ -143,14 +186,24 @@ export function DashboardSidebar({ ...props }: React.ComponentProps<typeof Sideb
 
   const handleDeleteConfirm = () => {
     if (!appToDelete) return;
-    
+
+    if (applications.length <= 1) {
+      toast({
+        title: "Cannot delete application",
+        description: "You must have at least one application.",
+        variant: "destructive",
+      });
+      setDeleteDialogOpen(false);
+      return;
+    }
+
     const appId = appToDelete.id;
     const previousApps = [...applications];
-    
+
     // Optimistic update on Zustand store
     removeApplication(appId);
     setDeleteDialogOpen(false);
-    
+
     deleteAppMutation.mutate(appId, {
       onError: () => {
         // Rollback - refetch applications
@@ -164,36 +217,72 @@ export function DashboardSidebar({ ...props }: React.ComponentProps<typeof Sideb
       <Sidebar collapsible="offcanvas" className="lg:border-r-0!" {...props}>
         <SidebarHeader className="p-3 sm:p-4 lg:p-5 pb-0">
           <div className="flex items-center gap-2">
-            <Image src="/logo-dark.png" alt="Simly" width={100} height={100} className="dark:hidden" />
-            <Image src="/logo-light.png" alt="Simly" width={100} height={100} className="hidden dark:block" />
+            <Image
+              src="/logo-dark.png"
+              alt="Simly"
+              width={100}
+              height={100}
+              className="dark:hidden"
+            />
+            <Image
+              src="/logo-light.png"
+              alt="Simly"
+              width={100}
+              height={100}
+              className="hidden dark:block"
+            />
           </div>
         </SidebarHeader>
 
         <SidebarContent className="px-3 sm:px-4 lg:px-5">
           {/* Active Application Context */}
           <div className="flex items-center gap-2 sm:gap-3 rounded-lg border bg-card p-2 sm:p-3 mb-3 sm:mb-4 mt-4">
-            <div className={`flex size-8 sm:size-[34px] items-center justify-center rounded-lg shrink-0 ${activeApp ? (activeApp.is_sandbox ? "bg-orange-500 text-white" : "bg-primary text-primary-foreground") : "bg-muted text-muted-foreground"}`}>
-              {activeApp ? (activeApp.is_sandbox ? <IconShieldHalfFilled className="size-4 sm:size-5" /> : <IconCategory2 className="size-4 sm:size-5" />) : <IconFolder className="size-4 sm:size-5" />}
+            <div
+              className={`flex size-8 sm:size-[34px] items-center justify-center rounded-lg shrink-0 ${
+                activeApp
+                  ? activeApp.is_sandbox
+                    ? "bg-orange-500 text-white"
+                    : "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {activeApp ? (
+                activeApp.is_sandbox ? (
+                  <IconShieldHalfFilled className="size-4 sm:size-5" />
+                ) : (
+                  <IconCategory2 className="size-4 sm:size-5" />
+                )
+              ) : (
+                <IconFolder className="size-4 sm:size-5" />
+              )}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-xs sm:text-sm truncate">{activeApp?.name || "No App Selected"}</p>
+              <p className="font-semibold text-xs sm:text-sm truncate">
+                {activeApp?.name || "No App Selected"}
+              </p>
               {activeApp && (
                 <div className="flex items-center gap-1 text-muted-foreground">
                   {activeApp.is_sandbox ? (
                     <>
                       <IconShieldHalfFilled className="size-3 text-orange-500" />
-                      <span className="text-[10px] sm:text-xs font-bold text-orange-500">Sandbox</span>
+                      <span className="text-[10px] sm:text-xs font-bold text-orange-500">
+                        Sandbox
+                      </span>
                     </>
                   ) : (
                     <>
                       <IconCategory2 className="size-3 text-emerald-500" />
-                      <span className="text-[10px] sm:text-xs font-bold text-emerald-500">Production</span>
+                      <span className="text-[10px] sm:text-xs font-bold text-emerald-500">
+                        Production
+                      </span>
                     </>
                   )}
                 </div>
               )}
               {!activeApp && (
-                <p className="text-[10px] sm:text-xs text-muted-foreground">Select an application to get started</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">
+                  Select an application to get started
+                </p>
               )}
             </div>
           </div>
@@ -203,11 +292,19 @@ export function DashboardSidebar({ ...props }: React.ComponentProps<typeof Sideb
               <SidebarMenu>
                 {menuItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild isActive={pathname === item.href} className="h-9 sm:h-[38px]">
+                    <SidebarMenuButton
+                      asChild
+                      isActive={pathname === item.href}
+                      className="h-9 sm:h-[38px]"
+                    >
                       <Link href={item.href}>
                         <item.icon className="size-6 sm:size-6" />
-                        <span className="text-sm font-medium">{item.title}</span>
-                        {pathname === item.href && <IconChevronRight className="ml-auto size-4 text-muted-foreground opacity-60" />}
+                        <span className="text-sm font-medium">
+                          {item.title}
+                        </span>
+                        {pathname === item.href && (
+                          <IconChevronRight className="ml-auto size-4 text-muted-foreground opacity-60" />
+                        )}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -216,12 +313,20 @@ export function DashboardSidebar({ ...props }: React.ComponentProps<typeof Sideb
             </SidebarGroupContent>
           </SidebarGroup>
 
-          <Collapsible open={developersOpen} onOpenChange={setDevelopersOpen} className="mt-4">
+          <Collapsible
+            open={developersOpen}
+            onOpenChange={setDevelopersOpen}
+            className="mt-4"
+          >
             <SidebarGroup className="p-0">
               <SidebarGroupLabel className="flex items-center justify-between px-0 text-[10px] sm:text-[11px] font-semibold tracking-wider text-muted-foreground">
                 <CollapsibleTrigger asChild>
                   <div className="flex items-center gap-1.5 cursor-pointer">
-                    <IconChevronDown className={`size-3 sm:size-3.5 transition-transform ${developersOpen ? "" : "-rotate-90"}`} />
+                    <IconChevronDown
+                      className={`size-3 sm:size-3.5 transition-transform ${
+                        developersOpen ? "" : "-rotate-90"
+                      }`}
+                    />
                     DEVELOPERS
                   </div>
                 </CollapsibleTrigger>
@@ -231,11 +336,31 @@ export function DashboardSidebar({ ...props }: React.ComponentProps<typeof Sideb
                   <SidebarMenu className="mt-2">
                     {developerMenuItems.map((item) => (
                       <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton asChild isActive={pathname === item.href} className="h-9 sm:h-[38px]">
+                        <SidebarMenuButton
+                          asChild
+                          isActive={pathname === item.href}
+                          className="h-9 sm:h-[38px]"
+                        >
                           <Link href={item.href}>
-                            <item.icon className={`size-4 sm:size-5 ${pathname === item.href ? "text-primary" : "text-muted-foreground"}`} />
-                            <span className={`text-sm ${pathname === item.href ? "font-bold" : "text-muted-foreground"}`}>{item.title}</span>
-                            {pathname === item.href && <IconChevronRight className="ml-auto size-4 text-muted-foreground opacity-60" />}
+                            <item.icon
+                              className={`size-4 sm:size-5 ${
+                                pathname === item.href
+                                  ? "text-primary"
+                                  : "text-muted-foreground"
+                              }`}
+                            />
+                            <span
+                              className={`text-sm ${
+                                pathname === item.href
+                                  ? "font-bold"
+                                  : "text-muted-foreground"
+                              }`}
+                            >
+                              {item.title}
+                            </span>
+                            {pathname === item.href && (
+                              <IconChevronRight className="ml-auto size-4 text-muted-foreground opacity-60" />
+                            )}
                           </Link>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
@@ -246,18 +371,30 @@ export function DashboardSidebar({ ...props }: React.ComponentProps<typeof Sideb
             </SidebarGroup>
           </Collapsible>
 
-          <Collapsible open={appsOpen} onOpenChange={setAppsOpen} className="mt-4">
+          <Collapsible
+            open={appsOpen}
+            onOpenChange={setAppsOpen}
+            className="mt-4"
+          >
             <SidebarGroup className="p-0">
               <SidebarGroupLabel className="flex items-center justify-between px-0 text-[10px] sm:text-[11px] font-semibold tracking-wider text-muted-foreground">
                 <CollapsibleTrigger asChild>
                   <div className="flex items-center gap-1.5 cursor-pointer">
-                    <IconChevronDown className={`size-3 sm:size-3.5 transition-transform ${appsOpen ? "" : "-rotate-90"}`} />
+                    <IconChevronDown
+                      className={`size-3 sm:size-3.5 transition-transform ${
+                        appsOpen ? "" : "-rotate-90"
+                      }`}
+                    />
                     APPLICATIONS
                   </div>
                 </CollapsibleTrigger>
-                <CreateAppDialog>
+                <CreateApplicationDialog
+                  onCreated={() =>
+                    useApplicationStore.getState().fetchApplications()
+                  }
+                >
                   <IconPlus className="size-4 cursor-pointer hover:text-foreground transition-colors" />
-                </CreateAppDialog>
+                </CreateApplicationDialog>
               </SidebarGroupLabel>
               <CollapsibleContent>
                 <SidebarGroupContent>
@@ -266,25 +403,46 @@ export function DashboardSidebar({ ...props }: React.ComponentProps<typeof Sideb
                       <SidebarMenuItem key={app.id}>
                         <ContextMenu>
                           <ContextMenuTrigger asChild>
-                            <SidebarMenuButton 
-                              isActive={activeAppId === app.id} 
+                            <SidebarMenuButton
+                              isActive={activeAppId === app.id}
                               className="h-9 sm:h-[38px] w-full"
                               onClick={() => setActiveAppId(app.id)}
                             >
-                              <IconCategory2 className={`size-4 sm:size-5 ${activeAppId === app.id ? "text-primary" : "text-muted-foreground"}`} />
-                              <span className={`flex-1 text-sm truncate ${activeAppId === app.id ? "font-bold" : "text-muted-foreground"}`}>
+                              <IconCategory2
+                                className={`size-4 sm:size-5 ${
+                                  activeAppId === app.id
+                                    ? "text-primary"
+                                    : "text-muted-foreground"
+                                }`}
+                              />
+                              <span
+                                className={`flex-1 text-sm truncate ${
+                                  activeAppId === app.id
+                                    ? "font-bold"
+                                    : "text-muted-foreground"
+                                }`}
+                              >
                                 {app.name}
                               </span>
-                              {app.is_sandbox && <div className="size-1.5 rounded-full bg-orange-500 shrink-0" />}
-                              {!app.is_sandbox && activeAppId === app.id && <div className="size-1.5 rounded-full bg-primary shrink-0" />}
+                              {app.is_sandbox && (
+                                <div className="size-1.5 rounded-full bg-orange-500 shrink-0" />
+                              )}
+                              {!app.is_sandbox && activeAppId === app.id && (
+                                <div className="size-1.5 rounded-full bg-primary shrink-0" />
+                              )}
                             </SidebarMenuButton>
                           </ContextMenuTrigger>
                           <ContextMenuContent>
-                            <ContextMenuItem onClick={() => handleRenameClick(app)}>
+                            <ContextMenuItem
+                              onClick={() => handleRenameClick(app)}
+                            >
                               <IconPencil className="size-4 mr-2" />
                               Rename
                             </ContextMenuItem>
-                            <ContextMenuItem className="text-destructive" onClick={() => handleDeleteClick(app)}>
+                            <ContextMenuItem
+                              className="text-destructive"
+                              onClick={() => handleDeleteClick(app)}
+                            >
                               <IconTrash className="size-4 mr-2" />
                               Delete
                             </ContextMenuItem>
@@ -293,12 +451,16 @@ export function DashboardSidebar({ ...props }: React.ComponentProps<typeof Sideb
                       </SidebarMenuItem>
                     ))}
                     <SidebarMenuItem>
-                      <CreateAppDialog>
+                      <CreateApplicationDialog
+                        onCreated={() =>
+                          useApplicationStore.getState().fetchApplications()
+                        }
+                      >
                         <SidebarMenuButton className="h-9 sm:h-[38px] border-zinc-200/50 text-muted-foreground hover:text-primary">
                           <IconPlus className="size-4" />
                           <span className="text-xs">Create New App</span>
                         </SidebarMenuButton>
-                      </CreateAppDialog>
+                      </CreateApplicationDialog>
                     </SidebarMenuItem>
                   </SidebarMenu>
                 </SidebarGroupContent>
@@ -312,9 +474,13 @@ export function DashboardSidebar({ ...props }: React.ComponentProps<typeof Sideb
             <div className="mb-4 p-3 rounded-lg bg-linear-to-r from-purple-50 to-gray-50 border border-purple-200 dark:from-purple-950/50 dark:to-gray-950/50 dark:border-purple-800">
               <div className="flex items-center gap-2 mb-2">
                 <IconConfetti className="size-4 text-purple-600 dark:text-purple-400" />
-                <span className="text-sm font-semibold text-purple-900 dark:text-purple-100">Upgrade Plan</span>
+                <span className="text-sm font-semibold text-purple-900 dark:text-purple-100">
+                  Upgrade Plan
+                </span>
               </div>
-              <p className="text-xs text-purple-700 dark:text-purple-300 mb-3">Get more SMS, devices, and premium features</p>
+              <p className="text-xs text-purple-700 dark:text-purple-300 mb-3">
+                Get more SMS, devices, and premium features
+              </p>
               <Link href="/organization/plans">
                 <button className="w-full bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium py-2 px-3 rounded-md transition-colors flex items-center justify-center gap-1">
                   <IconEye className="size-3" />
@@ -328,12 +494,22 @@ export function DashboardSidebar({ ...props }: React.ComponentProps<typeof Sideb
             <DropdownMenuTrigger asChild>
               <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg cursor-pointer hover:bg-accent transition-colors border bg-card/50">
                 <Avatar className="size-7 sm:size-8">
-                  <AvatarImage src={`https://api.dicebear.com/9.x/initials/svg?seed=${user?.name || "U"}`} />
-                  <AvatarFallback className="text-xs uppercase">{user?.name?.charAt(0)}</AvatarFallback>
+                  <AvatarImage
+                    src={`https://api.dicebear.com/9.x/initials/svg?seed=${
+                      user?.name || "U"
+                    }`}
+                  />
+                  <AvatarFallback className="text-xs uppercase">
+                    {user?.name?.charAt(0)}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-xs sm:text-sm truncate">{user?.name || "User"}</p>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{user?.email}</p>
+                  <p className="font-semibold text-xs sm:text-sm truncate">
+                    {user?.name || "User"}
+                  </p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
+                    {user?.email}
+                  </p>
                 </div>
                 <IconChevronDown className="size-4 text-muted-foreground shrink-0" />
               </div>
@@ -350,7 +526,10 @@ export function DashboardSidebar({ ...props }: React.ComponentProps<typeof Sideb
                 <ThemeToggle />
               </div>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive font-medium" onClick={() => logout()}>
+              <DropdownMenuItem
+                className="text-destructive font-medium"
+                onClick={() => logout()}
+              >
                 <IconLogout className="size-4 mr-2" />
                 Sign out
               </DropdownMenuItem>
@@ -364,7 +543,9 @@ export function DashboardSidebar({ ...props }: React.ComponentProps<typeof Sideb
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Rename Application</DialogTitle>
-            <DialogDescription>Enter a new name for "{appToRename?.name}"</DialogDescription>
+            <DialogDescription>
+              Enter a new name for "{appToRename?.name}"
+            </DialogDescription>
           </DialogHeader>
           <div className="py-4">
             <Label htmlFor="app-name">Application Name</Label>
@@ -378,8 +559,16 @@ export function DashboardSidebar({ ...props }: React.ComponentProps<typeof Sideb
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRenameDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleRenameSubmit} disabled={updateAppMutation.isPending}>
+            <Button
+              variant="outline"
+              onClick={() => setRenameDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleRenameSubmit}
+              disabled={updateAppMutation.isPending}
+            >
               {updateAppMutation.isPending ? "Saving..." : "Save"}
             </Button>
           </DialogFooter>
@@ -392,12 +581,16 @@ export function DashboardSidebar({ ...props }: React.ComponentProps<typeof Sideb
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Application</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{appToDelete?.name}"? This action cannot be undone and will delete all associated data.
+              Are you sure you want to delete "{appToDelete?.name}"? This action
+              cannot be undone and will delete all associated data.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               {deleteAppMutation.isPending ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>

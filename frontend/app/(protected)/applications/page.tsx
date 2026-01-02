@@ -66,6 +66,15 @@ export default function ApplicationsPage() {
   );
 
   const handleDelete = async (id: number) => {
+    if (applications.length <= 1) {
+      toast({
+        title: "Cannot delete application",
+        description: "You must have at least one application.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (
       !confirm(
         "Are you sure you want to delete this application? This action cannot be undone."
@@ -93,7 +102,7 @@ export default function ApplicationsPage() {
     try {
       await api.put(`/applications/${editingApp.id}`, {
         name: renamingName,
-        is_sandbox: editingApp.is_sandbox, // Keep existing sandbox status
+        is_sandbox: editingApp.is_sandbox,
       });
       updateApplication(editingApp.id, renamingName);
       toast({ title: "Application updated", variant: "success" });
@@ -114,12 +123,6 @@ export default function ApplicationsPage() {
     <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 space-y-8 bg-background">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2">
         <div className="space-y-1">
-          <div className="flex items-center gap-2 text-[#6e3ff3]">
-            <Folder className="size-5" />
-            <span className="text-sm font-bold uppercase tracking-widest">
-              Projects
-            </span>
-          </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
             Applications
           </h1>
