@@ -187,3 +187,22 @@ func (h *DeviceHandler) LinkDevice(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(device)
 }
+
+// GetPendingMessages returns pending messages for a device without updating heartbeat stats
+func (h *DeviceHandler) GetPendingMessages(w http.ResponseWriter, r *http.Request) {
+	deviceIDStr := chi.URLParam(r, "deviceID")
+	deviceID, err := strconv.Atoi(deviceIDStr)
+	if err != nil {
+		http.Error(w, "Invalid device ID", http.StatusBadRequest)
+		return
+	}
+
+	messages, err := h.service.GetPendingMessages(r.Context(), deviceID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(messages)
+}

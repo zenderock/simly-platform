@@ -173,6 +173,7 @@ func (s *Server) setupRoutes() {
 			r.Get("/link-token/{token}", deviceHandler.GetLinkTokenStatus)
 			r.Delete("/{deviceID}", deviceHandler.DeleteDevice)
 			r.Post("/{deviceID}/heartbeat", deviceHandler.Heartbeat)
+			r.Get("/{deviceID}/pending-messages", deviceHandler.GetPendingMessages)
 		})
 
 		// Messaging

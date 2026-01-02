@@ -171,8 +171,17 @@ class HomeController extends GetxController {
       connectivityStatus.value = result;
     });
 
-    // Request permissions for signal strength and SIM detection
-    await [Permission.location, Permission.phone].request();
+    // Request permissions for signal strength, SIM detection, and SMS
+    await [Permission.location, Permission.phone, Permission.sms].request();
+
+    // Check if SMS permission was granted
+    final smsStatus = await Permission.sms.status;
+    debugPrint("SMS permission status: $smsStatus");
+    if (!smsStatus.isGranted) {
+      debugPrint(
+        "WARNING: SMS permission not granted - SMS sending will fail!",
+      );
+    }
 
     // Get initial signal strength
     try {
@@ -231,7 +240,10 @@ class HomeController extends GetxController {
     if (!_authService.isAuthenticated.value) return;
 
     try {
-      debugPrint("Sending heartbeat with ${simCards.length} SIM cards");
+      debugPrint("=== HEARTBEAT DEBUG ===");
+      debugPrint("Battery level: ${batteryLevel.value}");
+      debugPrint("Signal strength: ${signalStrength.value}");
+      debugPrint("SIM cards count: ${simCards.length}");
 
       // Convert SIM cards to proper format
       final simCardsData = simCards
@@ -247,12 +259,18 @@ class HomeController extends GetxController {
 
       debugPrint("SIM cards data: $simCardsData");
 
-      await _apiProvider.post('devices/${_authService.deviceId}/heartbeat', {
+      final payload = {
         'battery_level': batteryLevel.value,
         'signal_strength': signalStrength.value,
         'status': 'online',
         'sim_cards': simCardsData,
-      });
+      };
+      debugPrint("Heartbeat payload: $payload");
+
+      await _apiProvider.post(
+        'devices/${_authService.deviceId}/heartbeat',
+        payload,
+      );
       debugPrint("Heartbeat sent successfully");
     } catch (e) {
       debugPrint("Heartbeat failed: $e");

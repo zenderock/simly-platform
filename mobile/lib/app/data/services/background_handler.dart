@@ -5,8 +5,6 @@ import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:battery_plus/battery_plus.dart';
-import 'package:flutter_signal_strength/flutter_signal_strength.dart';
 import 'package:dio/dio.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:mobile/app/data/config.dart';
@@ -124,10 +122,9 @@ class BackgroundHandler {
     if (deviceToken == null || deviceId == null) return;
 
     try {
-      // Send minimal heartbeat just to get pending messages
-      final response = await dio.post(
-        'devices/$deviceId/heartbeat',
-        data: {'status': 'online'},
+      // Just poll for pending messages - don't send heartbeat (HomeController handles that)
+      final response = await dio.get(
+        'devices/$deviceId/pending-messages',
         options: Options(headers: {'Authorization': 'Bearer $deviceToken'}),
       );
 

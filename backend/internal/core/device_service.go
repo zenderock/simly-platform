@@ -121,6 +121,11 @@ func (s *DeviceService) Heartbeat(ctx context.Context, deviceID int, battery, si
 	return s.store.GetPendingMessagesByDeviceID(ctx, deviceID)
 }
 
+// GetPendingMessages returns pending messages for a device without updating health stats
+func (s *DeviceService) GetPendingMessages(ctx context.Context, deviceID int) ([]model.Message, error) {
+	return s.store.GetPendingMessagesByDeviceID(ctx, deviceID)
+}
+
 func (s *DeviceService) DeleteDevice(ctx context.Context, deviceID, orgID int) error {
 	return s.store.DeleteDevice(ctx, deviceID, orgID)
 }
