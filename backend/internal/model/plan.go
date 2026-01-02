@@ -26,7 +26,7 @@ type PlanLimits struct {
 }
 
 const (
-	PlanFree   = "starter"      // Renamed from "free" to "starter"
+	PlanFree   = "free"         // Reverted from "starter" to "free"
 	PlanPro    = "professional" // Renamed from "pro" to "professional"
 	PlanAgency = "enterprise"   // Renamed from "agency" to "enterprise"
 )
@@ -35,7 +35,7 @@ const (
 var AvailablePlans = []Plan{
 	{
 		ID:          PlanFree,
-		Name:        "Starter",
+		Name:        "Free",
 		Price:       0,
 		Period:      "month",
 		Description: "For hobbyists and testing",
