@@ -59,8 +59,11 @@ func (s *BillingService) CreateCheckoutSession(ctx context.Context, orgID int, p
 
 	if org.StripeCustomerID != nil && *org.StripeCustomerID != "" {
 		params.Customer = stripe.String(*org.StripeCustomerID)
-	} else {
+	} else if userEmail != "" {
 		params.CustomerEmail = stripe.String(userEmail)
+	} else {
+		// If no email is available, let Stripe collect it during checkout
+		params.CustomerCreation = stripe.String("always")
 	}
 
 	sess, err := checkoutsession.New(params)

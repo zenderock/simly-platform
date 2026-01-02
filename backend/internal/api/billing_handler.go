@@ -99,16 +99,30 @@ func (h *BillingHandler) HandleStripeWebhook(w http.ResponseWriter, r *http.Requ
 
 // Helpers placeholders - Assuming functionality exists in Middleware or Context
 func getUserEmailFromContext(r *http.Request) string {
-	// TODO: implement extraction from claims
-	// For now return empty string, Stripe will ask if needed or rely on Customer ID if exists
-	// Ideally we get this from the JWT claims stored in context
+	// Try to get email from JWT claims stored in context
 	claims, ok := r.Context().Value("claims").(map[string]interface{})
 	if !ok {
 		return ""
 	}
-	if email, ok := claims["email"].(string); ok {
+
+	// Try different possible email claim names
+	if email, ok := claims["email"].(string); ok && email != "" {
 		return email
 	}
+
+	// Try alternative claim names
+	if email, ok := claims["user_email"].(string); ok && email != "" {
+		return email
+	}
+
+	if email, ok := claims["sub"].(string); ok && email != "" {
+		// Check if sub contains an email format
+		if len(email) > 0 && (email[0] != 'u' || len(email) < 10) {
+			// Likely an email, not a user ID
+			return email
+		}
+	}
+
 	return ""
 }
 

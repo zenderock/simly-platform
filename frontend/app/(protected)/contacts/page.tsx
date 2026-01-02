@@ -5,16 +5,16 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   listContacts, 
   deleteContact, 
+  updateContact,
   Contact, 
   listLists,
   createList,
   deleteList,
-  getListDetails,
-  ContactList
+  getListDetails
 } from "@/lib/api/contacts";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Trash2, Users, MoreHorizontal, FileDown, CheckSquare, Square } from "lucide-react";
+import { Plus, Search, Trash2, Users, MoreHorizontal, Square, Edit } from "lucide-react";
 import { useState } from "react";
 import {
   Table,
@@ -39,11 +39,20 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import { Separator } from "@/components/ui/separator";
 import { CreateContactDialog } from "./create-contact-dialog";
 import { ImportContactsDialog } from "./import-contacts-dialog";
 import  LoaderQuater  from "@/components/loader";
@@ -55,6 +64,15 @@ export default function ContactsPage() {
   const [createListOpen, setCreateListOpen] = useState(false);
   const [newListName, setNewListName] = useState("");
   const [newListDescription, setNewListDescription] = useState("");
+  const [editingContact, setEditingContact] = useState<Contact | null>(null);
+  const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
+  
+  // Edit form states
+  const [editFirstName, setEditFirstName] = useState("");
+  const [editLastName, setEditLastName] = useState("");
+  const [editPhoneNumber, setEditPhoneNumber] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editTags, setEditTags] = useState("");
 
   // Queries
   const { data: allContacts, isLoading: allContactsLoading } = useQuery({
@@ -108,12 +126,59 @@ export default function ContactsPage() {
     onError: () => toast.error("Failed to create list"),
   });
 
+  const updateContactMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) => updateContact(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["contacts"] });
+      queryClient.invalidateQueries({ queryKey: ["list-details"] });
+      setEditingContact(null);
+      toast.success("Contact updated successfully");
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data || error.message || "Failed to update contact";
+      toast.error(errorMessage);
+    },
+  });
+
   const handleCreateList = () => {
     if (!newListName.trim()) {
       toast.error("List name is required");
       return;
     }
     createListMutation.mutate({ name: newListName, description: newListDescription });
+  };
+
+  const handleEditContact = (contact: Contact) => {
+    setEditingContact(contact);
+    setEditFirstName(contact.first_name);
+    setEditLastName(contact.last_name);
+    setEditPhoneNumber(contact.phone_number);
+    setEditEmail(contact.email);
+    setEditTags(contact.tags?.join(", ") || "");
+  };
+
+  const handleUpdateContact = () => {
+    if (!editingContact) return;
+    
+    if (!editFirstName.trim()) {
+      toast.error("First name is required");
+      return;
+    }
+    
+    if (!editPhoneNumber.trim()) {
+      toast.error("Phone number is required");
+      return;
+    }
+
+    const updateData = {
+      first_name: editFirstName.trim(),
+      last_name: editLastName.trim(),
+      phone_number: editPhoneNumber.trim(),
+      email: editEmail.trim(),
+      tags: editTags ? editTags.split(",").map(t => t.trim()).filter(Boolean) : [],
+    };
+
+    updateContactMutation.mutate({ id: editingContact.id, data: updateData });
   };
 
   const contacts = selectedList === null ? allContacts : listDetails?.members;
@@ -308,8 +373,15 @@ export default function ContactsPage() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => {}}>Edit</DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive" onClick={() => deleteMutation.mutate(contact.id)}>
+                                <DropdownMenuItem onClick={() => handleEditContact(contact)}>
+                                  <Edit className="mr-2 size-4" />
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  className="text-destructive" 
+                                  onClick={() => setContactToDelete(contact)}
+                                >
+                                  <Trash2 className="mr-2 size-4" />
                                   Delete
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
@@ -324,6 +396,107 @@ export default function ContactsPage() {
            </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!contactToDelete} onOpenChange={() => setContactToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Contact</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {contactToDelete?.first_name} {contactToDelete?.last_name}? 
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (contactToDelete) {
+                  deleteMutation.mutate(contactToDelete.id);
+                  setContactToDelete(null);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Edit Contact Dialog */}
+      <Dialog open={!!editingContact} onOpenChange={() => setEditingContact(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Contact</DialogTitle>
+            <DialogDescription>
+              Update contact information for {editingContact?.first_name} {editingContact?.last_name}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-first-name">First Name</Label>
+                <Input
+                  id="edit-first-name"
+                  value={editFirstName}
+                  onChange={(e) => setEditFirstName(e.target.value)}
+                  placeholder="John"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-last-name">Last Name</Label>
+                <Input
+                  id="edit-last-name"
+                  value={editLastName}
+                  onChange={(e) => setEditLastName(e.target.value)}
+                  placeholder="Doe"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-phone">Phone Number</Label>
+              <Input
+                id="edit-phone"
+                value={editPhoneNumber}
+                onChange={(e) => setEditPhoneNumber(e.target.value)}
+                placeholder="+1234567890"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-email">Email</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+                placeholder="john@example.com"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-tags">Tags</Label>
+              <Input
+                id="edit-tags"
+                placeholder="vip, customer, newsletter"
+                value={editTags}
+                onChange={(e) => setEditTags(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingContact(null)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleUpdateContact}
+              disabled={updateContactMutation.isPending}
+            >
+              {updateContactMutation.isPending && <LoaderQuater className="mr-2" />}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
