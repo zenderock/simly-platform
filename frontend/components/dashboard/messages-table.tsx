@@ -126,12 +126,27 @@ export function MessagesTable() {
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Delivered": return "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/10 border-none font-bold";
-      case "Failed": return "bg-destructive/10 text-destructive hover:bg-destructive/10 border-none font-bold";
-      case "Pending": return "bg-amber-500/10 text-amber-500 hover:bg-amber-500/10 border-none font-bold";
-      case "Scheduled": return "bg-blue-500/10 text-blue-500 hover:bg-blue-500/10 border-none font-bold";
-      default: return "bg-primary/10 text-primary hover:bg-primary/10 border-none font-bold";
+    switch (status.toLowerCase()) {
+      case "sent": 
+        return "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/10 border-none font-bold";
+      case "delivered": 
+        return "bg-green-600/10 text-green-600 hover:bg-green-600/10 border-none font-bold";
+      case "failed": 
+        return "bg-destructive/10 text-destructive hover:bg-destructive/10 border-none font-bold";
+      case "pending": 
+        return "bg-amber-500/10 text-amber-500 hover:bg-amber-500/10 border-none font-bold";
+      case "scheduled": 
+        return "bg-blue-500/10 text-blue-500 hover:bg-blue-500/10 border-none font-bold";
+      case "processing":
+        return "bg-purple-500/10 text-purple-500 hover:bg-purple-500/10 border-none font-bold";
+      case "queued":
+        return "bg-orange-500/10 text-orange-500 hover:bg-orange-500/10 border-none font-bold";
+      case "cancelled":
+        return "bg-gray-500/10 text-gray-500 hover:bg-gray-500/10 border-none font-bold";
+      case "expired":
+        return "bg-red-800/10 text-red-800 hover:bg-red-800/10 border-none font-bold";
+      default: 
+        return "bg-slate-500/10 text-slate-500 hover:bg-slate-500/10 border-none font-bold";
     }
   };
 

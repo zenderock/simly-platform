@@ -32,6 +32,7 @@ import {
 
 import { useAuth } from "@/lib/auth";
 import { useApplicationStore } from "@/store/application-store";
+import { useUpdateApplication, useDeleteApplication } from "@/hooks/use-applications";
 import Image from "next/image";
 import { CreateAppDialog } from "./create-app-dialog";
 
@@ -89,6 +90,9 @@ export function DashboardSidebar({
   const { applications, activeAppId, setActiveAppId, getActiveApp } = useApplicationStore();
   const activeApp = getActiveApp();
   const currentOrg = organizations.find((org) => org.id === organizationId);
+  
+  const updateAppMutation = useUpdateApplication();
+  const deleteAppMutation = useDeleteApplication();
 
   return (
     <Sidebar collapsible="offcanvas" className="lg:border-r-0!" {...props}>
@@ -176,22 +180,67 @@ export function DashboardSidebar({
                 <SidebarMenu className="mt-2">
                   {applications.map((app) => (
                     <SidebarMenuItem key={app.id}>
-                      <SidebarMenuButton 
-                        isActive={activeAppId === app.id} 
-                        className="h-9 sm:h-[38px]"
-                        onClick={() => setActiveAppId(app.id)}
-                      >
-                        <IconCategory2 className={`size-4 sm:size-5 ${activeAppId === app.id ? "text-primary" : "text-muted-foreground"}`} />
-                        <span className={`flex-1 text-sm truncate ${activeAppId === app.id ? "font-bold" : "text-muted-foreground"}`}>
-                          {app.name}
-                        </span>
-                        {app.is_sandbox && (
-                          <div className="size-1.5 rounded-full bg-orange-500 shrink-0" />
-                        )}
-                        {!app.is_sandbox && activeAppId === app.id && (
-                          <div className="size-1.5 rounded-full bg-primary shrink-0" />
-                        )}
-                      </SidebarMenuButton>
+                      <div className="flex items-center group">
+                        <SidebarMenuButton 
+                          isActive={activeAppId === app.id} 
+                          className="h-9 sm:h-[38px] flex-1"
+                          onClick={() => setActiveAppId(app.id)}
+                        >
+                          <IconCategory2 className={`size-4 sm:size-5 ${activeAppId === app.id ? "text-primary" : "text-muted-foreground"}`} />
+                          <span className={`flex-1 text-sm truncate ${activeAppId === app.id ? "font-bold" : "text-muted-foreground"}`}>
+                            {app.name}
+                          </span>
+                          {app.is_sandbox && (
+                            <div className="size-1.5 rounded-full bg-orange-500 shrink-0" />
+                          )}
+                          {!app.is_sandbox && activeAppId === app.id && (
+                            <div className="size-1.5 rounded-full bg-primary shrink-0" />
+                          )}
+                        </SidebarMenuButton>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <button className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-accent rounded ml-1">
+                              <IconChevronDown className="size-3" />
+                            </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => {
+                              const newName = prompt("Enter new application name:", app.name);
+                              if (newName && newName.trim() && newName !== app.name) {
+                                updateAppMutation.mutate(
+                                  { id: app.id, name: newName.trim() },
+                                  {
+                                    onError: (error) => {
+                                      console.error("Failed to rename application:", error);
+                                      alert("Failed to rename application. Please try again.");
+                                    }
+                                  }
+                                );
+                              }
+                            }}>
+                              Rename
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive" onClick={() => {
+                              if (confirm(`Are you sure you want to delete "${app.name}"? This action cannot be undone.`)) {
+                                deleteAppMutation.mutate(app.id, {
+                                  onSuccess: () => {
+                                    // If we deleted the active app, clear the selection
+                                    if (activeAppId === app.id) {
+                                      setActiveAppId(null);
+                                    }
+                                  },
+                                  onError: (error) => {
+                                    console.error("Failed to delete application:", error);
+                                    alert("Failed to delete application. Please try again.");
+                                  }
+                                });
+                              }
+                            }}>
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </SidebarMenuItem>
                   ))}
                   <SidebarMenuItem>

@@ -21,6 +21,22 @@ export function useApplications() {
   });
 }
 
+export function useUpdateApplication() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, name }: { id: number; name: string }) => {
+      const res = await api.put<Application>(`/applications/${id}`, { name });
+      return res.data;
+    },
+    onSuccess: (updatedApp) => {
+      queryClient.setQueryData<Application[]>(applicationKeys.list(), (old) =>
+        old?.map((a) => (a.id === updatedApp.id ? updatedApp : a))
+      );
+    },
+  });
+}
+
 export function useDeleteApplication() {
   const queryClient = useQueryClient();
 

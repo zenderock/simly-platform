@@ -5,10 +5,6 @@ import android.os.Build
 import android.telephony.SmsManager
 import android.telephony.SubscriptionManager
 import android.telephony.TelephonyManager
-import android.content.BroadcastReceiver
-import android.content.Intent
-import android.content.IntentFilter
-import android.app.PendingIntent
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import androidx.annotation.NonNull
@@ -146,64 +142,17 @@ class MainActivity : FlutterActivity() {
         } else {
             SmsManager.getDefault()
         }
-
-        val SENT = "SMS_SENT_${System.currentTimeMillis()}"
-        val sentPI = PendingIntent.getBroadcast(
-            this, 
-            System.currentTimeMillis().toInt(), 
-            Intent(SENT), 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) 
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT 
-            else 
-                PendingIntent.FLAG_UPDATE_CURRENT
-        )
-
-        val receiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context?, intent: Intent?) {
-                val errorCode = when (resultCode) {
-                    SmsManager.RESULT_ERROR_GENERIC_FAILURE -> "GENERIC_FAILURE"
-                    SmsManager.RESULT_ERROR_NO_SERVICE -> "NO_SERVICE"
-                    SmsManager.RESULT_ERROR_NULL_PDU -> "NULL_PDU"
-                    SmsManager.RESULT_ERROR_RADIO_OFF -> "RADIO_OFF"
-                    else -> null
-                }
-                
-                if (resultCode == RESULT_OK) {
-                    callback(null, null)
-                } else {
-                    callback("SMS delivery failed with code: $resultCode", errorCode ?: "UNKNOWN_ERROR")
-                }
-                
-                try {
-                    context?.unregisterReceiver(this)
-                } catch (e: Exception) {
-                    // Already unregistered
-                }
-            }
-        }
-
-        // Use RECEIVER_NOT_EXPORTED for Android 13+
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(receiver, IntentFilter(SENT), Context.RECEIVER_NOT_EXPORTED)
-        } else {
-            registerReceiver(receiver, IntentFilter(SENT))
-        }
         
         try {
             val parts = smsManager.divideMessage(message)
             if (parts.size > 1) {
-                val sentIntents = ArrayList<PendingIntent>()
-                for (i in 0 until parts.size) sentIntents.add(sentPI)
-                smsManager.sendMultipartTextMessage(phoneNumber, null, parts, sentIntents, null)
+                smsManager.sendMultipartTextMessage(phoneNumber, null, parts, null, null)
             } else {
-                smsManager.sendTextMessage(phoneNumber, null, message, sentPI, null)
+                smsManager.sendTextMessage(phoneNumber, null, message, null, null)
             }
+            // Return success immediately after sending (don't wait for delivery confirmation)
+            callback(null, null)
         } catch (e: Exception) {
-            try {
-                unregisterReceiver(receiver)
-            } catch (ex: Exception) {
-                // Already unregistered
-            }
             callback(e.message, "EXCEPTION")
         }
     }

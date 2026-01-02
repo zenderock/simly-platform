@@ -54,6 +54,19 @@ func (s *Store) GetApplicationByID(ctx context.Context, id int) (*model.Applicat
 	return &app, nil
 }
 
+func (s *Store) UpdateApplication(ctx context.Context, appID, orgID int, name string) error {
+	query := `UPDATE applications SET name = $1, updated_at = NOW() WHERE id = $2 AND organization_id = $3`
+	result, err := s.db.Exec(ctx, query, name, appID, orgID)
+	if err != nil {
+		return fmt.Errorf("failed to update application: %w", err)
+	}
+	rowsAffected := result.RowsAffected()
+	if rowsAffected == 0 {
+		return fmt.Errorf("application not found")
+	}
+	return nil
+}
+
 func (s *Store) DeleteApplication(ctx context.Context, appID, orgID int) error {
 	query := `DELETE FROM applications WHERE id = $1 AND organization_id = $2`
 	result, err := s.db.Exec(ctx, query, appID, orgID)

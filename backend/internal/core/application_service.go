@@ -39,6 +39,13 @@ func (s *ApplicationService) GetApplication(ctx context.Context, appID int) (*mo
 	return s.store.GetApplicationByID(ctx, appID)
 }
 
+func (s *ApplicationService) UpdateApplication(ctx context.Context, appID, orgID int, name string) (*model.Application, error) {
+	if err := s.store.UpdateApplication(ctx, appID, orgID, name); err != nil {
+		return nil, err
+	}
+	return s.store.GetApplicationByID(ctx, appID)
+}
+
 func (s *ApplicationService) DeleteApplication(ctx context.Context, appID, orgID int) error {
 	return s.store.DeleteApplication(ctx, appID, orgID)
 }

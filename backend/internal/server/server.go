@@ -155,6 +155,7 @@ func (s *Server) setupRoutes() {
 		r.Route("/api/applications", func(r chi.Router) {
 			r.Get("/", appHandler.ListApplications)
 			r.Post("/", appHandler.CreateApplication)
+			r.Put("/{appID}", appHandler.UpdateApplication)
 			r.Delete("/{appID}", appHandler.DeleteApplication)
 		})
 

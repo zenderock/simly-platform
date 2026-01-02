@@ -57,18 +57,32 @@ export function GlobalSearch() {
   const router = useRouter();
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Reset state when dialog closes
+  const handleOpenChange = (isOpen: boolean) => {
+    setOpen(isOpen);
+    if (!isOpen) {
+      // Clear everything when closing
+      setQuery("");
+      setResults([]);
+      setLoading(false);
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    }
+  };
+
   // Keyboard shortcut
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
-        setOpen((open) => !open);
+        handleOpenChange(!open);
       }
     };
 
     document.addEventListener("keydown", down);
     return () => document.removeEventListener("keydown", down);
-  }, []);
+  }, [open]);
 
   // Search function
   const performSearch = useCallback(async (searchQuery: string) => {
@@ -167,8 +181,7 @@ export function GlobalSearch() {
   }, [query, organizationId, performSearch]);
 
   const handleSelect = (result: SearchResult) => {
-    setOpen(false);
-    setQuery("");
+    handleOpenChange(false);
     router.push(result.url);
   };
 
@@ -208,7 +221,7 @@ export function GlobalSearch() {
       </Button>
 
       {/* Search Dialog */}
-      <CommandDialog open={open} onOpenChange={setOpen}>
+      <CommandDialog open={open} onOpenChange={handleOpenChange}>
         <CommandInput
           placeholder="Search messages, devices, applications..."
           value={query}
@@ -234,8 +247,9 @@ export function GlobalSearch() {
                 {items.map((result) => (
                   <CommandItem
                     key={result.id}
+                    value={result.id}
                     onSelect={() => handleSelect(result)}
-                    className="flex items-center gap-3 py-3"
+                    className="flex items-center gap-3 py-3 cursor-pointer"
                   >
                     <IconComponent className={cn("size-4", config.color)} />
                     <div className="flex-1">

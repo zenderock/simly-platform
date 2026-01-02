@@ -15,3 +15,7 @@ type CreateApplicationRequest struct {
 	Name      string `json:"name"`
 	IsSandbox bool   `json:"is_sandbox"`
 }
+
+type UpdateApplicationRequest struct {
+	Name string `json:"name"`
+}

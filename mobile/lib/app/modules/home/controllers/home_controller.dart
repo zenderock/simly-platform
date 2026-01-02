@@ -79,12 +79,17 @@ class HomeController extends GetxController {
     final int msgId = event['msgId'];
     final int? simSlot = event['simSlot'];
 
+    debugPrint("=== SENDING SMS ===");
+    debugPrint("To: $to, MsgId: $msgId, SimSlot: $simSlot");
+
     try {
       await _channel.invokeMethod('sendSms', {
         'phoneNumber': to,
         'message': body,
         'simSlot': simSlot,
       });
+
+      debugPrint("SMS sent successfully to $to");
 
       logs.insert(0, {
         'to': to,
@@ -95,11 +100,15 @@ class HomeController extends GetxController {
 
       // Update status on backend
       try {
+        debugPrint("Updating message $msgId status to 'sent'");
         await _apiProvider.post('messages/$msgId/status', {'status': 'sent'});
+        debugPrint("Message $msgId status updated successfully");
       } catch (e) {
         debugPrint("Failed to update message status: $e");
       }
     } on PlatformException catch (e) {
+      debugPrint("SMS failed with PlatformException: ${e.code} - ${e.message}");
+
       logs.insert(0, {
         'to': to,
         'status': 'failed (${e.code})',
@@ -108,15 +117,19 @@ class HomeController extends GetxController {
       if (logs.length > 50) logs.removeLast();
 
       try {
+        debugPrint("Updating message $msgId status to 'failed'");
         await _apiProvider.post('messages/$msgId/status', {
           'status': 'failed',
           'error_code': e.code,
           'error_message': e.message,
         });
+        debugPrint("Message $msgId failure status updated");
       } catch (e) {
         debugPrint("Failed to update message status: $e");
       }
     } catch (e) {
+      debugPrint("SMS failed with error: $e");
+
       logs.insert(0, {
         'to': to,
         'status': 'error',
@@ -125,10 +138,12 @@ class HomeController extends GetxController {
       if (logs.length > 50) logs.removeLast();
 
       try {
+        debugPrint("Updating message $msgId status to 'failed'");
         await _apiProvider.post('messages/$msgId/status', {
           'status': 'failed',
           'error_message': e.toString(),
         });
+        debugPrint("Message $msgId failure status updated");
       } catch (e) {
         debugPrint("Failed to update message status: $e");
       }

@@ -65,6 +65,40 @@ func (h *ApplicationHandler) ListApplications(w http.ResponseWriter, r *http.Req
 	json.NewEncoder(w).Encode(apps)
 }
 
+func (h *ApplicationHandler) UpdateApplication(w http.ResponseWriter, r *http.Request) {
+	appIDStr := chi.URLParam(r, "appID")
+	appID, err := strconv.Atoi(appIDStr)
+	if err != nil {
+		http.Error(w, "Invalid App ID", http.StatusBadRequest)
+		return
+	}
+
+	orgID, err := GetActiveOrgID(r, h.orgService)
+	if err != nil {
+		http.Error(w, "Organization required", http.StatusForbidden)
+		return
+	}
+
+	var req model.UpdateApplicationRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	app, err := h.service.UpdateApplication(r.Context(), appID, orgID, req.Name)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(app)
+
+	// Audit
+	userID := GetUserID(r.Context())
+	h.auditService.Log(r.Context(), orgID, &userID, "application.updated", "application", appIDStr, map[string]string{"name": req.Name}, r.RemoteAddr)
+}
+
 func (h *ApplicationHandler) DeleteApplication(w http.ResponseWriter, r *http.Request) {
 	appIDStr := chi.URLParam(r, "appID")
 	appID, err := strconv.Atoi(appIDStr)

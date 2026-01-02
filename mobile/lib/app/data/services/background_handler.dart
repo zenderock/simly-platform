@@ -111,6 +111,8 @@ class BackgroundHandler {
     // However, we can use this to wake up or log.
   }
 
+  static final Set<int> _processingMessages = {};
+
   static Future<void> _pollMessages(
     Dio dio,
     GetStorage storage,
@@ -131,10 +133,21 @@ class BackgroundHandler {
       if (response.statusCode == 200 && response.data != null) {
         final List messages = response.data is List ? response.data : [];
         for (var msg in messages) {
+          final int msgId = msg['id'];
+
+          // Skip if already processing this message
+          if (_processingMessages.contains(msgId)) {
+            debugPrint("Message $msgId already being processed, skipping");
+            continue;
+          }
+
           final String to = msg['to'];
           final String body = msg['body'];
-          final int msgId = msg['id'];
           final int? simSlot = msg['sim_slot'];
+
+          // Mark as processing locally
+          _processingMessages.add(msgId);
+          debugPrint("Processing message $msgId to $to");
 
           // Request SMS send via main isolate
           service.invoke('sendSms', {
@@ -148,5 +161,11 @@ class BackgroundHandler {
     } catch (e) {
       debugPrint("Poll failed: $e");
     }
+  }
+
+  // Called by HomeController after SMS is sent (success or failure)
+  static void markMessageComplete(int msgId) {
+    _processingMessages.remove(msgId);
+    debugPrint("Message $msgId removed from processing queue");
   }
 }
