@@ -35,7 +35,6 @@ class HomeController extends GetxController {
   void onInit() {
     super.onInit();
     _initDeviceStats();
-    _startHeartbeats();
     _checkServiceStatus();
     _initLogListener();
 
@@ -95,7 +94,11 @@ class HomeController extends GetxController {
       if (logs.length > 50) logs.removeLast();
 
       // Update status on backend
-      await _apiProvider.post('messages/$msgId/status', {'status': 'sent'});
+      try {
+        await _apiProvider.post('messages/$msgId/status', {'status': 'sent'});
+      } catch (e) {
+        debugPrint("Failed to update message status: $e");
+      }
     } on PlatformException catch (e) {
       logs.insert(0, {
         'to': to,
@@ -104,11 +107,15 @@ class HomeController extends GetxController {
       });
       if (logs.length > 50) logs.removeLast();
 
-      await _apiProvider.post('messages/$msgId/status', {
-        'status': 'failed',
-        'error_code': e.code,
-        'error_message': e.message,
-      });
+      try {
+        await _apiProvider.post('messages/$msgId/status', {
+          'status': 'failed',
+          'error_code': e.code,
+          'error_message': e.message,
+        });
+      } catch (e) {
+        debugPrint("Failed to update message status: $e");
+      }
     } catch (e) {
       logs.insert(0, {
         'to': to,
@@ -117,10 +124,14 @@ class HomeController extends GetxController {
       });
       if (logs.length > 50) logs.removeLast();
 
-      await _apiProvider.post('messages/$msgId/status', {
-        'status': 'failed',
-        'error_message': e.toString(),
-      });
+      try {
+        await _apiProvider.post('messages/$msgId/status', {
+          'status': 'failed',
+          'error_message': e.toString(),
+        });
+      } catch (e) {
+        debugPrint("Failed to update message status: $e");
+      }
     }
   }
 
@@ -163,8 +174,19 @@ class HomeController extends GetxController {
     // Request permissions for signal strength and SIM detection
     await [Permission.location, Permission.phone].request();
 
+    // Get initial signal strength
+    try {
+      final signal = await FlutterSignalStrength().getCellularSignalStrength();
+      signalStrength.value = signal.toInt();
+    } catch (e) {
+      debugPrint("Error getting initial signal strength: $e");
+    }
+
     // Get SIM cards info
     await _updateSimCards();
+
+    // Start heartbeats AFTER initial data is loaded
+    _startHeartbeats();
 
     // Update stats periodically
     _statTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {

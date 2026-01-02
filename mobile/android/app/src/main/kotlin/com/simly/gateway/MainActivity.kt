@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Build
 import android.telephony.SmsManager
 import android.telephony.SubscriptionManager
+import android.telephony.TelephonyManager
 import android.content.BroadcastReceiver
 import android.content.Intent
 import android.content.IntentFilter
@@ -93,11 +94,18 @@ class MainActivity : FlutterActivity() {
                     if (phoneNumber.isNullOrEmpty()) {
                         try {
                             val telephonyManager = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                                phoneNumber = telephonyManager.getLine1Number(subInfo.subscriptionId)
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                // Android 13+ - use SubscriptionManager directly
+                                phoneNumber = subscriptionManager.getPhoneNumber(subInfo.subscriptionId)
+                            } else {
+                                // Older versions - try basic line1 number
+                                @Suppress("DEPRECATION")
+                                phoneNumber = telephonyManager.line1Number
                             }
                         } catch (e: SecurityException) {
                             // Permission denied
+                        } catch (e: Exception) {
+                            // Other error
                         }
                     }
                     

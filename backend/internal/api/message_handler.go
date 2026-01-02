@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -81,6 +82,7 @@ func (h *MessageHandler) InternalReceiveSMS(w http.ResponseWriter, r *http.Reque
 func (h *MessageHandler) ListMessages(w http.ResponseWriter, r *http.Request) {
 	orgID, err := GetActiveOrgID(r, h.orgService)
 	if err != nil {
+		log.Printf("[ListMessages] Failed to get org ID: %v", err)
 		http.Error(w, "Organization required", http.StatusForbidden)
 		return
 	}
@@ -92,12 +94,16 @@ func (h *MessageHandler) ListMessages(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	log.Printf("[ListMessages] Fetching messages for org=%d, app=%v", orgID, appID)
+
 	messages, err := h.service.ListMessages(r.Context(), orgID, appID)
 	if err != nil {
+		log.Printf("[ListMessages] Error fetching messages: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	log.Printf("[ListMessages] Successfully fetched %d messages", len(messages))
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(messages)
 }
@@ -105,6 +111,7 @@ func (h *MessageHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 	msgIDStr := chi.URLParam(r, "id")
 	msgID, err := strconv.Atoi(msgIDStr)
 	if err != nil {
+		log.Printf("[UpdateStatus] Invalid message ID: %s", msgIDStr)
 		http.Error(w, "Invalid message ID", http.StatusBadRequest)
 		return
 	}
@@ -115,14 +122,19 @@ func (h *MessageHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 		ErrorMessage string `json:"error_message"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("[UpdateStatus] Failed to decode request body: %v", err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
+	log.Printf("[UpdateStatus] Updating message %d: status=%s, error_code=%s, error_message=%s", msgID, req.Status, req.ErrorCode, req.ErrorMessage)
+
 	if err := h.service.UpdateStatus(r.Context(), msgID, req.Status, req.ErrorCode, req.ErrorMessage); err != nil {
+		log.Printf("[UpdateStatus] Error updating message %d: %v", msgID, err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	log.Printf("[UpdateStatus] Successfully updated message %d", msgID)
 	w.WriteHeader(http.StatusOK)
 }
