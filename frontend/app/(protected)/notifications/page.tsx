@@ -3,15 +3,21 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Info, AlertTriangle, CheckCircle2, Bell, CheckCheck } from "lucide-react";
+import {
+  AlertCircle,
+  Info,
+  AlertTriangle,
+  CheckCircle2,
+  Bell,
+  CheckCheck,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Alert } from "@/types";
 import LoaderQuater from "@/components/loader";
-import { 
-  useNotifications, 
-  useMarkAsRead, 
-  useMarkAllAsRead, 
-  useCreateTestAlert 
+import {
+  useNotifications,
+  useMarkAsRead,
+  useMarkAllAsRead,
 } from "@/hooks/use-notifications";
 
 const severityConfig = {
@@ -45,7 +51,6 @@ export default function NotificationsPage() {
   const { data: alerts = [], isLoading } = useNotifications();
   const markAsRead = useMarkAsRead();
   const markAllAsRead = useMarkAllAsRead();
-  const createTestAlert = useCreateTestAlert();
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -53,7 +58,9 @@ export default function NotificationsPage() {
   };
 
   const unreadCount = alerts.filter((alert: Alert) => !alert.is_read).length;
-  const unreadIds = alerts.filter((alert: Alert) => !alert.is_read).map((a: Alert) => a.id);
+  const unreadIds = alerts
+    .filter((alert: Alert) => !alert.is_read)
+    .map((a: Alert) => a.id);
 
   if (isLoading) {
     return (
@@ -73,16 +80,9 @@ export default function NotificationsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button 
-            onClick={() => createTestAlert.mutate()} 
-            variant="secondary"
-            disabled={createTestAlert.isPending}
-          >
-            Create Test Alert
-          </Button>
           {unreadCount > 0 && (
-            <Button 
-              onClick={() => markAllAsRead.mutate(unreadIds)} 
+            <Button
+              onClick={() => markAllAsRead.mutate(unreadIds)}
               variant="outline"
               disabled={markAllAsRead.isPending}
             >
@@ -99,19 +99,22 @@ export default function NotificationsPage() {
             <Bell className="size-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">No notifications</h3>
             <p className="text-muted-foreground text-center">
-              You're all caught up! Notifications will appear here when there are updates.
+              You're all caught up! Notifications will appear here when there
+              are updates.
             </p>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-4">
           {alerts.map((alert: Alert) => {
-            const config = severityConfig[alert.severity as keyof typeof severityConfig] || severityConfig.info;
+            const config =
+              severityConfig[alert.severity as keyof typeof severityConfig] ||
+              severityConfig.info;
             const IconComponent = config.icon;
-            
+
             return (
-              <Card 
-                key={alert.id} 
+              <Card
+                key={alert.id}
                 className={cn(
                   "transition-all hover:shadow-md",
                   !alert.is_read && "ring-2 ring-primary/20",
@@ -138,8 +141,12 @@ export default function NotificationsPage() {
                           <Badge variant="outline" className="text-xs">
                             {alert.type}
                           </Badge>
-                          <Badge 
-                            variant={alert.severity === 'error' ? 'destructive' : 'secondary'}
+                          <Badge
+                            variant={
+                              alert.severity === "error"
+                                ? "destructive"
+                                : "secondary"
+                            }
                             className="text-xs capitalize"
                           >
                             {alert.severity}
@@ -148,8 +155,8 @@ export default function NotificationsPage() {
                       </div>
                     </div>
                     {!alert.is_read && (
-                      <Button 
-                        variant="ghost" 
+                      <Button
+                        variant="ghost"
                         size="sm"
                         onClick={() => markAsRead.mutate(alert.id)}
                         disabled={markAsRead.isPending}
