@@ -188,8 +188,11 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 	}
 
 	// 2. Device Selection - Use DevicePoolManager for intelligent selection
+	useQueuedDispatch := false // Flag to determine if we should use queued dispatch
+
 	if req.ScheduledAt != nil && req.ScheduledAt.After(time.Now()) {
 		// Valid Scheduled Message - device will be assigned later
+		useQueuedDispatch = true
 	} else if req.DeviceID != nil {
 		// Specific Device Requested
 		device, err := s.store.GetDeviceByID(ctx, *req.DeviceID)
@@ -199,37 +202,43 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 		if device.OrganizationID != orgID {
 			return nil, errors.New("unauthorized: device does not belong to your organization")
 		}
+
+		// If device is offline or unavailable, queue the message instead of rejecting
 		if device.Status != "online" {
-			return nil, errors.New("device is offline")
+			log.Printf("Device %d is offline, message will be queued for dispatch when device comes online", device.ID)
+			useQueuedDispatch = true
+			targetDevice = device // Keep device assignment for queue
+		} else if s.devicePoolManager != nil && !s.devicePoolManager.IsDeviceAvailable(device.ID, org.SMSThrottleRateSeconds) {
+			log.Printf("Device %d is temporarily unavailable, message will be queued", device.ID)
+			useQueuedDispatch = true
+			targetDevice = device
+		} else {
+			targetDevice = device
 		}
-
-		// Check if device is available (not in cooldown, not suspended, throttle respected)
-		if s.devicePoolManager != nil && !s.devicePoolManager.IsDeviceAvailable(device.ID, org.SMSThrottleRateSeconds) {
-			return nil, errors.New("device is temporarily unavailable (cooldown, suspended, or throttled)")
-		}
-
-		targetDevice = device
 	} else {
 		// Smart Selection using DevicePoolManager
 		if s.devicePoolManager != nil {
 			targetDevice, err = s.devicePoolManager.GetNextAvailableDevice(ctx, orgID, req.Tags)
-			if err != nil {
-				return nil, fmt.Errorf("failed to select device: %w", err)
-			}
-			if targetDevice == nil {
-				return nil, errors.New("no available devices (all offline, in cooldown, or suspended)")
+			if err != nil || targetDevice == nil {
+				// No devices available right now - queue the message
+				log.Printf("No available devices for org %d, message will be queued", orgID)
+				useQueuedDispatch = true
 			}
 		} else {
 			// Fallback to old selection method if DevicePoolManager not available
 			targetDevice, err = s.selectBestDevice(ctx, orgID, req.Tags, nil)
 			if err != nil {
-				return nil, err
+				// No devices available - queue the message
+				log.Printf("No available devices for org %d, message will be queued", orgID)
+				useQueuedDispatch = true
 			}
 		}
 	}
 
-	if targetDevice != nil && targetDevice.FCMToken == "" {
-		return nil, errors.New("device has no valid push token")
+	// Only check FCM token if we're going to send immediately
+	if !useQueuedDispatch && targetDevice != nil && targetDevice.FCMToken == "" {
+		log.Printf("Device %d has no FCM token, message will be queued", targetDevice.ID)
+		useQueuedDispatch = true
 	}
 
 	// 3. Create Message Record
@@ -251,8 +260,13 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 		msg.DeviceID = &targetDevice.ID
 	}
 
-	if req.ScheduledAt != nil && req.ScheduledAt.After(time.Now()) {
+	// Determine initial status based on dispatch strategy
+	if useQueuedDispatch {
+		msg.Status = "queued" // Will be picked up by DispatcherService
+	} else if req.ScheduledAt != nil && req.ScheduledAt.After(time.Now()) {
 		msg.Status = "scheduled"
+	} else {
+		msg.Status = "pending"
 	}
 
 	if msg.Priority == "" {
@@ -266,7 +280,7 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 		return nil, err
 	}
 
-	// 4. Trigger FCM Push (ONLY IF NOT SCHEDULED)
+	// 4. Trigger FCM Push (ONLY IF NOT SCHEDULED AND NOT QUEUED)
 	if msg.Status == "pending" && targetDevice != nil {
 		if err := s.NotifyDevice(ctx, msg); err != nil {
 			logNotificationError(msg.ID, err)

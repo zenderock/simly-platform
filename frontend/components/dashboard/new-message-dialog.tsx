@@ -86,9 +86,17 @@ export function NewMessageDialog() {
 
       await api.post("/messages/send", payload);
 
+      // Determine success message based on context
+      let successMessage = "Your message has been queued for delivery.";
+      if (formData.scheduled_at) {
+        successMessage = "Your message has been scheduled successfully.";
+      } else if (formData.device_id !== "auto") {
+        successMessage = "Your message has been sent to the device.";
+      }
+
       toast({
-        title: "Message Sent",
-        description: "Your message has been queued for delivery.",
+        title: "Message Queued",
+        description: successMessage,
         variant: "success",
       });
 
@@ -98,10 +106,11 @@ export function NewMessageDialog() {
       
       // Optional: Refresh messages table here? 
       // We might need a global refresh trigger or just let SWR/Polling handle it later.
-    } catch (error) {
-       toast({
+    } catch (error: any) {
+      const errorMessage = error.response?.data || error.message || "Failed to send message. Please try again.";
+      toast({
         title: "Error",
-        description: "Failed to send message. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
