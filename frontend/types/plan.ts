@@ -7,7 +7,7 @@ export interface PlanLimits {
   max_contacts: number; // -1 = unlimited
   max_campaigns: number; // -1 = unlimited
   max_recipients_per_campaign: number; // -1 = unlimited
-  sms_monthly: number; // Kept for backward compatibility if needed, but primary is now pay-per-use
+  sms_monthly: number; // Monthly SMS limit (-1 = unlimited)
 }
 
 export interface Plan {

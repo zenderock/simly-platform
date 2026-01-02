@@ -172,9 +172,9 @@ export default function PlansPage() {
                 <div className="rounded-lg bg-muted/50 p-2 text-center">
                   <IconMessage className="size-4 mx-auto mb-1 text-muted-foreground" />
                   <div className="font-semibold text-sm">
-                    {formatPrice(plan.limits.sms_rate_per_message)}
+                    {plan.limits.sms_monthly === -1 ? "∞" : plan.limits.sms_monthly}
                   </div>
-                  <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Per SMS</div>
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Monthly SMS</div>
                 </div>
                 <div className="rounded-lg bg-muted/50 p-2 text-center">
                   <IconCategory2 className="size-4 mx-auto mb-1 text-muted-foreground" />

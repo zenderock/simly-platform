@@ -40,7 +40,6 @@ import {
   Trash2,
   Copy,
   FileSpreadsheet,
-  FileText,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -51,11 +50,13 @@ import { useDashboardStore } from "@/store/dashboard-store";
 import { useApplicationStore } from "@/store/application-store";
 import { useMessages } from "@/hooks/use-messages";
 import { useSearchParams } from "next/navigation";
+import { useToast } from "@/components/ui/use-toast";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 30, 50];
 
 export function MessagesTable() {
   const activeAppId = useApplicationStore((state) => state.activeAppId);
+  const { toast } = useToast();
   const searchQuery = useDashboardStore((state) => state.searchQuery);
   const statusFilter = useDashboardStore((state) => state.statusFilter);
   const appFilter = useDashboardStore((state) => state.appFilter);
@@ -156,6 +157,68 @@ export function MessagesTable() {
         return "bg-red-800/10 text-red-800 hover:bg-red-800/10 border-none font-bold";
       default: 
         return "bg-slate-500/10 text-slate-500 hover:bg-slate-500/10 border-none font-bold";
+    }
+  };
+
+  const handleExportCSV = () => {
+    if (filteredMessages.length === 0) {
+      toast({
+        title: "No data to export",
+        description: "There are no messages matching your current filters.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const headers = [
+        "ID",
+        "Recipient",
+        "Message",
+        "Application",
+        "Status",
+        "Device",
+        "Date",
+        "Scheduled At"
+      ];
+
+      const rows = filteredMessages.map((msg) => [
+        msg.id,
+        msg.to,
+        `"${(msg.body || "").replace(/"/g, '""')}"`,
+        msg.application_name || "Direct API",
+        msg.status,
+        msg.device_name || "—",
+        msg.created_at ? new Date(msg.created_at).toISOString() : "",
+        msg.scheduled_at ? new Date(msg.scheduled_at).toISOString() : ""
+      ]);
+
+      const csvContent = [
+        headers.join(","),
+        ...rows.map((row) => row.join(","))
+      ].join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `messages_export_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast({
+        title: "Export successful",
+        description: `Exported ${filteredMessages.length} messages to CSV.`,
+      });
+    } catch (error) {
+      console.error("Export failed", error);
+      toast({
+        title: "Export failed",
+        description: "An error occurred while exporting data.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -271,24 +334,20 @@ export function MessagesTable() {
 
           <div className="hidden sm:block w-px h-[22px] bg-border" />
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8 sm:h-9 gap-1.5 sm:gap-2 shadow-none font-semibold">
-                <FileInput className="size-3.5 sm:size-4" />
-                <span className="hidden sm:inline">Export</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem>
-                <FileSpreadsheet className="size-4 mr-2" />
-                CSV
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <FileText className="size-4 mr-2" />
-                PDF
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 sm:h-9 gap-1.5 sm:gap-2 shadow-none font-semibold">
+                  <FileInput className="size-3.5 sm:size-4" />
+                  <span className="hidden sm:inline">Export</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleExportCSV}>
+                  <FileSpreadsheet className="size-4 mr-2" />
+                  CSV
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
         </div>
       </div>
 

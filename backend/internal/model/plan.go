@@ -16,6 +16,7 @@ type Plan struct {
 type PlanLimits struct {
 	SMSRatePerMessage        float64 `json:"sms_rate_per_message"` // Cost in cents
 	SMSBurst                 int     `json:"sms_burst"`
+	SMSMonthly               int     `json:"sms_monthly"` // -1 = unlimited
 	MaxDevices               int     `json:"max_devices"` // -1 = unlimited
 	MaxSimsPerDevice         int     `json:"max_sims_per_device"`
 	MaxApplications          int     `json:"max_applications"`            // -1 = unlimited
@@ -39,7 +40,7 @@ var AvailablePlans = []Plan{
 		Period:      "month",
 		Description: "For hobbyists and testing",
 		Features: []string{
-			"Pay-per-SMS pricing (5¢ per SMS)",
+			"100 SMS / month included",
 			"1 application",
 			"100 contacts",
 			"1 campaign",
@@ -49,8 +50,9 @@ var AvailablePlans = []Plan{
 			"Community support",
 		},
 		Limits: PlanLimits{
-			SMSRatePerMessage:        5.0, // 5 cents per SMS
+			SMSRatePerMessage:        0,
 			SMSBurst:                 10,
+			SMSMonthly:               100,
 			MaxDevices:               1,
 			MaxSimsPerDevice:         1,
 			MaxApplications:          1,
@@ -67,7 +69,7 @@ var AvailablePlans = []Plan{
 		Period:      "month",
 		Description: "For startups and small businesses",
 		Features: []string{
-			"Pay-per-SMS pricing (3¢ per SMS)",
+			"Unlimited SMS",
 			"5 applications",
 			"1,000 contacts",
 			"5 campaigns",
@@ -79,8 +81,9 @@ var AvailablePlans = []Plan{
 			"Advanced webhooks",
 		},
 		Limits: PlanLimits{
-			SMSRatePerMessage:        3.0, // 3 cents per SMS
+			SMSRatePerMessage:        0,
 			SMSBurst:                 100,
+			SMSMonthly:               -1, // Unlimited
 			MaxDevices:               2,
 			MaxSimsPerDevice:         1,
 			MaxApplications:          5,
@@ -97,7 +100,7 @@ var AvailablePlans = []Plan{
 		Period:      "month",
 		Description: "For large campaigns and fleets",
 		Features: []string{
-			"Pay-per-SMS pricing (2¢ per SMS)",
+			"Unlimited SMS",
 			"Unlimited applications",
 			"Unlimited contacts",
 			"Unlimited campaigns",
@@ -110,8 +113,9 @@ var AvailablePlans = []Plan{
 			"Advanced webhooks",
 		},
 		Limits: PlanLimits{
-			SMSRatePerMessage:        2.0, // 2 cents per SMS
+			SMSRatePerMessage:        0,
 			SMSBurst:                 1000,
+			SMSMonthly:               -1, // Unlimited
 			MaxDevices:               -1, // unlimited
 			MaxSimsPerDevice:         4,
 			MaxApplications:          -1, // unlimited
