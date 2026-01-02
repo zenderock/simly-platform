@@ -65,7 +65,7 @@ var AvailablePlans = []Plan{
 	{
 		ID:          PlanPro,
 		Name:        "Professional",
-		Price:       2900, // $29
+		Price:       1000, // $10
 		Period:      "month",
 		Description: "For startups and small businesses",
 		Features: []string{
