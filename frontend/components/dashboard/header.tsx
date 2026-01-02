@@ -92,13 +92,13 @@ export function DashboardHeader() {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem 
+            {/* <DropdownMenuItem 
               className="cursor-pointer py-2.5 px-3 text-primary font-medium"
               onSelect={() => setCreateOrgOpen(true)}
             >
               <PlusCircle className="size-4 mr-2" />
               <span className="text-sm">Create an organization</span>
-            </DropdownMenuItem>
+            </DropdownMenuItem> */}
           </DropdownMenuContent>
         </DropdownMenu>
 

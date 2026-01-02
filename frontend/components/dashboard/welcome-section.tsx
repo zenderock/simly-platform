@@ -14,9 +14,12 @@ import api from "@/lib/api";
 import { DashboardStats } from "@/types";
 import { useAuth } from "@/lib/auth";
 import { useDashboardStore } from "@/store/dashboard-store";
+import { useToast } from "@/components/ui/use-toast";
+import { Message } from "@/types";
 
 export function WelcomeSection() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const refreshKey = useDashboardStore((state) => state.refreshKey);
   const [stats, setStats] = useState<DashboardStats | null>(null);
 
@@ -31,6 +34,76 @@ export function WelcomeSection() {
     };
     fetchStats();
   }, [refreshKey]);
+
+  const handleExportCSV = async () => {
+    try {
+      toast({
+        title: "Preparing export",
+        description: "Fetching activity logs...",
+      });
+
+      const res = await api.get<Message[]>("/messages");
+      const messages = res.data || [];
+
+      if (messages.length === 0) {
+        toast({
+          title: "No data to export",
+          description: "No activity logs found.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const headers = [
+        "ID",
+        "Recipient",
+        "Message",
+        "Application",
+        "Status",
+        "Device",
+        "Date",
+        "Scheduled At"
+      ];
+
+      const rows = messages.map((msg) => [
+        msg.id,
+        msg.to,
+        `"${(msg.body || "").replace(/"/g, '""')}"`,
+        msg.application_name || "Direct API",
+        msg.status,
+        msg.device_name || "—",
+        msg.created_at ? new Date(msg.created_at).toISOString() : "",
+        msg.scheduled_at ? new Date(msg.scheduled_at).toISOString() : ""
+      ]);
+
+      const csvContent = [
+        headers.join(","),
+        ...rows.map((row) => row.join(","))
+      ].join("\n");
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", `activity_log_export_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = "hidden";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast({
+        title: "Export successful",
+        description: `Exported ${messages.length} activity records.`,
+      });
+    } catch (error) {
+      console.error("Export failed", error);
+      toast({
+        title: "Export failed",
+        description: "An error occurred while exporting data.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const pending = stats?.pending_messages || 0;
   const activeDevices = stats?.active_devices || 0;
@@ -67,13 +140,9 @@ export function WelcomeSection() {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleExportCSV}>
               <Download className="size-4 mr-2" />
               Export CSV
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <FileText className="size-4 mr-2" />
-              PDF Report
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
