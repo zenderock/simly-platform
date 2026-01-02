@@ -278,7 +278,7 @@ class HomeView extends GetView<HomeController> {
         ),
         _buildStatItem(
           'SIM Slots',
-          '2 Active',
+          '${controller.simCards.length} Active',
           Icons.sim_card_outlined,
           const Color(0xFF10B981),
         ),

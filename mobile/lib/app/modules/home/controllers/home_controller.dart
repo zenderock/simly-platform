@@ -7,8 +7,12 @@ import 'package:mobile/app/data/services/auth_service.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_signal_strength/flutter_signal_strength.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 
 class HomeController extends GetxController {
+  static const _channel = MethodChannel('com.simly.gateway/sms');
+
   final _apiProvider = ApiClient();
   final _authService = Get.find<AuthService>();
 
@@ -19,6 +23,7 @@ class HomeController extends GetxController {
   final logs = <Map<String, dynamic>>[].obs;
   final notificationMode = "Polling".obs;
   final lastPushReceivedAt = Rxn<DateTime>();
+  final simCards = <Map<String, dynamic>>[].obs;
 
   RxBool get isAuthenticated => _authService.isAuthenticated;
 
@@ -98,8 +103,11 @@ class HomeController extends GetxController {
       connectivityStatus.value = result;
     });
 
-    // Request permissions for signal strength
+    // Request permissions for signal strength and SIM detection
     await [Permission.location, Permission.phone].request();
+
+    // Get SIM cards info
+    await _updateSimCards();
 
     // Update stats periodically
     _statTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
@@ -111,9 +119,23 @@ class HomeController extends GetxController {
             .getCellularSignalStrength();
         signalStrength.value = signal.toInt();
       } catch (e) {
-        print("Error getting signal strength: $e");
+        debugPrint("Error getting signal strength: $e");
       }
+
+      // Update SIM cards periodically
+      await _updateSimCards();
     });
+  }
+
+  Future<void> _updateSimCards() async {
+    try {
+      final result = await _channel.invokeMethod('getSimCards');
+      if (result is List) {
+        simCards.value = result.cast<Map<String, dynamic>>();
+      }
+    } catch (e) {
+      debugPrint("Failed to get SIM cards: $e");
+    }
   }
 
   void _startHeartbeats() {
@@ -131,9 +153,10 @@ class HomeController extends GetxController {
         'battery_level': batteryLevel.value,
         'signal_strength': signalStrength.value,
         'status': 'online',
+        'sim_cards': simCards.toList(),
       });
     } catch (e) {
-      print("Heartbeat failed: $e");
+      debugPrint("Heartbeat failed: $e");
     }
   }
 

@@ -135,6 +135,30 @@ func (s *Store) UpdateDeviceHealth(ctx context.Context, deviceID int, battery in
 	return err
 }
 
+func (s *Store) UpdateDeviceSimCards(ctx context.Context, deviceID int, simCards []model.UpdateSimCardRequest) error {
+	return s.ExecTx(ctx, func(tx *Store) error {
+		// Delete existing SIM cards for this device
+		_, err := tx.db.Exec(ctx, "DELETE FROM device_sims WHERE device_id = $1", deviceID)
+		if err != nil {
+			return err
+		}
+
+		// Insert new SIM cards
+		for _, sim := range simCards {
+			query := `
+				INSERT INTO device_sims (device_id, slot_index, phone_number, operator, is_active, created_at, updated_at)
+				VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+			`
+			_, err = tx.db.Exec(ctx, query, deviceID, sim.SlotIndex, sim.PhoneNumber, sim.Operator, sim.IsActive)
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+}
+
 func (s *Store) DeleteDevice(ctx context.Context, deviceID, orgID int) error {
 	query := `DELETE FROM devices WHERE id = $1 AND organization_id = $2`
 	result, err := s.db.Exec(ctx, query, deviceID, orgID)

@@ -37,9 +37,17 @@ type RegisterDeviceRequest struct {
 }
 
 type UpdateDeviceStatusRequest struct {
-	Status         string `json:"status"`
-	BatteryLevel   int    `json:"battery_level,omitempty"`
-	SignalStrength int    `json:"signal_strength,omitempty"`
+	Status         string                 `json:"status"`
+	BatteryLevel   int                    `json:"battery_level,omitempty"`
+	SignalStrength int                    `json:"signal_strength,omitempty"`
+	SimCards       []UpdateSimCardRequest `json:"sim_cards,omitempty"`
+}
+
+type UpdateSimCardRequest struct {
+	SlotIndex   int    `json:"slot_index"`
+	PhoneNumber string `json:"phone_number"`
+	Operator    string `json:"operator"`
+	IsActive    bool   `json:"is_active"`
 }
 
 // Token used for QR Code linking flow (optional, but good practice)

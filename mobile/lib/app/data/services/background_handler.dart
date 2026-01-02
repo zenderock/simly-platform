@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:flutter_background_service_android/flutter_background_service_android.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -9,12 +9,21 @@ import 'package:get_storage/get_storage.dart';
 import 'package:battery_plus/battery_plus.dart';
 import 'package:flutter_signal_strength/flutter_signal_strength.dart';
 import 'package:dio/dio.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:mobile/app/data/config.dart';
 
 class BackgroundHandler {
   static const _channel = MethodChannel('com.simly.gateway/sms');
 
   static Future<void> initializeService() async {
+    // Request notification permission on Android 13+
+    final notificationStatus = await Permission.notification.request();
+    if (notificationStatus.isDenied) {
+      debugPrint(
+        'Notification permission denied - foreground service may fail',
+      );
+    }
+
     final service = FlutterBackgroundService();
 
     await service.configure(
@@ -22,11 +31,11 @@ class BackgroundHandler {
         onStart: onStart,
         autoStart: false,
         isForegroundMode: true,
-        notificationChannelId:
-            'simly_gateway_v2', // Changed ID to force refresh
+        notificationChannelId: 'simly_gateway_v2',
         initialNotificationTitle: 'Simly Gateway Active',
         initialNotificationContent: 'Ready to send SMS',
-        foregroundServiceNotificationId: 999, // Changed ID
+        foregroundServiceNotificationId: 999,
+        foregroundServiceTypes: [AndroidForegroundType.dataSync],
       ),
       iosConfiguration: IosConfiguration(
         autoStart: false,
@@ -62,7 +71,7 @@ class BackgroundHandler {
     try {
       await Firebase.initializeApp();
     } catch (e) {
-      print("Firebase init failed in background: $e");
+      debugPrint("Firebase init failed in background: $e");
     }
     await GetStorage.init();
     final storage = GetStorage();
@@ -76,7 +85,7 @@ class BackgroundHandler {
 
     // FCM Integration for real-time triggers
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print("FCM Message received: ${message.data}");
+      debugPrint("FCM Message received: ${message.data}");
       service.invoke('onPushReceived');
       _pollMessages(dio, storage, service);
     });
@@ -123,12 +132,24 @@ class BackgroundHandler {
         signal = s.toInt();
       } catch (_) {}
 
+      // Get SIM cards info
+      List<Map<String, dynamic>> simCards = [];
+      try {
+        final result = await _channel.invokeMethod('getSimCards');
+        if (result is List) {
+          simCards = result.cast<Map<String, dynamic>>();
+        }
+      } catch (e) {
+        debugPrint("Failed to get SIM cards: $e");
+      }
+
       final response = await dio.post(
         'devices/$deviceId/heartbeat',
         data: {
           'battery_level': battery,
           'signal_strength': signal,
           'status': 'online',
+          'sim_cards': simCards,
         },
         options: Options(headers: {'Authorization': 'Bearer $deviceToken'}),
       );
@@ -197,7 +218,7 @@ class BackgroundHandler {
         }
       }
     } catch (e) {
-      print("Poll failed: $e");
+      debugPrint("Poll failed: $e");
     }
   }
 }

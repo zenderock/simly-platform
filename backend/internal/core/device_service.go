@@ -96,7 +96,7 @@ func (s *DeviceService) ListDevices(ctx context.Context, orgID int) ([]model.Dev
 	return s.store.GetDevicesByOrganizationID(ctx, orgID)
 }
 
-func (s *DeviceService) Heartbeat(ctx context.Context, deviceID int, battery, signal int) ([]model.Message, error) {
+func (s *DeviceService) Heartbeat(ctx context.Context, deviceID int, battery, signal int, simCards []model.UpdateSimCardRequest) ([]model.Message, error) {
 	if battery > 0 && battery < 15 {
 		// Fetch device to get OrgID and Name
 		device, err := s.store.GetDeviceByID(ctx, deviceID)
@@ -108,6 +108,14 @@ func (s *DeviceService) Heartbeat(ctx context.Context, deviceID int, battery, si
 	}
 	if err := s.store.UpdateDeviceHealth(ctx, deviceID, battery, signal, "online"); err != nil {
 		return nil, err
+	}
+
+	// Update SIM cards if provided
+	if len(simCards) > 0 {
+		if err := s.store.UpdateDeviceSimCards(ctx, deviceID, simCards); err != nil {
+			// Log error but don't fail the heartbeat
+			fmt.Printf("Failed to update SIM cards for device %d: %v\n", deviceID, err)
+		}
 	}
 
 	return s.store.GetPendingMessagesByDeviceID(ctx, deviceID)
