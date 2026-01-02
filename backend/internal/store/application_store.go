@@ -79,3 +79,13 @@ func (s *Store) DeleteApplication(ctx context.Context, appID, orgID int) error {
 	}
 	return nil
 }
+
+func (s *Store) CountApplicationsByOrganization(ctx context.Context, orgID int) (int, error) {
+	query := `SELECT COUNT(*) FROM applications WHERE organization_id = $1`
+	var count int
+	err := s.db.QueryRow(ctx, query, orgID).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count applications: %w", err)
+	}
+	return count, nil
+}

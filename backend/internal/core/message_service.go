@@ -193,7 +193,11 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 			if err := s.store.CreateMessage(ctx, msg); err != nil {
 				return nil, err
 			}
-			_ = s.rateLimiter.IncrementUsage(ctx, *req.ApplicationID, orgID)
+
+			// Record usage for billing
+			if cost, err := s.rateLimiter.CalculateSMSCost(ctx, orgID); err == nil {
+				_ = s.rateLimiter.RecordUsage(ctx, *req.ApplicationID, orgID, msg.ID, cost)
+			}
 
 			return msg, nil
 		}
@@ -307,11 +311,6 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 		if err := s.NotifyDevice(ctx, msg); err != nil {
 			logNotificationError(msg.ID, err)
 		}
-	}
-
-	// 5. Increment Usage
-	if req.ApplicationID != nil {
-		_ = s.rateLimiter.IncrementUsage(ctx, *req.ApplicationID, orgID)
 	}
 
 	return msg, nil
@@ -462,14 +461,21 @@ func (s *MessageService) UpdateStatus(ctx context.Context, msgID int, status str
 		return err
 	}
 
-	// 5. Trigger Alert if Fail in terminal state
+	// 5. Record Usage for billing when message is successfully sent
+	if (status == "sent" || status == "delivered") && msg.ApplicationID != nil {
+		if cost, err := s.rateLimiter.CalculateSMSCost(ctx, msg.OrganizationID); err == nil {
+			_ = s.rateLimiter.RecordUsage(ctx, *msg.ApplicationID, msg.OrganizationID, msgID, cost)
+		}
+	}
+
+	// 6. Trigger Alert if Fail in terminal state
 	if status == "failed" {
 		title := "Message Delivery Failed"
 		message := fmt.Sprintf("Message to %s failed to deliver after %d retries. Content: %s", msg.ToNumber, msg.RetryCount, msg.Body)
 		s.alertService.NotifyOrganization(ctx, msg.OrganizationID, "message_failed", title, message, "warning")
 	}
 
-	// 6. Dispatch Webhook
+	// 7. Dispatch Webhook
 	s.webhook.DispatchEvent(msg.OrganizationID, msg.ApplicationID, "sms.status_updated", map[string]interface{}{
 		"message_id":  msgID,
 		"status":      status,

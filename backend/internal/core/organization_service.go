@@ -76,7 +76,8 @@ func (s *OrganizationService) GetOrganizationStats(ctx context.Context, orgID in
 
 func (s *OrganizationService) UpdatePlan(ctx context.Context, orgID int, planID string) error {
 	limits := model.GetPlanLimits(planID)
-	return s.store.UpdateOrganizationPlan(ctx, orgID, planID, limits.SMSMonthly, limits.SMSBurst, limits.MaxDevices, limits.MaxSimsPerDevice)
+	// Note: We keep SMSMonthlyLimit as 0 for backward compatibility during transition
+	return s.store.UpdateOrganizationPlan(ctx, orgID, planID, 0, limits.SMSBurst, limits.MaxDevices, limits.MaxSimsPerDevice, limits.MaxApplications, limits.MaxContacts, limits.MaxCampaigns, limits.MaxRecipientsPerCampaign)
 }
 
 func (s *OrganizationService) GetDispatchSettings(ctx context.Context, orgID int) (*store.OrganizationDispatchSettings, error) {

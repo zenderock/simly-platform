@@ -4,46 +4,47 @@ import (
 	"context"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/zenderock/simly-backend/internal/store"
 	"golang.org/x/time/rate"
 )
 
-// RateLimitService handles both Burst (TPS) and Quota (Monthly) limits
+// RateLimitService handles burst (TPS) limits and feature constraints for pay-per-use pricing
 type RateLimitService struct {
-	store *store.Store
+	store         *store.Store
+	pricingEngine *PricingEngine
+	usageService  *UsageService
 	// In-memory limiters for burst control. Key: ApplicationID
 	limiters map[int]*rate.Limiter
 	mu       sync.Mutex
 }
 
 func NewRateLimitService(store *store.Store) *RateLimitService {
+	pricingEngine := NewPricingEngine(store)
+	usageService := NewUsageService(store, pricingEngine)
 	return &RateLimitService{
-		store:    store,
-		limiters: make(map[int]*rate.Limiter),
+		store:         store,
+		pricingEngine: pricingEngine,
+		usageService:  usageService,
+		limiters:      make(map[int]*rate.Limiter),
 	}
 }
 
-// AllowRequest checks if we should proceed. Returns error if limited.
+// AllowRequest checks if we should proceed with SMS sending. Returns error if limited.
+// Only checks burst limits - no monthly quotas in pay-per-use model.
 func (s *RateLimitService) AllowRequest(ctx context.Context, appID int, orgID int) error {
-	// 1. Check Monthly Quota (Database)
-	// Optimization: This could be cached, but for MVP we query (or upsert/check).
-	quotaExceeded, err := s.checkMonthlyQuota(ctx, appID, orgID)
+	// Get organization to check burst limits
+	org, err := s.store.GetOrganizationByID(ctx, orgID)
 	if err != nil {
-		return fmt.Errorf("quota check failed: %w", err)
-	}
-	if quotaExceeded {
-		return fmt.Errorf("monthly quota exceeded")
+		return fmt.Errorf("failed to get organization: %w", err)
 	}
 
-	// 2. Update limiter with org's burst limit
-	org, err := s.store.GetOrganizationByID(ctx, orgID)
-	if err == nil && org.SMSBurstLimit > 0 {
+	// Update limiter with org's burst limit
+	if org.SMSBurstLimit > 0 {
 		s.UpdateLimiterForOrg(appID, org.SMSBurstLimit)
 	}
 
-	// 3. Check Burst Limit (In-Memory Token Bucket)
+	// Check Burst Limit (In-Memory Token Bucket)
 	limiter := s.getLimiter(appID)
 	if !limiter.Allow() {
 		return fmt.Errorf("rate limit exceeded (too many requests per second)")
@@ -52,10 +53,9 @@ func (s *RateLimitService) AllowRequest(ctx context.Context, appID int, orgID in
 	return nil
 }
 
-// IncrementUsage should be called AFTER a successful SMS send
-func (s *RateLimitService) IncrementUsage(ctx context.Context, appID int, orgID int) error {
-	period := time.Now().Format("2006-01") // YYYY-MM
-	return s.store.IncrementUsageLedger(ctx, appID, orgID, period)
+// RecordUsage should be called AFTER a successful SMS send to track usage for billing
+func (s *RateLimitService) RecordUsage(ctx context.Context, appID int, orgID int, messageID int, cost float64) error {
+	return s.usageService.RecordSMSUsage(ctx, orgID, &appID, &messageID, cost)
 }
 
 func (s *RateLimitService) getLimiter(appID int) *rate.Limiter {
@@ -87,24 +87,27 @@ func (s *RateLimitService) UpdateLimiterForOrg(appID int, burstLimit int) {
 	s.limiters[appID] = limiter
 }
 
-func (s *RateLimitService) checkMonthlyQuota(ctx context.Context, appID, orgID int) (bool, error) {
-	period := time.Now().Format("2006-01")
-	usage, err := s.store.GetOrganizationUsage(ctx, orgID, period)
-	if err != nil {
-		// If check fails (e.g. db error), fail closed for safety
-		return true, err
-	}
+// CheckFeatureLimit validates if an organization can create more of a specific feature type
+func (s *RateLimitService) CheckFeatureLimit(ctx context.Context, orgID int, featureType string, currentCount int) error {
+	return s.pricingEngine.CheckFeatureLimit(ctx, orgID, featureType, currentCount)
+}
 
-	// Fetch Limit (Ideally cached)
-	org, err := s.store.GetOrganizationByID(ctx, orgID)
-	if err != nil {
-		return true, err
-	}
+// CalculateSMSCost calculates the cost of an SMS based on the organization's plan
+func (s *RateLimitService) CalculateSMSCost(ctx context.Context, orgID int) (float64, error) {
+	return s.pricingEngine.CalculateSMSCost(ctx, orgID, 1) // Single SMS
+}
 
-	limit := org.SMSMonthlyLimit
-	if limit == 0 {
-		limit = 100 // Fallback for safety
-	}
+// RecordApplicationUsage records application creation for feature limit tracking
+func (s *RateLimitService) RecordApplicationUsage(ctx context.Context, orgID int, appID int) error {
+	return s.usageService.RecordApplicationUsage(ctx, orgID, appID)
+}
 
-	return usage >= limit, nil
+// RecordContactUsage records contact creation for feature limit tracking
+func (s *RateLimitService) RecordContactUsage(ctx context.Context, orgID int, contactID int) error {
+	return s.usageService.RecordContactUsage(ctx, orgID, contactID)
+}
+
+// RecordCampaignUsage records campaign creation for feature limit tracking
+func (s *RateLimitService) RecordCampaignUsage(ctx context.Context, orgID int, campaignID int) error {
+	return s.usageService.RecordCampaignUsage(ctx, orgID, campaignID)
 }

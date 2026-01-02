@@ -408,3 +408,13 @@ func (s *Store) GetCampaignMessageStats(ctx context.Context, campaignID int) (*C
 	}
 	return &stats, nil
 }
+
+func (s *Store) CountCampaignsByOrganization(ctx context.Context, orgID int) (int, error) {
+	query := `SELECT COUNT(*) FROM campaigns WHERE organization_id = $1`
+	var count int
+	err := s.db.QueryRow(ctx, query, orgID).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count campaigns: %w", err)
+	}
+	return count, nil
+}

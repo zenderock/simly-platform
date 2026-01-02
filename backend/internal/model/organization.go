@@ -3,14 +3,20 @@ package model
 import "time"
 
 type Organization struct {
-	ID                     int        `json:"id"`
-	Name                   string     `json:"name"`
-	Slug                   string     `json:"slug"`
-	Plan                   string     `json:"plan"`
-	SMSMonthlyLimit        int        `json:"sms_monthly_limit"`
-	SMSBurstLimit          int        `json:"sms_burst_limit"`
-	MaxDevices             int        `json:"max_devices"`
-	MaxSimsPerDevice       int        `json:"max_sims_per_device"`
+	ID               int    `json:"id"`
+	Name             string `json:"name"`
+	Slug             string `json:"slug"`
+	Plan             string `json:"plan"`
+	SMSMonthlyLimit  int    `json:"sms_monthly_limit"` // Kept for backward compatibility during transition
+	SMSBurstLimit    int    `json:"sms_burst_limit"`
+	MaxDevices       int    `json:"max_devices"`
+	MaxSimsPerDevice int    `json:"max_sims_per_device"`
+	// New feature limits for pay-per-use pricing
+	MaxApplications          int `json:"max_applications"`
+	MaxContacts              int `json:"max_contacts"`
+	MaxCampaigns             int `json:"max_campaigns"`
+	MaxRecipientsPerCampaign int `json:"max_recipients_per_campaign"`
+	// Billing fields
 	StripeCustomerID       *string    `json:"stripe_customer_id,omitempty"`
 	StripeSubscriptionID   *string    `json:"stripe_subscription_id,omitempty"`
 	StripePriceID          *string    `json:"stripe_price_id,omitempty"`
@@ -46,4 +52,17 @@ type OrganizationStats struct {
 	ActiveDevices     int     `json:"active_devices"`
 	TotalDevices      int     `json:"total_devices"`
 	SuccessRate       float64 `json:"success_rate"`
+}
+
+// UsageRecord tracks usage events for billing purposes
+type UsageRecord struct {
+	ID             int       `json:"id"`
+	OrganizationID int       `json:"organization_id"`
+	ApplicationID  *int      `json:"application_id,omitempty"`
+	MessageID      *int      `json:"message_id,omitempty"`
+	UsageType      string    `json:"usage_type"` // "sms", "application", "contact", "campaign"
+	Cost           float64   `json:"cost"`       // Cost in cents
+	Timestamp      time.Time `json:"timestamp"`
+	Period         string    `json:"period"` // YYYY-MM for billing aggregation
+	CreatedAt      time.Time `json:"created_at"`
 }

@@ -329,3 +329,13 @@ func (s *Store) BulkCreateContacts(ctx context.Context, orgID int, contacts []mo
 
 	return insertedIDs, nil
 }
+
+func (s *Store) CountContactsByOrganization(ctx context.Context, orgID int) (int, error) {
+	query := `SELECT COUNT(*) FROM contacts WHERE organization_id = $1`
+	var count int
+	err := s.db.QueryRow(ctx, query, orgID).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count contacts: %w", err)
+	}
+	return count, nil
+}

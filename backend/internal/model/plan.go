@@ -14,81 +14,110 @@ type Plan struct {
 }
 
 type PlanLimits struct {
-	SMSMonthly       int `json:"sms_monthly"`
-	SMSBurst         int `json:"sms_burst"`
-	MaxDevices       int `json:"max_devices"` // -1 = unlimited
-	MaxSimsPerDevice int `json:"max_sims_per_device"`
+	SMSRatePerMessage        float64 `json:"sms_rate_per_message"` // Cost in cents
+	SMSBurst                 int     `json:"sms_burst"`
+	MaxDevices               int     `json:"max_devices"` // -1 = unlimited
+	MaxSimsPerDevice         int     `json:"max_sims_per_device"`
+	MaxApplications          int     `json:"max_applications"`            // -1 = unlimited
+	MaxContacts              int     `json:"max_contacts"`                // -1 = unlimited
+	MaxCampaigns             int     `json:"max_campaigns"`               // -1 = unlimited
+	MaxRecipientsPerCampaign int     `json:"max_recipients_per_campaign"` // -1 = unlimited
 }
 
 const (
-	PlanFree   = "free"
-	PlanPro    = "pro"
-	PlanAgency = "agency"
+	PlanFree   = "starter"      // Renamed from "free" to "starter"
+	PlanPro    = "professional" // Renamed from "pro" to "professional"
+	PlanAgency = "enterprise"   // Renamed from "agency" to "enterprise"
 )
 
 // AvailablePlans returns all available subscription plans
 var AvailablePlans = []Plan{
 	{
 		ID:          PlanFree,
-		Name:        "Free",
+		Name:        "Starter",
 		Price:       0,
 		Period:      "month",
 		Description: "For hobbyists and testing",
 		Features: []string{
-			"100 SMS per month",
-			"1 connection allowed",
+			"Pay-per-SMS pricing (5¢ per SMS)",
+			"1 application",
+			"100 contacts",
+			"1 campaign",
+			"100 recipients per campaign",
+			"1 device connection",
 			"Basic receipt webhooks",
 			"Community support",
 		},
 		Limits: PlanLimits{
-			SMSMonthly:       100,
-			SMSBurst:         10,
-			MaxDevices:       1,
-			MaxSimsPerDevice: 1,
+			SMSRatePerMessage:        5.0, // 5 cents per SMS
+			SMSBurst:                 10,
+			MaxDevices:               1,
+			MaxSimsPerDevice:         1,
+			MaxApplications:          1,
+			MaxContacts:              100,
+			MaxCampaigns:             1,
+			MaxRecipientsPerCampaign: 100,
 		},
 		Popular: false,
 	},
 	{
 		ID:          PlanPro,
-		Name:        "Pro",
-		Price:       1500, // $15
+		Name:        "Professional",
+		Price:       2900, // $29
 		Period:      "month",
 		Description: "For startups and small businesses",
 		Features: []string{
-			"1,000 SMS per month",
+			"Pay-per-SMS pricing (3¢ per SMS)",
+			"5 applications",
+			"1,000 contacts",
+			"5 campaigns",
+			"1,000 recipients per campaign",
 			"Up to 2 devices",
 			"1 SIM per device",
-			"Basic support",
+			"Priority support",
 			"API access",
-			"Webhook support",
+			"Advanced webhooks",
 		},
 		Limits: PlanLimits{
-			SMSMonthly:       1000,
-			SMSBurst:         100,
-			MaxDevices:       2,
-			MaxSimsPerDevice: 1,
+			SMSRatePerMessage:        3.0, // 3 cents per SMS
+			SMSBurst:                 100,
+			MaxDevices:               2,
+			MaxSimsPerDevice:         1,
+			MaxApplications:          5,
+			MaxContacts:              1000,
+			MaxCampaigns:             5,
+			MaxRecipientsPerCampaign: 1000,
 		},
 		Popular: true,
 	},
 	{
 		ID:          PlanAgency,
-		Name:        "Agency",
-		Price:       4900, // $49
+		Name:        "Enterprise",
+		Price:       9900, // $99
 		Period:      "month",
 		Description: "For large campaigns and fleets",
 		Features: []string{
-			"Unlimited SMS",
+			"Pay-per-SMS pricing (2¢ per SMS)",
+			"Unlimited applications",
+			"Unlimited contacts",
+			"Unlimited campaigns",
+			"Unlimited recipients per campaign",
 			"Unlimited devices",
+			"4 SIMs per device",
 			"White-label options",
-			"Priority support",
+			"Dedicated support",
 			"Full API access",
 			"Advanced webhooks",
 		},
 		Limits: PlanLimits{
-			SMSMonthly:       1000000, // Effectively unlimited
-			SMSBurst:         1000,
-			MaxDevices:       -1,
-			MaxSimsPerDevice: 4,
+			SMSRatePerMessage:        2.0, // 2 cents per SMS
+			SMSBurst:                 1000,
+			MaxDevices:               -1, // unlimited
+			MaxSimsPerDevice:         4,
+			MaxApplications:          -1, // unlimited
+			MaxContacts:              -1, // unlimited
+			MaxCampaigns:             -1, // unlimited
+			MaxRecipientsPerCampaign: -1, // unlimited
 		},
 		Popular: false,
 	},
