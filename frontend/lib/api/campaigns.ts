@@ -18,7 +18,7 @@ export interface Campaign {
 export interface CreateCampaignRequest {
   name: string;
   template_body: string;
-  list_id: number;
+  list_id: number | null;
   device_id: number;
   sim_slot?: number | null;
   scheduled_at?: string;

@@ -31,7 +31,7 @@ type Campaign struct {
 type CreateCampaignRequest struct {
 	Name         string     `json:"name"`
 	TemplateBody string     `json:"template_body"`
-	ListID       int        `json:"list_id"`
+	ListID       *int       `json:"list_id"`
 	DeviceID     int        `json:"device_id"`
 	SimSlot      *int       `json:"sim_slot"`
 	ScheduledAt  *time.Time `json:"scheduled_at"`

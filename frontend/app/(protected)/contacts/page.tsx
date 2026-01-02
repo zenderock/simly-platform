@@ -30,6 +30,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
@@ -42,6 +52,9 @@ export default function ContactsPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [selectedList, setSelectedList] = useState<number | null>(null); // null = All Contacts
+  const [createListOpen, setCreateListOpen] = useState(false);
+  const [newListName, setNewListName] = useState("");
+  const [newListDescription, setNewListDescription] = useState("");
 
   // Queries
   const { data: allContacts, isLoading: allContactsLoading } = useQuery({
@@ -83,6 +96,26 @@ export default function ContactsPage() {
     },
   });
 
+  const createListMutation = useMutation({
+    mutationFn: createList,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["contact-lists"] });
+      setCreateListOpen(false);
+      setNewListName("");
+      setNewListDescription("");
+      toast.success("List created");
+    },
+    onError: () => toast.error("Failed to create list"),
+  });
+
+  const handleCreateList = () => {
+    if (!newListName.trim()) {
+      toast.error("List name is required");
+      return;
+    }
+    createListMutation.mutate({ name: newListName, description: newListDescription });
+  };
+
   const contacts = selectedList === null ? allContacts : listDetails?.members;
   const contactsLoading = selectedList === null ? allContactsLoading : listDetailsLoading;
 
@@ -116,9 +149,50 @@ export default function ContactsPage() {
         <div className="w-64 border-r bg-muted/10 p-4 flex flex-col gap-4">
            <div className="flex items-center justify-between mb-2">
              <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Lists</h3>
-             <Button variant="ghost" size="icon" className="size-6">
-               <Plus className="size-3" />
-             </Button>
+             <Dialog open={createListOpen} onOpenChange={setCreateListOpen}>
+               <DialogTrigger asChild>
+                 <Button variant="ghost" size="icon" className="size-6">
+                   <Plus className="size-3" />
+                 </Button>
+               </DialogTrigger>
+               <DialogContent>
+                 <DialogHeader>
+                   <DialogTitle>Create New List</DialogTitle>
+                   <DialogDescription>
+                     Create a list to organize your contacts for campaigns.
+                   </DialogDescription>
+                 </DialogHeader>
+                 <div className="space-y-4 py-4">
+                   <div className="space-y-2">
+                     <Label htmlFor="list-name">List Name</Label>
+                     <Input
+                       id="list-name"
+                       placeholder="e.g. VIP Customers"
+                       value={newListName}
+                       onChange={(e) => setNewListName(e.target.value)}
+                     />
+                   </div>
+                   <div className="space-y-2">
+                     <Label htmlFor="list-description">Description (optional)</Label>
+                     <Input
+                       id="list-description"
+                       placeholder="e.g. High-value customers for special offers"
+                       value={newListDescription}
+                       onChange={(e) => setNewListDescription(e.target.value)}
+                     />
+                   </div>
+                 </div>
+                 <DialogFooter>
+                   <Button variant="outline" onClick={() => setCreateListOpen(false)}>
+                     Cancel
+                   </Button>
+                   <Button onClick={handleCreateList} disabled={createListMutation.isPending}>
+                     {createListMutation.isPending ? <LoaderQuater className="mr-2" /> : null}
+                     Create List
+                   </Button>
+                 </DialogFooter>
+               </DialogContent>
+             </Dialog>
            </div>
            
            <div className="flex flex-col gap-1">

@@ -31,15 +31,15 @@ func (s *CampaignService) CreateCampaign(ctx context.Context, orgID int, req mod
 	}
 
 	// Validate List and Device ownership if provided
-	if req.ListID != 0 {
-		list, err := s.store.GetContactListByID(ctx, req.ListID)
+	if req.ListID != nil && *req.ListID != 0 {
+		list, err := s.store.GetContactListByID(ctx, *req.ListID)
 		if err != nil {
 			return nil, err
 		}
 		if list.OrganizationID != orgID {
 			return nil, errors.New("unauthorized list access")
 		}
-		campaign.ListID = &req.ListID
+		campaign.ListID = req.ListID
 	}
 
 	if req.DeviceID != 0 {
@@ -89,18 +89,24 @@ func (s *CampaignService) LaunchCampaign(ctx context.Context, id, orgID int) err
 		return errors.New("campaign already launched or processing")
 	}
 
-	if c.ListID == nil || c.DeviceID == nil {
-		return errors.New("missing list or device")
+	if c.DeviceID == nil {
+		return errors.New("missing device")
 	}
 
-	// Fetch Contacts
-	contacts, err := s.store.GetContactsInList(ctx, *c.ListID)
+	// Fetch Contacts - either from specific list or all contacts
+	var contacts []model.Contact
+	if c.ListID != nil {
+		contacts, err = s.store.GetContactsInList(ctx, *c.ListID)
+	} else {
+		// ListID is nil means "All Contacts"
+		contacts, err = s.store.GetContactsByOrganizationID(ctx, orgID)
+	}
 	if err != nil {
 		return err
 	}
 
 	if len(contacts) == 0 {
-		return errors.New("contact list is empty")
+		return errors.New("no contacts found")
 	}
 
 	// Prepare Messages

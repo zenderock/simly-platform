@@ -75,6 +75,22 @@ export default function CreateCampaignPage() {
   // Fetch Data
   const { data: lists } = useQuery({ queryKey: ["contact-lists"], queryFn: listLists });
   const { data: devices } = useQuery({ queryKey: ["devices"], queryFn: listDevices });
+  const { data: allContacts } = useQuery({ 
+    queryKey: ["contacts"], 
+    queryFn: async () => {
+      const { listContacts } = await import("@/lib/api/contacts");
+      return listContacts();
+    }
+  });
+
+  // Create a virtual "All Contacts" list option
+  const allContactsOption = {
+    id: -1, // Special ID for all contacts
+    name: "All Contacts",
+    member_count: allContacts?.length || 0,
+  };
+  
+  const listsWithAll = lists ? [allContactsOption, ...lists] : [allContactsOption];
 
   const createMutation = useMutation({
     mutationFn: createCampaign,
@@ -118,16 +134,17 @@ export default function CreateCampaignPage() {
   const prevStep = () => setCurrentStep((prev) => prev - 1);
 
   const onSubmit = (data: FormData) => {
+    const listId = parseInt(data.list_id);
     createMutation.mutate({
         name: data.name,
         template_body: data.template_body,
-        list_id: parseInt(data.list_id),
+        list_id: listId === -1 ? null : listId, // null means all contacts
         device_id: parseInt(data.device_id),
         sim_slot: data.sim_slot === "auto" ? null : parseInt(data.sim_slot || "0"),
     });
   };
 
-  const selectedList = lists?.find(l => l.id.toString() === form.watch("list_id"));
+  const selectedList = listsWithAll.find(l => l.id.toString() === form.watch("list_id"));
   const selectedDevice = devices?.find(d => d.id.toString() === form.watch("device_id"));
 
   return (
@@ -239,11 +256,11 @@ export default function CreateCampaignPage() {
                                                         </SelectTrigger>
                                                     </FormControl>
                                                     <SelectContent>
-                                                        {lists?.map(list => (
+                                                        {listsWithAll.map(list => (
                                                             <SelectItem key={list.id} value={list.id.toString()}>
                                                                 <div className="flex items-center justify-between w-full min-w-[200px]">
                                                                     <span>{list.name}</span>
-                                                                    <span className="text-xs text-muted-foreground ml-2">({list.member_count} members)</span>
+                                                                    <span className="text-xs text-muted-foreground ml-2">({list.member_count} contacts)</span>
                                                                 </div>
                                                             </SelectItem>
                                                         ))}
