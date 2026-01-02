@@ -238,18 +238,19 @@ export function GlobalSearch() {
             <CommandEmpty>No results found for "{query}"</CommandEmpty>
           )}
 
-          {!loading && Object.entries(groupedResults).map(([type, items]) => {
+          {!loading && results.length > 0 && Object.entries(groupedResults).map(([type, items]) => {
             const config = typeConfig[type as keyof typeof typeConfig];
             const IconComponent = config.icon;
 
             return (
-              <CommandGroup key={type} heading={config.label}>
+              <CommandGroup key={type} heading={config.label} forceMount>
                 {items.map((result) => (
                   <CommandItem
                     key={result.id}
                     value={result.id}
                     onSelect={() => handleSelect(result)}
                     className="flex items-center gap-3 py-3 cursor-pointer"
+                    forceMount
                   >
                     <IconComponent className={cn("size-4", config.color)} />
                     <div className="flex-1">
