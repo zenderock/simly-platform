@@ -1,62 +1,19 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Phone, Settings, Plus } from 'lucide-react'
 import Link from 'next/link'
-import { toast } from 'sonner'
-
-interface Application {
-  id: number
-  name: string
-  description: string
-  is_sandbox: boolean
-  created_at: string
-  updated_at: string
-}
+import { useApplicationStore } from '@/store/application-store'
 
 export default function ApplicationsPage() {
-  const [applications, setApplications] = useState<Application[]>([])
-  const [loading, setLoading] = useState(true)
+  const { applications, fetchApplications } = useApplicationStore()
 
   useEffect(() => {
     fetchApplications()
   }, [])
-
-  const fetchApplications = async () => {
-    try {
-      setLoading(true)
-      const response = await fetch('/api/applications')
-      if (response.ok) {
-        const data = await response.json()
-        setApplications(data)
-      } else {
-        toast.error('Failed to load applications')
-      }
-    } catch (error) {
-      console.error('Failed to fetch applications:', error)
-      toast.error('Failed to load applications')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (loading) {
-    return (
-      <div className="container mx-auto py-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-8 bg-gray-200 rounded w-1/3"></div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-32 bg-gray-200 rounded"></div>
-            ))}
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -74,7 +31,7 @@ export default function ApplicationsPage() {
       </div>
 
       {applications.length === 0 ? (
-        <Card>
+        <Card className="border-border">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Settings className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">No applications found</h3>
@@ -90,7 +47,7 @@ export default function ApplicationsPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {applications.map((app) => (
-            <Card key={app.id} className="hover:shadow-md transition-shadow">
+            <Card key={app.id} className="border-border">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg">{app.name}</CardTitle>

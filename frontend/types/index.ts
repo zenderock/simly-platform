@@ -34,6 +34,7 @@ export interface Application {
   id: number;
   organization_id: number;
   name: string;
+  description?: string;
   is_sandbox: boolean;
   created_at: string;
   updated_at: string;
