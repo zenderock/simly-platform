@@ -1,89 +1,285 @@
-'use client'
+"use client";
 
-import { useEffect } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import Link from 'next/link'
-import { useApplicationStore } from '@/store/application-store'
-import { IconPlus, IconSettings, IconPhone } from '@tabler/icons-react'
+import { useState, useEffect } from "react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { useApplicationStore } from "@/store/application-store";
+import {
+  Search,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  Folder,
+  ShieldCheck,
+  ShieldAlert,
+} from "lucide-react";
+import { CreateApplicationDialog } from "@/components/applications/create-application-dialog";
+import api from "@/lib/api";
+import { useToast } from "@/components/ui/use-toast";
+import LoaderQuater from "@/components/loader";
+import { Label } from "@/components/ui/label";
 
 export default function ApplicationsPage() {
-  const { applications, fetchApplications } = useApplicationStore()
+  const {
+    applications,
+    fetchApplications,
+    removeApplication,
+    updateApplication,
+  } = useApplicationStore();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [editingApp, setEditingApp] = useState<any>(null);
+  const [renamingName, setRenamingName] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
-    fetchApplications()
-  }, [])
+    fetchApplications();
+  }, [fetchApplications]);
+
+  const filteredApps = applications.filter((app) =>
+    app.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleDelete = async (id: number) => {
+    if (
+      !confirm(
+        "Are you sure you want to delete this application? This action cannot be undone."
+      )
+    )
+      return;
+
+    setIsDeleting(true);
+    try {
+      await api.delete(`/applications/${id}`);
+      removeApplication(id);
+      toast({ title: "Application deleted", variant: "default" });
+    } catch (e) {
+      toast({ title: "Failed to delete", variant: "destructive" });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleRenameSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingApp) return;
+
+    setIsRenaming(true);
+    try {
+      await api.put(`/applications/${editingApp.id}`, {
+        name: renamingName,
+        is_sandbox: editingApp.is_sandbox, // Keep existing sandbox status
+      });
+      updateApplication(editingApp.id, renamingName);
+      toast({ title: "Application updated", variant: "success" });
+      setEditingApp(null);
+    } catch (e) {
+      toast({ title: "Failed to update", variant: "destructive" });
+    } finally {
+      setIsRenaming(false);
+    }
+  };
+
+  const openRenameDialog = (app: any) => {
+    setEditingApp(app);
+    setRenamingName(app.name);
+  };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Applications</h1>
-          <p className="text-muted-foreground">
-            Manage your applications and their phone number assignments
+    <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 space-y-8 bg-background">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-[#6e3ff3]">
+            <Folder className="size-5" />
+            <span className="text-sm font-bold uppercase tracking-widest">
+              Projects
+            </span>
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+            Applications
+          </h1>
+          <p className="text-muted-foreground text-sm sm:text-base max-w-lg">
+            Create and manage your applications to organize API access.
           </p>
         </div>
-        <Button>
-          <IconPlus className="h-4 w-4 mr-2" />
-          New Application
-        </Button>
+
+        <div className="flex items-center gap-2">
+          <CreateApplicationDialog onCreated={fetchApplications} />
+        </div>
       </div>
 
-      {applications.length === 0 ? (
-        <Card className="border-border">
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <IconSettings className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No applications found</h3>
-            <p className="text-muted-foreground text-center mb-4">
-              Create your first application to start managing SMS routing.
-            </p>
-            <Button>
-              <IconPlus className="h-4 w-4 mr-2" />
-              Create Application
-            </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {applications.map((app) => (
-            <Card key={app.id} className="border-border">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">{app.name}</CardTitle>
-                  <Badge variant={app.is_sandbox ? 'secondary' : 'default'}>
-                    {app.is_sandbox ? 'Sandbox' : 'Live'}
-                  </Badge>
-                </div>
-                {app.description && (
-                  <CardDescription>{app.description}</CardDescription>
-                )}
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">
-                    Created {new Date(app.created_at).toLocaleDateString()}
-                  </span>
-                </div>
-                <div className="flex gap-2">
-                  <Button asChild variant="outline" size="sm" className="flex-1">
-                    <Link href={`/applications/${app.id}/numbers`}>
-                      <IconPhone className="h-4 w-4 mr-2" />
-                      Numbers
-                    </Link>
-                  </Button>
-                  <Button asChild variant="outline" size="sm" className="flex-1">
-                    <Link href={`/applications/${app.id}/settings`}>
-                      <IconSettings className="h-4 w-4 mr-2" />
-                      Settings
-                    </Link>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+      <div className="space-y-4">
+        {/* Search */}
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <Input
+            placeholder="Search applications..."
+            className="pl-10 h-10 shadow-none border-zinc-200 dark:border-zinc-800 focus-visible:ring-[#6e3ff3]"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
         </div>
-      )}
+
+        <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/30 hover:bg-muted/30 border-none">
+                <TableHead className="font-bold text-muted-foreground text-[10px] uppercase italic">
+                  Name
+                </TableHead>
+                <TableHead className="font-bold text-muted-foreground text-[10px] uppercase italic">
+                  Mode
+                </TableHead>
+                <TableHead className="font-bold text-muted-foreground text-[10px] uppercase italic text-right">
+                  Created
+                </TableHead>
+                <TableHead className="w-[50px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredApps.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4} className="h-32 text-center">
+                    <div className="flex flex-col items-center justify-center text-muted-foreground">
+                      <Folder className="size-8 mb-2 opacity-50" />
+                      <p className="text-sm">No applications found</p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredApps.map((app) => (
+                  <TableRow key={app.id}>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        <div className="size-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-500">
+                          <Folder className="size-4" />
+                        </div>
+                        <span className="font-semibold">{app.name}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={`gap-1 pr-3 ${
+                          app.is_sandbox
+                            ? "bg-orange-50 text-orange-600 border-orange-200 dark:bg-orange-900/10 dark:text-orange-400 dark:border-orange-900/30"
+                            : "bg-green-50 text-green-600 border-green-200 dark:bg-green-900/10 dark:text-green-400 dark:border-green-900/30"
+                        }`}
+                      >
+                        {app.is_sandbox ? (
+                          <ShieldAlert className="size-3" />
+                        ) : (
+                          <ShieldCheck className="size-3" />
+                        )}
+                        {app.is_sandbox ? "Sandbox" : "Live"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right text-xs text-muted-foreground font-mono">
+                      {new Date(app.created_at).toLocaleDateString()}
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-8 text-muted-foreground"
+                          >
+                            <MoreHorizontal className="size-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => openRenameDialog(app)}
+                          >
+                            <Pencil className="size-4 mr-2" />
+                            Rename
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => handleDelete(app.id)}
+                            className="text-destructive font-bold"
+                          >
+                            <Trash2 className="size-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      {/* Rename Dialog */}
+      <Dialog
+        open={!!editingApp}
+        onOpenChange={(open) => !open && setEditingApp(null)}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <form onSubmit={handleRenameSubmit}>
+            <DialogHeader>
+              <DialogTitle>Rename Application</DialogTitle>
+              <DialogDescription>
+                Change the name of your application.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label
+                  htmlFor="rename-input"
+                  className="font-bold text-xs uppercase text-muted-foreground"
+                >
+                  Name
+                </Label>
+                <Input
+                  id="rename-input"
+                  value={renamingName}
+                  onChange={(e) => setRenamingName(e.target.value)}
+                  className="h-10"
+                  required
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="submit" disabled={isRenaming}>
+                {isRenaming ? (
+                  <LoaderQuater className="size-4 animate-spin mr-2" />
+                ) : null}
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
-  )
+  );
 }
