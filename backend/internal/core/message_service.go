@@ -19,6 +19,7 @@ type MessageService struct {
 	rateLimiter          *RateLimitService
 	appService           *ApplicationService
 	alertService         *AlertService
+	devicePoolManager    *DevicePoolManager
 	sandboxSuccessNumber string
 	sandboxFailureNumber string
 }
@@ -32,6 +33,7 @@ func NewMessageService(
 	sandboxSuccessNumber string,
 	sandboxFailureNumber string,
 	alertService *AlertService,
+	devicePoolManager *DevicePoolManager,
 ) *MessageService {
 	return &MessageService{
 		store:                store,
@@ -40,6 +42,7 @@ func NewMessageService(
 		rateLimiter:          rateLimiter,
 		appService:           appService,
 		alertService:         alertService,
+		devicePoolManager:    devicePoolManager,
 		sandboxSuccessNumber: sandboxSuccessNumber,
 		sandboxFailureNumber: sandboxFailureNumber,
 	}
@@ -184,9 +187,9 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 		}
 	}
 
-	// 1. Device Selection (Smart Routing) - SKIP IF SCHEDULED
+	// 2. Device Selection - Use DevicePoolManager for intelligent selection
 	if req.ScheduledAt != nil && req.ScheduledAt.After(time.Now()) {
-		// Valid Scheduled Message
+		// Valid Scheduled Message - device will be assigned later
 	} else if req.DeviceID != nil {
 		// Specific Device Requested
 		device, err := s.store.GetDeviceByID(ctx, *req.DeviceID)
@@ -199,12 +202,29 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 		if device.Status != "online" {
 			return nil, errors.New("device is offline")
 		}
+
+		// Check if device is available (not in cooldown, not suspended, throttle respected)
+		if s.devicePoolManager != nil && !s.devicePoolManager.IsDeviceAvailable(device.ID, org.SMSThrottleRateSeconds) {
+			return nil, errors.New("device is temporarily unavailable (cooldown, suspended, or throttled)")
+		}
+
 		targetDevice = device
 	} else {
-		// Smart Selection based on Tags
-		targetDevice, err = s.selectBestDevice(ctx, orgID, req.Tags, nil)
-		if err != nil {
-			return nil, err
+		// Smart Selection using DevicePoolManager
+		if s.devicePoolManager != nil {
+			targetDevice, err = s.devicePoolManager.GetNextAvailableDevice(ctx, orgID, req.Tags)
+			if err != nil {
+				return nil, fmt.Errorf("failed to select device: %w", err)
+			}
+			if targetDevice == nil {
+				return nil, errors.New("no available devices (all offline, in cooldown, or suspended)")
+			}
+		} else {
+			// Fallback to old selection method if DevicePoolManager not available
+			targetDevice, err = s.selectBestDevice(ctx, orgID, req.Tags, nil)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -246,7 +266,7 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 		return nil, err
 	}
 
-	// 3. Trigger FCM Push (ONLY IF NOT SCHEDULED)
+	// 4. Trigger FCM Push (ONLY IF NOT SCHEDULED)
 	if msg.Status == "pending" && targetDevice != nil {
 		if err := s.NotifyDevice(ctx, msg); err != nil {
 			logNotificationError(msg.ID, err)
@@ -273,7 +293,13 @@ func (s *MessageService) NotifyDeviceWithExclusion(ctx context.Context, msg *mod
 	if msg.DeviceID != nil {
 		device, err = s.store.GetDeviceByID(ctx, *msg.DeviceID)
 	} else {
-		device, err = s.selectBestDevice(ctx, msg.OrganizationID, msg.RequiredTags, excludeID)
+		// Use DevicePoolManager if available, otherwise fallback to old method
+		if s.devicePoolManager != nil {
+			device, err = s.devicePoolManager.GetNextAvailableDevice(ctx, msg.OrganizationID, msg.RequiredTags)
+		} else {
+			device, err = s.selectBestDevice(ctx, msg.OrganizationID, msg.RequiredTags, excludeID)
+		}
+
 		if err == nil && device != nil {
 			// Update message with selected device
 			if updateErr := s.store.UpdateMessageDevice(ctx, msg.ID, device.ID); updateErr != nil {
@@ -286,10 +312,18 @@ func (s *MessageService) NotifyDeviceWithExclusion(ctx context.Context, msg *mod
 	}
 
 	if err != nil {
+		// Record failure in DevicePoolManager if device was specified
+		if msg.DeviceID != nil && s.devicePoolManager != nil {
+			s.devicePoolManager.RecordFailure(*msg.DeviceID)
+		}
 		return fmt.Errorf("failed to find device for notification: %w", err)
 	}
 
 	if device.FCMToken == "" {
+		// Record failure in DevicePoolManager
+		if s.devicePoolManager != nil {
+			s.devicePoolManager.RecordFailure(device.ID)
+		}
 		return errors.New("device has no valid push token")
 	}
 
@@ -304,7 +338,21 @@ func (s *MessageService) NotifyDeviceWithExclusion(ctx context.Context, msg *mod
 		pushData["sim_slot"] = fmt.Sprintf("%d", *msg.SimSlot)
 	}
 
-	return s.notifications.SendPush(ctx, device.FCMToken, "Action Required", "New SMS to send", pushData)
+	// Send push notification
+	pushErr := s.notifications.SendPush(ctx, device.FCMToken, "Action Required", "New SMS to send", pushData)
+
+	// Record send event in DevicePoolManager
+	if s.devicePoolManager != nil {
+		if pushErr != nil {
+			// Record failure
+			s.devicePoolManager.RecordFailure(device.ID)
+		} else {
+			// Record successful send
+			s.devicePoolManager.RecordSend(device.ID)
+		}
+	}
+
+	return pushErr
 }
 
 func logNotificationError(msgID int, err error) {
@@ -318,7 +366,18 @@ func (s *MessageService) UpdateStatus(ctx context.Context, msgID int, status str
 		return err
 	}
 
-	// 2. Handle Retries for Failures
+	// 2. Record success/failure in DevicePoolManager
+	if msg.DeviceID != nil && s.devicePoolManager != nil {
+		if status == "sent" || status == "delivered" {
+			// Record success - resets circuit breaker
+			s.devicePoolManager.RecordSuccess(*msg.DeviceID)
+		} else if status == "failed" {
+			// Record failure - may trigger circuit breaker
+			s.devicePoolManager.RecordFailure(*msg.DeviceID)
+		}
+	}
+
+	// 3. Handle Retries for Failures
 	if status == "failed" {
 		if msg.RetryCount < msg.MaxRetries {
 			newRetryCount := msg.RetryCount + 1
@@ -341,7 +400,7 @@ func (s *MessageService) UpdateStatus(ctx context.Context, msgID int, status str
 		}
 	}
 
-	// 3. Update Status Normally (Success or Terminal Failure)
+	// 4. Update Status Normally (Success or Terminal Failure)
 	fullError := ""
 	if errorCode != "" {
 		fullError = fmt.Sprintf("%s: %s", errorCode, errorMessage)
@@ -353,14 +412,14 @@ func (s *MessageService) UpdateStatus(ctx context.Context, msgID int, status str
 		return err
 	}
 
-	// 4. Trigger Alert if Fail in terminal state
+	// 5. Trigger Alert if Fail in terminal state
 	if status == "failed" {
 		title := "Message Delivery Failed"
 		message := fmt.Sprintf("Message to %s failed to deliver after %d retries. Content: %s", msg.ToNumber, msg.RetryCount, msg.Body)
 		s.alertService.NotifyOrganization(ctx, msg.OrganizationID, "message_failed", title, message, "warning")
 	}
 
-	// 5. Dispatch Webhook
+	// 6. Dispatch Webhook
 	s.webhook.DispatchEvent(msg.OrganizationID, msg.ApplicationID, "sms.status_updated", map[string]interface{}{
 		"message_id":  msgID,
 		"status":      status,

@@ -3,9 +3,7 @@ package core
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
-	"time"
 
 	"github.com/zenderock/simly-backend/internal/model"
 	"github.com/zenderock/simly-backend/internal/store"
@@ -22,12 +20,15 @@ func NewCampaignService(store *store.Store, messageService *MessageService) *Cam
 
 func (s *CampaignService) CreateCampaign(ctx context.Context, orgID int, req model.CreateCampaignRequest) (*model.Campaign, error) {
 	campaign := &model.Campaign{
-		OrganizationID: orgID,
-		Name:           req.Name,
-		TemplateBody:   req.TemplateBody,
-		Status:         model.CampaignStatusDraft,
-		SimSlot:        req.SimSlot,
-		ScheduledAt:    req.ScheduledAt,
+		OrganizationID:  orgID,
+		Name:            req.Name,
+		TemplateBody:    req.TemplateBody,
+		Status:          model.CampaignStatusDraft,
+		SimSlot:         req.SimSlot,
+		ScheduledAt:     req.ScheduledAt,
+		SendWindowStart: req.SendWindowStart,
+		SendWindowEnd:   req.SendWindowEnd,
+		UseAllDevices:   req.UseAllDevices,
 	}
 
 	// Validate List and Device ownership if provided
@@ -89,8 +90,9 @@ func (s *CampaignService) LaunchCampaign(ctx context.Context, id, orgID int) err
 		return errors.New("campaign already launched or processing")
 	}
 
-	if c.DeviceID == nil {
-		return errors.New("missing device")
+	// Validate device assignment based on use_all_devices flag
+	if !c.UseAllDevices && c.DeviceID == nil {
+		return errors.New("missing device: either specify a device or enable use_all_devices")
 	}
 
 	// Fetch Contacts - either from specific list or all contacts
@@ -120,40 +122,25 @@ func (s *CampaignService) LaunchCampaign(ctx context.Context, id, orgID int) err
 		})
 	}
 
-	// Create Messages in Bulk
-	if err := s.store.BulkCreateMessagesForCampaign(ctx, c.ID, orgID, *c.DeviceID, messages); err != nil {
+	// Determine device ID for message creation
+	// If use_all_devices is true, pass 0 (NULL) to let dispatcher assign devices
+	// Otherwise use the specified device
+	var deviceIDForMessages int
+	if c.UseAllDevices {
+		deviceIDForMessages = 0 // Will be stored as NULL in database
+	} else {
+		deviceIDForMessages = *c.DeviceID
+	}
+
+	// Create Messages in Bulk with "queued" status
+	if err := s.store.BulkCreateMessagesForCampaign(ctx, c.ID, orgID, deviceIDForMessages, messages); err != nil {
 		return err
 	}
 
-	// Update Status
+	// Update Status to processing - DispatcherService will handle sending
 	if err := s.store.UpdateCampaignStatus(ctx, c.ID, model.CampaignStatusProcessing); err != nil {
 		return err
 	}
-
-	// Kick off notifications asynchronously
-	go func() {
-		// Create a detached context with timeout
-		bgCtx, cancel := context.WithTimeout(context.Background(), 1*time.Hour) // Allow long time for large lists
-		defer cancel()
-
-		pendingMsgs, err := s.store.GetPendingMessagesForCampaign(bgCtx, c.ID)
-		if err != nil {
-			fmt.Printf("Error fetching pending messages for campaign %d: %v\n", c.ID, err)
-			return
-		}
-
-		fmt.Printf("Starting broadcast for campaign %d: %d messages\n", c.ID, len(pendingMsgs))
-
-		for _, m := range pendingMsgs {
-			if err := s.messageService.NotifyDevice(bgCtx, &m); err != nil {
-				// Don't stop, just log. Device might be offline or busy.
-				// App polling will pick it up later.
-				// fmt.Printf("Failed to notify device for msg %d: %v\n", m.ID, err)
-			}
-			// Small delay to avoid flooding FCM API rate limits
-			time.Sleep(10 * time.Millisecond)
-		}
-	}()
 
 	return nil
 }

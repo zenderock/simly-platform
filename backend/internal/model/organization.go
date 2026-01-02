@@ -15,8 +15,13 @@ type Organization struct {
 	StripeSubscriptionID   *string    `json:"stripe_subscription_id,omitempty"`
 	StripePriceID          *string    `json:"stripe_price_id,omitempty"`
 	StripeCurrentPeriodEnd *time.Time `json:"stripe_current_period_end,omitempty"`
-	CreatedAt              time.Time  `json:"created_at"`
-	UpdatedAt              time.Time  `json:"updated_at"`
+	// Dispatch settings for intelligent SMS dispatch
+	SMSThrottleRateSeconds int       `json:"sms_throttle_rate_seconds"`
+	SendWindowStart        int       `json:"send_window_start"`
+	SendWindowEnd          int       `json:"send_window_end"`
+	SendWindowTimezone     string    `json:"send_window_timezone"`
+	CreatedAt              time.Time `json:"created_at"`
+	UpdatedAt              time.Time `json:"updated_at"`
 }
 
 type OrganizationMember struct {

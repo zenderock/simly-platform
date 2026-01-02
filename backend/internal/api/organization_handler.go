@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/zenderock/simly-backend/internal/core"
 	"github.com/zenderock/simly-backend/internal/model"
+	"github.com/zenderock/simly-backend/internal/store"
 )
 
 type OrganizationHandler struct {
@@ -274,6 +275,95 @@ func (h *OrganizationHandler) UpdatePlan(w http.ResponseWriter, r *http.Request)
 
 	// Audit
 	h.auditService.Log(r.Context(), orgID, &userID, "organization.plan_updated", "organization", strconv.Itoa(orgID), map[string]string{"plan": req.Plan}, r.RemoteAddr)
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *OrganizationHandler) GetDispatchSettings(w http.ResponseWriter, r *http.Request) {
+	orgID, err := GetActiveOrgID(r, h.service)
+	if err != nil {
+		http.Error(w, "Organization required", http.StatusForbidden)
+		return
+	}
+
+	settings, err := h.service.GetDispatchSettings(r.Context(), orgID)
+	if err != nil {
+		http.Error(w, "Failed to fetch dispatch settings", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(settings)
+}
+
+func (h *OrganizationHandler) UpdateDispatchSettings(w http.ResponseWriter, r *http.Request) {
+	orgID, err := GetActiveOrgID(r, h.service)
+	if err != nil {
+		http.Error(w, "Organization required", http.StatusForbidden)
+		return
+	}
+
+	// Check permissions - only owner and admin can change dispatch settings
+	userID := GetUserID(r.Context())
+	role, err := h.service.GetMemberRole(r.Context(), orgID, userID)
+	if err != nil {
+		http.Error(w, "Failed to verify permissions", http.StatusInternalServerError)
+		return
+	}
+	if role != "owner" && role != "admin" {
+		http.Error(w, "Unauthorized: only owners and admins can change dispatch settings", http.StatusForbidden)
+		return
+	}
+
+	type UpdateDispatchSettingsRequest struct {
+		SMSThrottleRateSeconds int    `json:"sms_throttle_rate_seconds"`
+		SendWindowStart        int    `json:"send_window_start"`
+		SendWindowEnd          int    `json:"send_window_end"`
+		SendWindowTimezone     string `json:"send_window_timezone"`
+	}
+	var req UpdateDispatchSettingsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+
+	// Validate settings
+	if req.SMSThrottleRateSeconds < 1 {
+		http.Error(w, "Throttle rate must be at least 1 second", http.StatusBadRequest)
+		return
+	}
+	if req.SendWindowStart < 0 || req.SendWindowStart > 23 {
+		http.Error(w, "Send window start must be between 0 and 23", http.StatusBadRequest)
+		return
+	}
+	if req.SendWindowEnd < 0 || req.SendWindowEnd > 23 {
+		http.Error(w, "Send window end must be between 0 and 23", http.StatusBadRequest)
+		return
+	}
+	if req.SendWindowTimezone == "" {
+		http.Error(w, "Send window timezone is required", http.StatusBadRequest)
+		return
+	}
+
+	settings := &store.OrganizationDispatchSettings{
+		SMSThrottleRateSeconds: req.SMSThrottleRateSeconds,
+		SendWindowStart:        req.SendWindowStart,
+		SendWindowEnd:          req.SendWindowEnd,
+		SendWindowTimezone:     req.SendWindowTimezone,
+	}
+
+	if err := h.service.UpdateDispatchSettings(r.Context(), orgID, settings); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Audit
+	h.auditService.Log(r.Context(), orgID, &userID, "organization.dispatch_settings_updated", "organization", strconv.Itoa(orgID), map[string]string{
+		"throttle_rate": strconv.Itoa(req.SMSThrottleRateSeconds),
+		"window_start":  strconv.Itoa(req.SendWindowStart),
+		"window_end":    strconv.Itoa(req.SendWindowEnd),
+		"timezone":      req.SendWindowTimezone,
+	}, r.RemoteAddr)
 
 	w.WriteHeader(http.StatusOK)
 }

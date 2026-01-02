@@ -245,3 +245,123 @@ func (s *Store) GetPendingMessagesByDeviceID(ctx context.Context, deviceID int) 
 	}
 	return messages, nil
 }
+
+// GetQueuedMessages fetches a batch of queued messages ordered by priority and created_at
+func (s *Store) GetQueuedMessages(ctx context.Context, limit int) ([]model.Message, error) {
+	query := `
+		SELECT id, organization_id, application_id, campaign_id, device_id, to_number, body, status, direction, priority, required_tags, created_at, updated_at, scheduled_at, processed_at, retry_count, max_retries, last_error, metadata, sim_slot
+		FROM messages
+		WHERE status = 'queued'
+		ORDER BY 
+			CASE priority 
+				WHEN 'high' THEN 1 
+				WHEN 'normal' THEN 2 
+				WHEN 'low' THEN 3 
+				ELSE 2 
+			END,
+			created_at ASC
+		LIMIT $1
+	`
+	rows, err := s.db.Query(ctx, query, limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query queued messages: %w", err)
+	}
+	defer rows.Close()
+
+	var messages []model.Message
+	for rows.Next() {
+		var m model.Message
+		var reqTags []string
+		if err := rows.Scan(
+			&m.ID,
+			&m.OrganizationID,
+			&m.ApplicationID,
+			&m.CampaignID,
+			&m.DeviceID,
+			&m.ToNumber,
+			&m.Body,
+			&m.Status,
+			&m.Direction,
+			&m.Priority,
+			&reqTags,
+			&m.CreatedAt,
+			&m.UpdatedAt,
+			&m.ScheduledAt,
+			&m.ProcessedAt,
+			&m.RetryCount,
+			&m.MaxRetries,
+			&m.LastError,
+			&m.Metadata,
+			&m.SimSlot,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan queued message: %w", err)
+		}
+		m.RequiredTags = reqTags
+		messages = append(messages, m)
+	}
+	return messages, nil
+}
+
+// GetQueuedMessagesByOrganization fetches a batch of queued messages for a specific organization
+// ordered by priority and created_at. This is useful for send window checks.
+func (s *Store) GetQueuedMessagesByOrganization(ctx context.Context, orgID int, limit int) ([]model.Message, error) {
+	query := `
+		SELECT id, organization_id, application_id, campaign_id, device_id, to_number, body, status, direction, priority, required_tags, created_at, updated_at, scheduled_at, processed_at, retry_count, max_retries, last_error, metadata, sim_slot
+		FROM messages
+		WHERE status = 'queued' AND organization_id = $1
+		ORDER BY 
+			CASE priority 
+				WHEN 'high' THEN 1 
+				WHEN 'normal' THEN 2 
+				WHEN 'low' THEN 3 
+				ELSE 2 
+			END,
+			created_at ASC
+		LIMIT $2
+	`
+	rows, err := s.db.Query(ctx, query, orgID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query queued messages by organization: %w", err)
+	}
+	defer rows.Close()
+
+	var messages []model.Message
+	for rows.Next() {
+		var m model.Message
+		var reqTags []string
+		if err := rows.Scan(
+			&m.ID,
+			&m.OrganizationID,
+			&m.ApplicationID,
+			&m.CampaignID,
+			&m.DeviceID,
+			&m.ToNumber,
+			&m.Body,
+			&m.Status,
+			&m.Direction,
+			&m.Priority,
+			&reqTags,
+			&m.CreatedAt,
+			&m.UpdatedAt,
+			&m.ScheduledAt,
+			&m.ProcessedAt,
+			&m.RetryCount,
+			&m.MaxRetries,
+			&m.LastError,
+			&m.Metadata,
+			&m.SimSlot,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan queued message: %w", err)
+		}
+		m.RequiredTags = reqTags
+		messages = append(messages, m)
+	}
+	return messages, nil
+}
+
+// UpdateMessageDeviceAndStatus updates the device assignment and status for a message
+func (s *Store) UpdateMessageDeviceAndStatus(ctx context.Context, msgID int, deviceID int, status string) error {
+	query := `UPDATE messages SET device_id = $1, status = $2, updated_at = NOW() WHERE id = $3`
+	_, err := s.db.Exec(ctx, query, deviceID, status, msgID)
+	return err
+}

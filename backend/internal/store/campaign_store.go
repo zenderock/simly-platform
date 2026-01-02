@@ -3,14 +3,15 @@ package store
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/zenderock/simly-backend/internal/model"
 )
 
 func (s *Store) CreateCampaign(ctx context.Context, c *model.Campaign) error {
 	query := `
-		INSERT INTO campaigns (organization_id, name, template_body, list_id, device_id, sim_slot, status, scheduled_at, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), NOW())
+		INSERT INTO campaigns (organization_id, name, template_body, list_id, device_id, sim_slot, status, scheduled_at, send_window_start, send_window_end, use_all_devices, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
 		RETURNING id, created_at, updated_at
 	`
 	err := s.db.QueryRow(ctx, query,
@@ -22,6 +23,9 @@ func (s *Store) CreateCampaign(ctx context.Context, c *model.Campaign) error {
 		c.SimSlot,
 		c.Status,
 		c.ScheduledAt,
+		c.SendWindowStart,
+		c.SendWindowEnd,
+		c.UseAllDevices,
 	).Scan(&c.ID, &c.CreatedAt, &c.UpdatedAt)
 
 	if err != nil {
@@ -33,8 +37,8 @@ func (s *Store) CreateCampaign(ctx context.Context, c *model.Campaign) error {
 func (s *Store) UpdateCampaign(ctx context.Context, c *model.Campaign) error {
 	query := `
 		UPDATE campaigns
-		SET name = $1, template_body = $2, list_id = $3, device_id = $4, sim_slot = $5, status = $6, scheduled_at = $7, updated_at = NOW()
-		WHERE id = $8 AND organization_id = $9
+		SET name = $1, template_body = $2, list_id = $3, device_id = $4, sim_slot = $5, status = $6, scheduled_at = $7, send_window_start = $8, send_window_end = $9, use_all_devices = $10, updated_at = NOW()
+		WHERE id = $11 AND organization_id = $12
 	`
 	result, err := s.db.Exec(ctx, query,
 		c.Name,
@@ -44,6 +48,9 @@ func (s *Store) UpdateCampaign(ctx context.Context, c *model.Campaign) error {
 		c.SimSlot,
 		c.Status,
 		c.ScheduledAt,
+		c.SendWindowStart,
+		c.SendWindowEnd,
+		c.UseAllDevices,
 		c.ID,
 		c.OrganizationID,
 	)
@@ -58,7 +65,7 @@ func (s *Store) UpdateCampaign(ctx context.Context, c *model.Campaign) error {
 
 func (s *Store) GetCampaignByID(ctx context.Context, id int) (*model.Campaign, error) {
 	query := `
-		SELECT id, organization_id, name, template_body, list_id, device_id, sim_slot, status, scheduled_at, total_messages, sent_messages, failed_messages, created_at, updated_at
+		SELECT id, organization_id, name, template_body, list_id, device_id, sim_slot, status, scheduled_at, total_messages, sent_messages, failed_messages, send_window_start, send_window_end, pause_reason, estimated_completion_at, use_all_devices, created_at, updated_at
 		FROM campaigns
 		WHERE id = $1
 	`
@@ -76,6 +83,11 @@ func (s *Store) GetCampaignByID(ctx context.Context, id int) (*model.Campaign, e
 		&c.TotalMessages,
 		&c.SentMessages,
 		&c.FailedMessages,
+		&c.SendWindowStart,
+		&c.SendWindowEnd,
+		&c.PauseReason,
+		&c.EstimatedCompletionAt,
+		&c.UseAllDevices,
 		&c.CreatedAt,
 		&c.UpdatedAt,
 	)
@@ -87,7 +99,7 @@ func (s *Store) GetCampaignByID(ctx context.Context, id int) (*model.Campaign, e
 
 func (s *Store) ListCampaigns(ctx context.Context, orgID int) ([]model.Campaign, error) {
 	query := `
-		SELECT id, organization_id, name, template_body, list_id, device_id, sim_slot, status, scheduled_at, total_messages, sent_messages, failed_messages, created_at, updated_at
+		SELECT id, organization_id, name, template_body, list_id, device_id, sim_slot, status, scheduled_at, total_messages, sent_messages, failed_messages, send_window_start, send_window_end, pause_reason, estimated_completion_at, use_all_devices, created_at, updated_at
 		FROM campaigns
 		WHERE organization_id = $1
 		ORDER BY created_at DESC
@@ -114,6 +126,11 @@ func (s *Store) ListCampaigns(ctx context.Context, orgID int) ([]model.Campaign,
 			&c.TotalMessages,
 			&c.SentMessages,
 			&c.FailedMessages,
+			&c.SendWindowStart,
+			&c.SendWindowEnd,
+			&c.PauseReason,
+			&c.EstimatedCompletionAt,
+			&c.UseAllDevices,
 			&c.CreatedAt,
 			&c.UpdatedAt,
 		); err != nil {
@@ -209,10 +226,16 @@ func (s *Store) BulkCreateMessagesForCampaign(ctx context.Context, campaignID, o
 			query := "INSERT INTO messages (organization_id, device_id, sim_slot, to_number, body, status, direction, campaign_id, created_at, updated_at) VALUES "
 			vals := []interface{}{}
 
+			// Convert deviceID to nullable pointer
+			var deviceIDPtr *int
+			if deviceID != 0 {
+				deviceIDPtr = &deviceID
+			}
+
 			for j, m := range batch {
 				n := j * 7
-				query += fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, 'pending', 'outbound', $%d, NOW(), NOW())", n+1, n+2, n+3, n+4, n+5, n+6)
-				vals = append(vals, orgID, deviceID, m.SimSlot, m.ToNumber, m.Body, campaignID)
+				query += fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, 'queued', 'outbound', $%d, NOW(), NOW())", n+1, n+2, n+3, n+4, n+5, n+6)
+				vals = append(vals, orgID, deviceIDPtr, m.SimSlot, m.ToNumber, m.Body, campaignID)
 
 				if j < len(batch)-1 {
 					query += ","
@@ -277,4 +300,111 @@ func (s *Store) GetCampaignAnalytics(ctx context.Context, campaignID int) (*mode
 	}
 
 	return &a, nil
+}
+
+// UpdateCampaignPauseReason updates the pause reason for a campaign
+func (s *Store) UpdateCampaignPauseReason(ctx context.Context, campaignID int, reason string) error {
+	var pauseReason *string
+	if reason != "" {
+		pauseReason = &reason
+	}
+	query := `UPDATE campaigns SET pause_reason = $1, updated_at = NOW() WHERE id = $2`
+	_, err := s.db.Exec(ctx, query, pauseReason, campaignID)
+	return err
+}
+
+// UpdateCampaignEstimatedCompletion updates the estimated completion time for a campaign
+func (s *Store) UpdateCampaignEstimatedCompletion(ctx context.Context, campaignID int, estimatedAt time.Time) error {
+	query := `UPDATE campaigns SET estimated_completion_at = $1, updated_at = NOW() WHERE id = $2`
+	_, err := s.db.Exec(ctx, query, estimatedAt, campaignID)
+	return err
+}
+
+// UpdateCampaignFinalStats updates the final sent and failed counts for a campaign
+func (s *Store) UpdateCampaignFinalStats(ctx context.Context, campaignID int, sent, failed int) error {
+	query := `UPDATE campaigns SET sent_messages = $1, failed_messages = $2, updated_at = NOW() WHERE id = $3`
+	_, err := s.db.Exec(ctx, query, sent, failed, campaignID)
+	return err
+}
+
+// GetProcessingCampaigns returns all campaigns in processing status
+func (s *Store) GetProcessingCampaigns(ctx context.Context) ([]model.Campaign, error) {
+	query := `
+		SELECT id, organization_id, name, template_body, list_id, device_id, sim_slot, status, scheduled_at, total_messages, sent_messages, failed_messages, send_window_start, send_window_end, pause_reason, estimated_completion_at, use_all_devices, created_at, updated_at
+		FROM campaigns
+		WHERE status = 'processing'
+	`
+	rows, err := s.db.Query(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get processing campaigns: %w", err)
+	}
+	defer rows.Close()
+
+	var campaigns []model.Campaign
+	for rows.Next() {
+		var c model.Campaign
+		if err := rows.Scan(
+			&c.ID,
+			&c.OrganizationID,
+			&c.Name,
+			&c.TemplateBody,
+			&c.ListID,
+			&c.DeviceID,
+			&c.SimSlot,
+			&c.Status,
+			&c.ScheduledAt,
+			&c.TotalMessages,
+			&c.SentMessages,
+			&c.FailedMessages,
+			&c.SendWindowStart,
+			&c.SendWindowEnd,
+			&c.PauseReason,
+			&c.EstimatedCompletionAt,
+			&c.UseAllDevices,
+			&c.CreatedAt,
+			&c.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan processing campaign: %w", err)
+		}
+		campaigns = append(campaigns, c)
+	}
+	return campaigns, nil
+}
+
+// CampaignMessageStats holds message counts by status for a campaign
+type CampaignMessageStats struct {
+	Total     int
+	Queued    int
+	Pending   int
+	Sent      int
+	Delivered int
+	Failed    int
+}
+
+// GetCampaignMessageStats returns message counts by status for a campaign
+func (s *Store) GetCampaignMessageStats(ctx context.Context, campaignID int) (*CampaignMessageStats, error) {
+	query := `
+		SELECT 
+			COALESCE(COUNT(*), 0) as total,
+			COALESCE(COUNT(*) FILTER (WHERE status = 'queued'), 0) as queued,
+			COALESCE(COUNT(*) FILTER (WHERE status = 'pending'), 0) as pending,
+			COALESCE(COUNT(*) FILTER (WHERE status = 'sent'), 0) as sent,
+			COALESCE(COUNT(*) FILTER (WHERE status = 'delivered'), 0) as delivered,
+			COALESCE(COUNT(*) FILTER (WHERE status = 'failed'), 0) as failed
+		FROM messages
+		WHERE campaign_id = $1
+	`
+	var stats CampaignMessageStats
+	err := s.db.QueryRow(ctx, query, campaignID).Scan(
+		&stats.Total,
+		&stats.Queued,
+		&stats.Pending,
+		&stats.Sent,
+		&stats.Delivered,
+		&stats.Failed,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get campaign message stats: %w", err)
+	}
+	return &stats, nil
 }

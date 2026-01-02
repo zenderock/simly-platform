@@ -78,3 +78,11 @@ func (s *OrganizationService) UpdatePlan(ctx context.Context, orgID int, planID 
 	limits := model.GetPlanLimits(planID)
 	return s.store.UpdateOrganizationPlan(ctx, orgID, planID, limits.SMSMonthly, limits.SMSBurst, limits.MaxDevices, limits.MaxSimsPerDevice)
 }
+
+func (s *OrganizationService) GetDispatchSettings(ctx context.Context, orgID int) (*store.OrganizationDispatchSettings, error) {
+	return s.store.GetOrganizationDispatchSettings(ctx, orgID)
+}
+
+func (s *OrganizationService) UpdateDispatchSettings(ctx context.Context, orgID int, settings *store.OrganizationDispatchSettings) error {
+	return s.store.UpdateOrganizationDispatchSettings(ctx, orgID, settings)
+}

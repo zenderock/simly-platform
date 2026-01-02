@@ -18,9 +18,10 @@ import (
 )
 
 type Server struct {
-	Config *config.Config
-	DB     *store.Store
-	Router chi.Router
+	Config     *config.Config
+	DB         *store.Store
+	Router     chi.Router
+	Dispatcher *core.DispatcherService
 }
 
 func New(cfg *config.Config) (*Server, error) {
@@ -45,6 +46,10 @@ func New(cfg *config.Config) (*Server, error) {
 }
 
 func (s *Server) Close() {
+	// Stop dispatcher gracefully
+	if s.Dispatcher != nil {
+		s.Dispatcher.Stop()
+	}
 	s.DB.Close()
 }
 
@@ -86,7 +91,11 @@ func (s *Server) setupRoutes() {
 	deviceService := core.NewDeviceService(s.DB, alertService, s.Config.JWTSecret)
 	rateLimitService := core.NewRateLimitService(s.DB)
 	auditService := core.NewAuditService(s.DB)
-	messageService := core.NewMessageService(s.DB, webhookService, notificationProvider, rateLimitService, appService, s.Config.SandboxSuccessNumber, s.Config.SandboxFailureNumber, alertService)
+
+	// Initialize DevicePoolManager early so it can be used by MessageService
+	devicePoolManager := core.NewDevicePoolManager(s.DB)
+
+	messageService := core.NewMessageService(s.DB, webhookService, notificationProvider, rateLimitService, appService, s.Config.SandboxSuccessNumber, s.Config.SandboxFailureNumber, alertService, devicePoolManager)
 
 	// Start Workers
 	scheduler := core.NewSchedulerService(s.DB, messageService)
@@ -94,6 +103,20 @@ func (s *Server) setupRoutes() {
 
 	monitoringService := core.NewMonitoringService(s.DB, alertService, messageService)
 	go monitoringService.Start(context.Background())
+
+	// Initialize and start DispatcherService (reuse devicePoolManager from MessageService)
+	sendWindowManager := core.NewSendWindowManager(s.DB)
+	dispatchConfig := core.DefaultDispatchConfig()
+	dispatcher := core.NewDispatcherService(
+		s.DB,
+		messageService,
+		devicePoolManager,
+		sendWindowManager,
+		alertService,
+		dispatchConfig,
+	)
+	s.Dispatcher = dispatcher
+	go dispatcher.Start(context.Background())
 
 	// Handlers
 	authHandler := api.NewAuthHandler(authUserService)
@@ -223,6 +246,8 @@ func (s *Server) setupRoutes() {
 			r.Put("/current", orgHandler.UpdateOrganization)
 			r.Put("/current/plan", orgHandler.UpdatePlan)
 			r.Get("/current/stats", orgHandler.GetOrganizationStats)
+			r.Get("/current/dispatch-settings", orgHandler.GetDispatchSettings)
+			r.Put("/current/dispatch-settings", orgHandler.UpdateDispatchSettings)
 			r.Get("/plans", orgHandler.ListPlans)
 			r.Post("/", orgHandler.CreateOrganization)
 			r.Post("/members", orgHandler.AddMember)

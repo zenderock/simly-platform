@@ -22,7 +22,7 @@ func (s *Store) CreateOrganization(ctx context.Context, org *model.Organization)
 
 func (s *Store) GetOrganizationByID(ctx context.Context, id int) (*model.Organization, error) {
 	query := `
-		SELECT id, name, slug, plan, sms_monthly_limit, sms_burst_limit, max_devices, max_sims_per_device, stripe_customer_id, stripe_subscription_id, stripe_price_id, stripe_current_period_end, created_at, updated_at
+		SELECT id, name, slug, plan, sms_monthly_limit, sms_burst_limit, max_devices, max_sims_per_device, stripe_customer_id, stripe_subscription_id, stripe_price_id, stripe_current_period_end, sms_throttle_rate_seconds, send_window_start, send_window_end, send_window_timezone, created_at, updated_at
 		FROM organizations
 		WHERE id = $1
 	`
@@ -40,6 +40,10 @@ func (s *Store) GetOrganizationByID(ctx context.Context, id int) (*model.Organiz
 		&org.StripeSubscriptionID,
 		&org.StripePriceID,
 		&org.StripeCurrentPeriodEnd,
+		&org.SMSThrottleRateSeconds,
+		&org.SendWindowStart,
+		&org.SendWindowEnd,
+		&org.SendWindowTimezone,
 		&org.CreatedAt,
 		&org.UpdatedAt,
 	)
@@ -64,7 +68,7 @@ func (s *Store) AddOrganizationMember(ctx context.Context, member *model.Organiz
 
 func (s *Store) GetUserOrganizations(ctx context.Context, userID int) ([]model.Organization, error) {
 	query := `
-		SELECT o.id, o.name, o.slug, o.plan, o.sms_monthly_limit, o.sms_burst_limit, o.max_devices, o.max_sims_per_device, o.created_at, o.updated_at
+		SELECT o.id, o.name, o.slug, o.plan, o.sms_monthly_limit, o.sms_burst_limit, o.max_devices, o.max_sims_per_device, o.sms_throttle_rate_seconds, o.send_window_start, o.send_window_end, o.send_window_timezone, o.created_at, o.updated_at
 		FROM organizations o
 		JOIN organization_members om ON o.id = om.organization_id
 		WHERE om.user_id = $1
@@ -78,7 +82,7 @@ func (s *Store) GetUserOrganizations(ctx context.Context, userID int) ([]model.O
 	var orgs []model.Organization
 	for rows.Next() {
 		var o model.Organization
-		if err := rows.Scan(&o.ID, &o.Name, &o.Slug, &o.Plan, &o.SMSMonthlyLimit, &o.SMSBurstLimit, &o.MaxDevices, &o.MaxSimsPerDevice, &o.CreatedAt, &o.UpdatedAt); err != nil {
+		if err := rows.Scan(&o.ID, &o.Name, &o.Slug, &o.Plan, &o.SMSMonthlyLimit, &o.SMSBurstLimit, &o.MaxDevices, &o.MaxSimsPerDevice, &o.SMSThrottleRateSeconds, &o.SendWindowStart, &o.SendWindowEnd, &o.SendWindowTimezone, &o.CreatedAt, &o.UpdatedAt); err != nil {
 			return nil, err
 		}
 		orgs = append(orgs, o)
@@ -220,4 +224,59 @@ func (s *Store) GetOrganizationByStripeCustomerID(ctx context.Context, customerI
 		return nil, err
 	}
 	return &org, nil
+}
+
+// OrganizationDispatchSettings holds dispatch-related settings for an organization
+type OrganizationDispatchSettings struct {
+	SMSThrottleRateSeconds int    `json:"sms_throttle_rate_seconds"`
+	SendWindowStart        int    `json:"send_window_start"`
+	SendWindowEnd          int    `json:"send_window_end"`
+	SendWindowTimezone     string `json:"send_window_timezone"`
+}
+
+// GetOrganizationDispatchSettings retrieves dispatch settings for an organization
+func (s *Store) GetOrganizationDispatchSettings(ctx context.Context, orgID int) (*OrganizationDispatchSettings, error) {
+	query := `
+		SELECT sms_throttle_rate_seconds, send_window_start, send_window_end, send_window_timezone
+		FROM organizations
+		WHERE id = $1
+	`
+	var settings OrganizationDispatchSettings
+	err := s.db.QueryRow(ctx, query, orgID).Scan(
+		&settings.SMSThrottleRateSeconds,
+		&settings.SendWindowStart,
+		&settings.SendWindowEnd,
+		&settings.SendWindowTimezone,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get organization dispatch settings: %w", err)
+	}
+	return &settings, nil
+}
+
+// UpdateOrganizationDispatchSettings updates dispatch settings for an organization
+func (s *Store) UpdateOrganizationDispatchSettings(ctx context.Context, orgID int, settings *OrganizationDispatchSettings) error {
+	query := `
+		UPDATE organizations 
+		SET sms_throttle_rate_seconds = $1, 
+		    send_window_start = $2, 
+		    send_window_end = $3, 
+		    send_window_timezone = $4, 
+		    updated_at = NOW() 
+		WHERE id = $5
+	`
+	result, err := s.db.Exec(ctx, query,
+		settings.SMSThrottleRateSeconds,
+		settings.SendWindowStart,
+		settings.SendWindowEnd,
+		settings.SendWindowTimezone,
+		orgID,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update organization dispatch settings: %w", err)
+	}
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("organization not found")
+	}
+	return nil
 }

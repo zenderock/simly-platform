@@ -1,0 +1,159 @@
+# Implementation Plan
+
+- [x] 1. Database migrations and model updates
+  - [x] 1.1 Create migration for organization dispatch settings
+    - Add columns: sms_throttle_rate_seconds, send_window_start, send_window_end, send_window_timezone
+    - Set defaults: 3, 8, 21, 'UTC'
+    - _Requirements: 1.1, 1.3, 4.3_
+  - [x] 1.2 Create migration for campaign dispatch settings
+    - Add columns: send_window_start, send_window_end, pause_reason, estimated_completion_at, use_all_devices
+    - _Requirements: 4.1, 5.2, 2.1_
+  - [x] 1.3 Update Go models with new fields
+    - Update Organization struct with dispatch settings
+    - Update Campaign struct with dispatch settings
+    - Add new message status constant "queued"
+    - _Requirements: 1.1, 4.1, 5.2_
+
+- [x] 2. Implement DevicePoolManager
+  - [x] 2.1 Create DeviceThrottleState and CircuitBreakerState structs
+    - Implement in-memory state tracking per device
+    - Include LastSendTime, SendCount10Min, WindowStart, CooldownUntil
+    - Include ConsecutiveFailures, SuspendedUntil for circuit breaker
+    - _Requirements: 1.1, 1.4, 3.1_
+  - [x] 2.2 Implement throttle tracking methods
+    - RecordSend: update last send time and increment 10-min counter
+    - GetDeviceDelay: calculate remaining delay before next send allowed
+    - Check and trigger cooldown when 100 messages in 10-min window
+    - _Requirements: 1.1, 1.2, 1.4_
+  - [ ]* 2.3 Write property test for throttle rate enforcement
+    - **Property 1: Throttle rate enforcement**
+    - **Validates: Requirements 1.1, 1.4**
+  - [ ]* 2.4 Write property test for cooldown trigger
+    - **Property 2: Cooldown trigger consistency**
+    - **Validates: Requirements 1.2**
+  - [x] 2.5 Implement circuit breaker methods
+    - RecordFailure: increment counter, open circuit at threshold
+    - RecordSuccess: reset failure counter
+    - IsDeviceAvailable: check if device is suspended
+    - _Requirements: 3.1, 3.4_
+  - [ ]* 2.6 Write property test for circuit breaker activation
+    - **Property 4: Circuit breaker activation**
+    - **Validates: Requirements 3.1, 3.2**
+  - [ ]* 2.7 Write property test for circuit breaker reset
+    - **Property 5: Circuit breaker reset on success**
+    - **Validates: Requirements 3.4**
+  - [x] 2.8 Implement round-robin device selection
+    - GetNextAvailableDevice: select next device respecting throttle, cooldown, circuit breaker
+    - Track last used device index per organization for fair distribution
+    - Skip unavailable devices
+    - _Requirements: 2.1, 2.3, 2.4_
+  - [ ]* 2.9 Write property test for round-robin fairness
+    - **Property 3: Round-robin distribution fairness**
+    - **Validates: Requirements 2.1**
+
+- [ ] 3. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 4. Implement SendWindowManager
+  - [x] 4.1 Create SendWindowManager struct and methods
+    - IsWithinWindow: check if current time is within configured window
+    - GetNextWindowOpen: calculate when window opens next
+    - Support organization-level and campaign-level windows
+    - _Requirements: 4.1, 4.2, 4.3_
+  - [ ]* 4.2 Write property test for send window enforcement
+    - **Property 6: Send window enforcement**
+    - **Validates: Requirements 4.1, 4.2**
+
+- [x] 5. Implement DispatcherService
+  - [x] 5.1 Create DispatcherService struct with configuration
+    - BatchSize, TickInterval, DefaultThrottleRate
+    - Inject DevicePoolManager and SendWindowManager
+    - _Requirements: 1.1, 4.1_
+  - [x] 5.2 Implement Start/Stop lifecycle methods
+    - Start: begin ticker-based processing loop
+    - Stop: graceful shutdown with context cancellation
+    - _Requirements: 5.2_
+  - [x] 5.3 Implement ProcessBatch method
+    - Fetch batch of queued messages
+    - For each message: check send window, get available device, dispatch
+    - Update message status and device assignment
+    - Handle no-device-available scenario
+    - _Requirements: 1.1, 2.1, 4.1_
+  - [x] 5.4 Implement campaign status updates
+    - Update pause_reason when paused (cooldown, circuit_breaker, outside_window, no_devices)
+    - Calculate and update estimated_completion_at
+    - Detect campaign completion and update status
+    - _Requirements: 5.2, 5.3, 5.4_
+  - [ ]* 5.5 Write property test for campaign completion detection
+    - **Property 7: Campaign completion detection**
+    - **Validates: Requirements 5.3**
+
+- [ ] 6. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 7. Update CampaignService for dispatcher integration
+  - [x] 7.1 Modify LaunchCampaign to use queued status
+    - Create messages with status "queued" instead of "pending"
+    - Remove the goroutine that sends notifications directly
+    - Let DispatcherService handle all sending
+    - _Requirements: 2.1, 6.1_
+  - [x] 7.2 Add support for use_all_devices option
+    - When true, don't assign specific device at creation
+    - Let dispatcher distribute across all available devices
+    - _Requirements: 2.1_
+  - [x] 7.3 Add send window configuration to campaign creation
+    - Accept send_window_start and send_window_end in CreateCampaignRequest
+    - Store in campaign record
+    - _Requirements: 4.1_
+
+- [x] 8. Update store layer
+  - [x] 8.1 Add store methods for queued message retrieval
+    - GetQueuedMessages: fetch batch of queued messages ordered by priority, created_at
+    - Support filtering by organization for send window checks
+    - _Requirements: 5.1, 6.3_
+  - [x] 8.2 Add store methods for campaign analytics updates
+    - UpdateCampaignPauseReason
+    - UpdateCampaignEstimatedCompletion
+    - GetCampaignMessageStats for completion detection
+    - _Requirements: 5.2, 5.3, 5.4_
+  - [x] 8.3 Add store methods for organization dispatch settings
+    - GetOrganizationDispatchSettings
+    - UpdateOrganizationDispatchSettings
+    - _Requirements: 1.3, 4.3_
+
+- [x] 9. Wire up DispatcherService in server
+  - [x] 9.1 Initialize DispatcherService in server startup
+    - Create DevicePoolManager and SendWindowManager
+    - Create DispatcherService with dependencies
+    - Start dispatcher in background goroutine
+    - _Requirements: 1.1, 2.1_
+  - [x] 9.2 Add graceful shutdown for dispatcher
+    - Stop dispatcher on server shutdown
+    - Wait for current batch to complete
+    - _Requirements: 5.2_
+
+- [x] 10. Update MessageService for unified throttling
+  - [x] 10.1 Integrate DevicePoolManager into MessageService
+    - Use DevicePoolManager for device selection in SendSMS
+    - Respect throttle state for API-triggered sends
+    - _Requirements: 6.1, 6.2_
+  - [x] 10.2 Update NotifyDevice to record send events
+    - Call DevicePoolManager.RecordSend after successful notification
+    - Call DevicePoolManager.RecordFailure on notification failure
+    - _Requirements: 1.1, 3.1_
+
+- [ ] 11. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 12. Add API endpoints for dispatch settings
+  - [x] 12.1 Add organization dispatch settings endpoint
+    - GET/PUT /api/organizations/:id/dispatch-settings
+    - Allow configuring throttle_rate, send_window
+    - _Requirements: 1.3, 4.3_
+  - [x] 12.2 Update campaign endpoints
+    - Include send_window fields in create/update campaign
+    - Include pause_reason and estimated_completion in campaign response
+    - _Requirements: 4.1, 5.2, 5.4_
+
+- [ ] 13. Final Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.

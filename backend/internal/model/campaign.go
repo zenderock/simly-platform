@@ -24,17 +24,26 @@ type Campaign struct {
 	TotalMessages  int        `json:"total_messages"`
 	SentMessages   int        `json:"sent_messages"`
 	FailedMessages int        `json:"failed_messages"`
-	CreatedAt      time.Time  `json:"created_at"`
-	UpdatedAt      time.Time  `json:"updated_at"`
+	// Dispatch settings for intelligent SMS dispatch
+	SendWindowStart       *int       `json:"send_window_start,omitempty"`
+	SendWindowEnd         *int       `json:"send_window_end,omitempty"`
+	PauseReason           *string    `json:"pause_reason,omitempty"`
+	EstimatedCompletionAt *time.Time `json:"estimated_completion_at,omitempty"`
+	UseAllDevices         bool       `json:"use_all_devices"`
+	CreatedAt             time.Time  `json:"created_at"`
+	UpdatedAt             time.Time  `json:"updated_at"`
 }
 
 type CreateCampaignRequest struct {
-	Name         string     `json:"name"`
-	TemplateBody string     `json:"template_body"`
-	ListID       *int       `json:"list_id"`
-	DeviceID     int        `json:"device_id"`
-	SimSlot      *int       `json:"sim_slot"`
-	ScheduledAt  *time.Time `json:"scheduled_at"`
+	Name            string     `json:"name"`
+	TemplateBody    string     `json:"template_body"`
+	ListID          *int       `json:"list_id"`
+	DeviceID        int        `json:"device_id"`
+	SimSlot         *int       `json:"sim_slot"`
+	ScheduledAt     *time.Time `json:"scheduled_at"`
+	SendWindowStart *int       `json:"send_window_start,omitempty"`
+	SendWindowEnd   *int       `json:"send_window_end,omitempty"`
+	UseAllDevices   bool       `json:"use_all_devices"`
 }
 type CampaignAnalytics struct {
 	CampaignID int            `json:"campaign_id"`
