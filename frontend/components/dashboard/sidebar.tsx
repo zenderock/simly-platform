@@ -64,7 +64,7 @@ import Image from "next/image";
 import { CreateAppDialog } from "./create-app-dialog";
 import { Application } from "@/types";
 
-import { IconLogs, IconCreditCard, IconHome2, IconMail, IconDeviceMobile, IconKey, IconUsers, IconSpeakerphone, IconShieldHalfFilled, IconCategory2, IconChevronDown, IconChevronRight, IconFolder, IconPlus, IconConfetti, IconEye, IconLogout, IconUserCircle, IconPencil, IconTrash } from '@tabler/icons-react';
+import { IconLogs, IconCreditCard, IconHome2, IconMail, IconDeviceMobile, IconKey, IconUsers, IconSpeakerphone, IconShieldHalfFilled, IconCategory2, IconChevronDown, IconChevronRight, IconFolder, IconPlus, IconConfetti, IconEye, IconLogout, IconUserCircle, IconPencil, IconTrash, IconCode, IconBook, IconPlayerPlay, IconList } from '@tabler/icons-react';
 
 const menuItems = [
   { title: "Dashboard", icon: IconHome2, href: "/dashboard" },
@@ -77,11 +77,19 @@ const menuItems = [
   { title: "Billing", icon: IconCreditCard, href: "/organization/plans" },
 ];
 
+const developerMenuItems = [
+  { title: "Overview", icon: IconCode, href: "/developers" },
+  { title: "API Docs", icon: IconBook, href: "/developers/docs" },
+  { title: "Playground", icon: IconPlayerPlay, href: "/developers/playground" },
+  { title: "Logs", icon: IconList, href: "/developers/logs" },
+];
+
 export function DashboardSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [appsOpen, setAppsOpen] = React.useState(true);
+  const [developersOpen, setDevelopersOpen] = React.useState(true);
   const pathname = usePathname();
   const { user, logout, organizations, organizationId } = useAuth();
-  const { applications, activeAppId, setActiveAppId, getActiveApp } = useApplicationStore();
+  const { applications, activeAppId, setActiveAppId, getActiveApp, updateApplication, removeApplication } = useApplicationStore();
   const activeApp = getActiveApp();
   const currentOrg = organizations.find((org) => org.id === organizationId);
   
@@ -108,11 +116,21 @@ export function DashboardSidebar({ ...props }: React.ComponentProps<typeof Sideb
       setRenameDialogOpen(false);
       return;
     }
+    
+    const trimmedName = newAppName.trim();
+    const previousName = appToRename.name;
+    
+    // Optimistic update on Zustand store
+    updateApplication(appToRename.id, trimmedName);
+    setRenameDialogOpen(false);
+    
     updateAppMutation.mutate(
-      { id: appToRename.id, name: newAppName.trim() },
+      { id: appToRename.id, name: trimmedName },
       {
-        onSuccess: () => setRenameDialogOpen(false),
-        onError: (error) => console.error("Failed to rename:", error),
+        onError: () => {
+          // Rollback on error
+          updateApplication(appToRename.id, previousName);
+        },
       }
     );
   };
@@ -124,12 +142,19 @@ export function DashboardSidebar({ ...props }: React.ComponentProps<typeof Sideb
 
   const handleDeleteConfirm = () => {
     if (!appToDelete) return;
-    deleteAppMutation.mutate(appToDelete.id, {
-      onSuccess: () => {
-        if (activeAppId === appToDelete.id) setActiveAppId(null);
-        setDeleteDialogOpen(false);
+    
+    const appId = appToDelete.id;
+    const previousApps = [...applications];
+    
+    // Optimistic update on Zustand store
+    removeApplication(appId);
+    setDeleteDialogOpen(false);
+    
+    deleteAppMutation.mutate(appId, {
+      onError: () => {
+        // Rollback - refetch applications
+        useApplicationStore.getState().fetchApplications();
       },
-      onError: (error) => console.error("Failed to delete:", error),
     });
   };
 
@@ -189,6 +214,36 @@ export function DashboardSidebar({ ...props }: React.ComponentProps<typeof Sideb
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
+
+          <Collapsible open={developersOpen} onOpenChange={setDevelopersOpen} className="mt-4">
+            <SidebarGroup className="p-0">
+              <SidebarGroupLabel className="flex items-center justify-between px-0 text-[10px] sm:text-[11px] font-semibold tracking-wider text-muted-foreground">
+                <CollapsibleTrigger asChild>
+                  <div className="flex items-center gap-1.5 cursor-pointer">
+                    <IconChevronDown className={`size-3 sm:size-3.5 transition-transform ${developersOpen ? "" : "-rotate-90"}`} />
+                    DEVELOPERS
+                  </div>
+                </CollapsibleTrigger>
+              </SidebarGroupLabel>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  <SidebarMenu className="mt-2">
+                    {developerMenuItems.map((item) => (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton asChild isActive={pathname === item.href} className="h-9 sm:h-[38px]">
+                          <Link href={item.href}>
+                            <item.icon className={`size-4 sm:size-5 ${pathname === item.href ? "text-primary" : "text-muted-foreground"}`} />
+                            <span className={`text-sm ${pathname === item.href ? "font-bold" : "text-muted-foreground"}`}>{item.title}</span>
+                            {pathname === item.href && <IconChevronRight className="ml-auto size-4 text-muted-foreground opacity-60" />}
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </SidebarGroup>
+          </Collapsible>
 
           <Collapsible open={appsOpen} onOpenChange={setAppsOpen} className="mt-4">
             <SidebarGroup className="p-0">

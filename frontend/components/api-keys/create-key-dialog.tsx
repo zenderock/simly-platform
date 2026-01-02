@@ -128,9 +128,28 @@ export function CreateKeyDialog({ applications, onCreated }: CreateKeyDialogProp
                 </Select>
               </div>
               
-              {selectedApp?.is_sandbox && (
-                <div className="p-3 bg-orange-50 border border-orange-100 rounded-lg text-xs text-orange-600 leading-relaxed">
-                   <strong>Sandbox Mode:</strong> Messages sent via this key will not be really sent to devices. They will be simulated for testing purposes.
+              {selectedApp && (
+                <div className={`p-3 rounded-lg text-xs leading-relaxed ${
+                  selectedApp.is_sandbox 
+                    ? "bg-orange-50 border border-orange-100 text-orange-600" 
+                    : "bg-emerald-50 border border-emerald-100 text-emerald-600"
+                }`}>
+                  <div className="flex items-center gap-2 mb-1">
+                    {selectedApp.is_sandbox ? (
+                      <IconShieldX className="size-4" />
+                    ) : (
+                      <IconShieldCheck className="size-4" />
+                    )}
+                    <strong>{selectedApp.is_sandbox ? "Test Key" : "Live Key"}</strong>
+                    <code className="ml-auto font-mono text-[10px] bg-white/50 px-1.5 py-0.5 rounded">
+                      {selectedApp.is_sandbox ? "sk_test_*" : "sk_live_*"}
+                    </code>
+                  </div>
+                  <p>
+                    {selectedApp.is_sandbox 
+                      ? "Messages sent via this key will be simulated for testing purposes. No real SMS will be sent."
+                      : "Messages sent via this key will be delivered to real devices. Use with caution in production."}
+                  </p>
                 </div>
               )}
             </div>
@@ -174,7 +193,7 @@ export function CreateKeyDialog({ applications, onCreated }: CreateKeyDialogProp
                     onClick={() => {
                         if (newKey.key) {
                             navigator.clipboard.writeText(newKey.key);
-                            toast({ title: "Copied!", description: "API Key copied to clipboard." });
+                            toast({ title: "Copied!", description: "API Key copied to clipboard.", variant: "success" });
                         }
                     }}
                   >

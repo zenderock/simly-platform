@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/zenderock/simly-backend/internal/model"
 	"github.com/zenderock/simly-backend/internal/store"
@@ -116,4 +117,76 @@ func (s *WebhookService) sendWebhook(wh model.Webhook, eventType string, payload
 
 func (s *WebhookService) DeleteWebhook(ctx context.Context, webhookID, orgID int) error {
 	return s.store.DeleteWebhook(ctx, webhookID, orgID)
+}
+
+// TestWebhookResult represents the result of a webhook test
+type TestWebhookResult struct {
+	Success    bool
+	StatusCode int
+	Message    string
+}
+
+// SendTestWebhook sends a test payload to a webhook and returns the result
+func (s *WebhookService) SendTestWebhook(wh model.Webhook) TestWebhookResult {
+	// Create test payload
+	testPayload := map[string]interface{}{
+		"event": "test",
+		"payload": map[string]interface{}{
+			"message":    "This is a test webhook from Simly",
+			"timestamp":  fmt.Sprintf("%d", time.Now().Unix()),
+			"webhook_id": wh.ID,
+		},
+	}
+
+	body, err := json.Marshal(testPayload)
+	if err != nil {
+		return TestWebhookResult{
+			Success: false,
+			Message: "Failed to create test payload",
+		}
+	}
+
+	req, err := http.NewRequest("POST", wh.URL, bytes.NewBuffer(body))
+	if err != nil {
+		return TestWebhookResult{
+			Success: false,
+			Message: fmt.Sprintf("Failed to create request: %v", err),
+		}
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("User-Agent", "Simly-Webhook-Test/1.0")
+
+	// Add Signature
+	mac := hmac.New(sha256.New, []byte(wh.Secret))
+	mac.Write(body)
+	signature := hex.EncodeToString(mac.Sum(nil))
+	req.Header.Set("X-Simly-Signature", signature)
+
+	client := &http.Client{
+		Timeout: 10 * time.Second,
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return TestWebhookResult{
+			Success: false,
+			Message: fmt.Sprintf("Request failed: %v", err),
+		}
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+		return TestWebhookResult{
+			Success:    true,
+			StatusCode: resp.StatusCode,
+			Message:    "Webhook received successfully",
+		}
+	}
+
+	return TestWebhookResult{
+		Success:    false,
+		StatusCode: resp.StatusCode,
+		Message:    fmt.Sprintf("Webhook returned status %d", resp.StatusCode),
+	}
 }

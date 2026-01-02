@@ -79,6 +79,7 @@ func (s *Server) setupRoutes() {
 	orgService := core.NewOrganizationService(s.DB)
 	appService := core.NewApplicationService(s.DB)
 	apiKeyService := core.NewAPIKeyService(s.DB)
+	apiKeyService.SetApplicationService(appService) // Enable sandbox detection for API key creation
 	webhookService := core.NewWebhookService(s.DB)
 	authUserService := core.NewUserService(s.DB, orgService, appService, string(jwtSecret))
 	userProfileService := core.NewUserProfileService(s.DB)
@@ -104,6 +105,14 @@ func (s *Server) setupRoutes() {
 	webhookHandler := api.NewWebhookHandler(webhookService, orgService, auditService)
 	orgHandler := api.NewOrganizationHandler(orgService, auditService, s.Config.StripePricePro, s.Config.StripePriceAgency)
 	alertHandler := api.NewAlertHandler(alertService, orgService)
+
+	// Public API Handlers
+	requestLogService := core.NewRequestLogService(s.DB)
+	publicMessageHandler := api.NewPublicMessageHandler(messageService, orgService, appService)
+	publicAPIRouter := api.NewPublicAPIRouter(publicMessageHandler, apiKeyService, requestLogService)
+
+	// Request Log Handler (for dashboard)
+	requestLogHandler := api.NewRequestLogHandler(requestLogService, orgService)
 
 	// Billing
 	billingService := core.NewBillingService(s.DB, s.Config.StripeSecretKey, s.Config.StripeWebhookSecret, "http://localhost:3000", s.Config.StripePricePro, s.Config.StripePriceAgency) // TODO: get frontend URL from config
@@ -136,6 +145,11 @@ func (s *Server) setupRoutes() {
 	// Health Check
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Simly Gateway API v1.0 - Operating Normally"))
+	})
+
+	// Public API v1 Routes (for external developers)
+	r.Route("/v1", func(r chi.Router) {
+		publicAPIRouter.RegisterRoutes(r)
 	})
 
 	// Public Routes
@@ -189,6 +203,7 @@ func (s *Server) setupRoutes() {
 		r.Route("/api/webhooks", func(r chi.Router) {
 			r.Get("/", webhookHandler.ListWebhooks)
 			r.Post("/", webhookHandler.RegisterWebhook)
+			r.Post("/{webhookID}/test", webhookHandler.TestWebhook)
 			r.Delete("/{webhookID}", webhookHandler.DeleteWebhook)
 		})
 
@@ -226,6 +241,12 @@ func (s *Server) setupRoutes() {
 			r.Get("/", alertHandler.ListAlerts)
 			r.Post("/{alertID}/read", alertHandler.MarkAsRead)
 			r.Post("/test", alertHandler.CreateTestAlert) // Route de test
+		})
+
+		// Request Logs (for developer portal)
+		r.Route("/api/request-logs", func(r chi.Router) {
+			r.Get("/", requestLogHandler.ListRequestLogs)
+			r.Get("/{id}", requestLogHandler.GetRequestLog)
 		})
 
 		// Contacts & Lists/Groups

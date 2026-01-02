@@ -50,6 +50,7 @@ export function CreateOrgDialog({ open, onOpenChange, onSuccess }: CreateOrgDial
       toast({
         title: "Organization created",
         description: `You have successfully created ${newOrg.name}.`,
+        variant: "success",
       });
 
       onOpenChange(false);

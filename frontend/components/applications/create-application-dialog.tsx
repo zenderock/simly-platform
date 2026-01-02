@@ -40,6 +40,7 @@ export function CreateApplicationDialog({ onCreated }: CreateApplicationDialogPr
       toast({
         title: "Application Created",
         description: `${formData.name} is ready.`,
+        variant: "success",
       });
       onCreated();
       setOpen(false);

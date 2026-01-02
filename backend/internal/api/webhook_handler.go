@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/zenderock/simly-backend/internal/core"
@@ -91,4 +92,73 @@ func (h *WebhookHandler) DeleteWebhook(w http.ResponseWriter, r *http.Request) {
 	h.auditService.Log(r.Context(), orgID, &userID, "webhook.deleted", "webhook", webhookIDStr, nil, r.RemoteAddr)
 
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// TestWebhookResponse represents the response from testing a webhook
+type TestWebhookResponse struct {
+	Success    bool   `json:"success"`
+	StatusCode int    `json:"status_code,omitempty"`
+	Message    string `json:"message"`
+	Duration   int64  `json:"duration_ms"`
+}
+
+func (h *WebhookHandler) TestWebhook(w http.ResponseWriter, r *http.Request) {
+	webhookIDStr := chi.URLParam(r, "webhookID")
+	webhookID, err := strconv.Atoi(webhookIDStr)
+	if err != nil {
+		http.Error(w, "Invalid Webhook ID", http.StatusBadRequest)
+		return
+	}
+
+	orgID, err := GetActiveOrgID(r, h.orgService)
+	if err != nil {
+		http.Error(w, "Organization required", http.StatusForbidden)
+		return
+	}
+
+	// Get the webhook to verify ownership and get URL
+	webhooks, err := h.service.ListWebhooks(r.Context(), orgID)
+	if err != nil {
+		http.Error(w, "Failed to fetch webhooks", http.StatusInternalServerError)
+		return
+	}
+
+	var webhook *model.Webhook
+	for _, wh := range webhooks {
+		if wh.ID == webhookID {
+			webhook = &wh
+			break
+		}
+	}
+
+	if webhook == nil {
+		http.Error(w, "Webhook not found", http.StatusNotFound)
+		return
+	}
+
+	// Send test payload
+	startTime := time.Now()
+	result := h.service.SendTestWebhook(*webhook)
+	duration := time.Since(startTime).Milliseconds()
+
+	response := TestWebhookResponse{
+		Success:    result.Success,
+		StatusCode: result.StatusCode,
+		Message:    result.Message,
+		Duration:   duration,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if result.Success {
+		w.WriteHeader(http.StatusOK)
+	} else {
+		w.WriteHeader(http.StatusBadGateway)
+	}
+	json.NewEncoder(w).Encode(response)
+
+	// Audit
+	userID := GetUserID(r.Context())
+	h.auditService.Log(r.Context(), orgID, &userID, "webhook.tested", "webhook", webhookIDStr, map[string]string{
+		"success": strconv.FormatBool(result.Success),
+	}, r.RemoteAddr)
 }

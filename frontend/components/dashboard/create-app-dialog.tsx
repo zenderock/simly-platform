@@ -43,7 +43,7 @@ export function CreateAppDialog({ children, open: controlledOpen, onOpenChange: 
       // isSandbox defaults to false for created apps for now, or we can add toggle
       const response = await api.post("/applications", { name, is_sandbox: false });
       
-      toast({ title: "Application created", description: `${name} has been created successfully.` });
+      toast({ title: "Application created", description: `${name} has been created successfully.`, variant: "success" });
       await fetchApplications();
       
       // Auto select the new app

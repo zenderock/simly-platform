@@ -89,7 +89,7 @@ export function NewMessageDialog() {
       toast({
         title: "Message Sent",
         description: "Your message has been queued for delivery.",
-        variant: "default",
+        variant: "success",
       });
 
       triggerRefresh();

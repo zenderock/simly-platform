@@ -29,10 +29,28 @@ export function useUpdateApplication() {
       const res = await api.put<Application>(`/applications/${id}`, { name });
       return res.data;
     },
-    onSuccess: (updatedApp) => {
+    onMutate: async ({ id, name }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: applicationKeys.list() });
+      
+      // Snapshot previous value
+      const previousApps = queryClient.getQueryData<Application[]>(applicationKeys.list());
+      
+      // Optimistically update
       queryClient.setQueryData<Application[]>(applicationKeys.list(), (old) =>
-        old?.map((a) => (a.id === updatedApp.id ? updatedApp : a))
+        old?.map((a) => (a.id === id ? { ...a, name } : a))
       );
+      
+      return { previousApps };
+    },
+    onError: (_err, _vars, context) => {
+      // Rollback on error
+      if (context?.previousApps) {
+        queryClient.setQueryData(applicationKeys.list(), context.previousApps);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: applicationKeys.list() });
     },
   });
 }
@@ -45,10 +63,25 @@ export function useDeleteApplication() {
       await api.delete(`/applications/${id}`);
       return id;
     },
-    onSuccess: (deletedId) => {
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: applicationKeys.list() });
+      
+      const previousApps = queryClient.getQueryData<Application[]>(applicationKeys.list());
+      
+      // Optimistically remove
       queryClient.setQueryData<Application[]>(applicationKeys.list(), (old) =>
-        old?.filter((a) => a.id !== deletedId)
+        old?.filter((a) => a.id !== id)
       );
+      
+      return { previousApps };
+    },
+    onError: (_err, _id, context) => {
+      if (context?.previousApps) {
+        queryClient.setQueryData(applicationKeys.list(), context.previousApps);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: applicationKeys.list() });
     },
   });
 }

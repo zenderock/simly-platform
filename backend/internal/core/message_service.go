@@ -372,6 +372,11 @@ func (s *MessageService) ListMessages(ctx context.Context, orgID int, appID *int
 	return s.store.GetMessagesByOrganizationID(ctx, orgID, appID)
 }
 
+// GetMessage retrieves a single message by ID
+func (s *MessageService) GetMessage(ctx context.Context, msgID int) (*model.Message, error) {
+	return s.store.GetMessageByID(ctx, msgID)
+}
+
 func (s *MessageService) RequeueDeviceMessages(ctx context.Context, deviceID int) error {
 	count, err := s.store.RequeueMessagesByDeviceID(ctx, deviceID)
 	if err != nil {

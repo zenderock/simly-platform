@@ -1,0 +1,172 @@
+# Implementation Plan
+
+- [x] 1. Set up Public API infrastructure
+  - [x] 1.1 Create Request Log model and database migration
+    - Create `backend/internal/model/request_log.go` with RequestLog struct
+    - Create migration file for `request_logs` table with indexes on org_id, created_at
+    - _Requirements: 3.1, 3.4_
+  - [x] 1.2 Create Public API error response types
+    - Create `backend/internal/api/public_errors.go` with APIError struct
+    - Implement helper functions: `WriteError`, `ValidationError`, `AuthError`, `NotFoundError`, `RateLimitError`
+    - _Requirements: 8.1, 8.2, 8.3, 8.4_
+  - [ ]* 1.3 Write property test for error response format
+    - **Property 14: Error Response Format Consistency**
+    - **Validates: Requirements 8.1, 8.2, 8.3, 8.4**
+  - [x] 1.4 Create Public API authentication middleware
+    - Create `backend/internal/api/public_auth_middleware.go`
+    - Accept only `sk_live_*` and `sk_test_*` tokens, reject JWT
+    - Set context values: org_id, app_id, is_sandbox (based on key prefix)
+    - _Requirements: 7.2, 7.5, 7.6_
+  - [ ]* 1.5 Write property test for authentication enforcement
+    - **Property 11: Public API Authentication Enforcement**
+    - **Validates: Requirements 7.2**
+  - [ ]* 1.6 Write property test for key type behavior
+    - **Property 12: Test Key Sandbox Mode**
+    - **Property 13: Live Key Production Mode**
+    - **Validates: Requirements 7.5, 7.6**
+
+- [x] 2. Implement Request Logging system
+  - [x] 2.1 Create Request Log Service
+    - Create `backend/internal/core/request_log_service.go`
+    - Implement: `CreateLog`, `ListLogs`, `GetLog` methods
+    - Add filtering support for status_code and path
+    - _Requirements: 3.1, 3.3, 3.4_
+  - [x] 2.2 Create Request Logger Middleware
+    - Create `backend/internal/api/request_logger_middleware.go`
+    - Capture: method, path, status, duration, request/response bodies
+    - Store logs asynchronously to not block requests
+    - _Requirements: 3.4_
+  - [ ]* 2.3 Write property test for request logging completeness
+    - **Property 4: Request Logging Completeness**
+    - **Validates: Requirements 3.4**
+  - [ ]* 2.4 Write property test for log filtering correctness
+    - **Property 3: Log Filtering Correctness**
+    - **Validates: Requirements 3.3**
+
+- [x] 3. Implement Public API endpoints
+  - [x] 3.1 Create Public Message Handler
+    - Create `backend/internal/api/public_message_handler.go`
+    - Implement `POST /v1/messages` with validation (E.164 phone, max 1600 chars)
+    - Implement `GET /v1/messages/{id}` for status lookup
+    - Use standardized error responses
+    - _Requirements: 7.3, 7.4, 8.1_
+  - [x] 3.2 Create Public API Router and register routes
+    - Create `backend/internal/api/public_router.go`
+    - Register routes under `/v1/` prefix in server.go
+    - Apply PublicAPIAuthMiddleware and RequestLoggerMiddleware
+    - _Requirements: 7.1, 7.2_
+  - [x] 3.3 Update API Key Service for test/live key distinction
+    - Modify `CreateAPIKey` to generate `sk_test_*` for sandbox apps, `sk_live_*` for production
+    - Update `VerifyAPIKey` to return `is_sandbox` flag based on prefix
+    - _Requirements: 7.5, 7.6_
+  - [ ]* 3.4 Write property test for API key revocation effect
+    - **Property 6: API Key Revocation Effect**
+    - **Validates: Requirements 4.3**
+  - [ ]* 3.5 Write property test for API key usage timestamp
+    - **Property 7: API Key Usage Timestamp Update**
+    - **Validates: Requirements 4.4**
+
+- [ ] 4. Checkpoint - Ensure all backend tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 5. Implement Request Logs API for dashboard
+  - [x] 5.1 Create Request Log Handler
+    - Create `backend/internal/api/request_log_handler.go`
+    - Implement `GET /api/request-logs` with pagination and filters
+    - Implement `GET /api/request-logs/{id}` for log details
+    - _Requirements: 3.1, 3.2, 3.3_
+  - [x] 5.2 Register Request Log routes in server.go
+    - Add routes under `/api/request-logs` with JWT auth
+    - _Requirements: 3.1_
+
+- [x] 6. Implement Frontend Developer Portal pages
+  - [x] 6.1 Create Developer Portal main page
+    - Create `frontend/app/(protected)/developers/page.tsx`
+    - Display overview with links to docs, playground, logs
+    - Show quick start guide with code snippets
+    - _Requirements: 6.1_
+  - [x] 6.2 Create Code Snippet component
+    - Create `frontend/components/developers/code-snippet.tsx`
+    - Support languages: cURL, JavaScript, Python, PHP, Go
+    - Implement copy-to-clipboard functionality
+    - _Requirements: 1.3, 6.2, 6.4_
+  - [ ]* 6.3 Write property test for code snippet language coverage
+    - **Property 1: Code Snippet Language Coverage**
+    - **Validates: Requirements 1.3**
+  - [ ]* 6.4 Write property test for code snippet key insertion
+    - **Property 10: Code Snippet Key Insertion**
+    - **Validates: Requirements 6.3**
+
+- [x] 7. Implement API Documentation page
+  - [x] 7.1 Create API Documentation page
+    - Create `frontend/app/(protected)/developers/docs/page.tsx`
+    - Display all Public API endpoints with descriptions
+    - Show request/response examples in JSON format
+    - _Requirements: 1.1, 1.2_
+  - [x] 7.2 Create API Endpoint Documentation component
+    - Create `frontend/components/developers/api-endpoint-doc.tsx`
+    - Display method, path, parameters, headers, examples
+    - Integrate code snippet component for each endpoint
+    - _Requirements: 1.2, 1.3_
+
+- [x] 8. Implement API Playground
+  - [x] 8.1 Create API Playground page
+    - Create `frontend/app/(protected)/developers/playground/page.tsx`
+    - Provide form to construct API requests
+    - Pre-fill API key from user's active keys
+    - _Requirements: 2.1_
+  - [x] 8.2 Implement request execution and response display
+    - Execute requests via fetch to Public API
+    - Display response status, headers, body
+    - Show error details for failed requests
+    - _Requirements: 2.2, 2.4_
+  - [ ]* 8.3 Write property test for error response display
+    - **Property 2: Error Response Display**
+    - **Validates: Requirements 2.4**
+
+- [x] 9. Implement Request Logs UI
+  - [x] 9.1 Create Request Logs page
+    - Create `frontend/app/(protected)/developers/logs/page.tsx`
+    - Display logs table with timestamp, endpoint, status, duration
+    - Implement pagination (100 most recent)
+    - _Requirements: 3.1_
+  - [x] 9.2 Create Request Log Detail modal
+    - Create `frontend/components/developers/request-log-detail.tsx`
+    - Show full request/response details including headers and body
+    - _Requirements: 3.2_
+  - [x] 9.3 Implement log filtering
+    - Add filters for status code and endpoint path
+    - Create `frontend/hooks/use-request-logs.ts` with React Query
+    - _Requirements: 3.3_
+
+- [x] 10. Enhance existing API Keys and Webhooks pages
+  - [x] 10.1 Update API Key creation to show test/live distinction
+    - Modify CreateKeyDialog to show key type based on app environment
+    - Display `sk_test_*` for sandbox, `sk_live_*` for production
+    - _Requirements: 4.1_
+  - [ ]* 10.2 Write property test for API key display fields
+    - **Property 5: API Key Display Fields**
+    - **Validates: Requirements 4.2**
+  - [x] 10.3 Update Webhook creation with event type selection
+    - Add event type checkboxes: message.sent, message.delivered, message.failed, message.received
+    - Validate HTTPS URL requirement
+    - _Requirements: 5.1_
+  - [x] 10.4 Add webhook test functionality
+    - Add "Test Webhook" button to WebhookCard
+    - Send test payload and display response status
+    - _Requirements: 5.3_
+  - [ ]* 10.5 Write property test for webhook display fields
+    - **Property 8: Webhook Display Fields**
+    - **Validates: Requirements 5.2**
+  - [ ]* 10.6 Write property test for webhook dispatch
+    - **Property 9: Webhook Dispatch on Status Change**
+    - **Validates: Requirements 5.4**
+
+- [x] 11. Add Developer section to sidebar navigation
+  - [x] 11.1 Update sidebar with Developer section
+    - Add "Developers" section with links to: Overview, API Docs, Playground, Logs
+    - Use appropriate icons (Code, Book, Play, List)
+    - _Requirements: 1.1, 2.1, 3.1_
+
+- [ ] 12. Final Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
