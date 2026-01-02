@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -27,8 +27,15 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { createContact } from "@/lib/api/contacts";
+import { createContact, listLists, addContactsToList } from "@/lib/api/contacts";
 import { PhoneInput } from "@/components/ui/phone-input";
 import LoaderQuater from "@/components/loader";
 import { IconPlus } from "@tabler/icons-react";
@@ -39,6 +46,7 @@ const schema = z.object({
   phone_number: z.string().min(5, "Valid phone number is required"),
   email: z.string().email().optional().or(z.literal("")),
   tags: z.string().optional(), // Comma separated
+  list_id: z.string().optional(), // Contact list to add to
 });
 
 type FormData = z.infer<typeof schema>;
@@ -51,6 +59,13 @@ export function CreateContactDialog({ onOpenChange }: CreateContactDialogProps) 
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
 
+  // Fetch contact lists
+  const { data: contactLists = [] } = useQuery({
+    queryKey: ["contact-lists"],
+    queryFn: listLists,
+    enabled: open, // Only fetch when dialog is open
+  });
+
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -59,20 +74,38 @@ export function CreateContactDialog({ onOpenChange }: CreateContactDialogProps) 
       phone_number: "",
       email: "",
       tags: "",
+      list_id: "",
     },
   });
 
   const mutation = useMutation({
     mutationFn: createContact,
-    onSuccess: () => {
+    onSuccess: async (contact) => {
       queryClient.invalidateQueries({ queryKey: ["contacts"] });
-      toast.success("Contact created successfully");
+      
+      // If a list was selected, add the contact to that list
+      const selectedListId = form.getValues("list_id");
+      if (selectedListId && selectedListId !== "") {
+        try {
+          await addContactsToList(parseInt(selectedListId), [contact.id]);
+          queryClient.invalidateQueries({ queryKey: ["contact-lists"] });
+          toast.success(`Contact created and added to list successfully`);
+        } catch (error) {
+          toast.success("Contact created successfully");
+          toast.error("Failed to add contact to list");
+        }
+      } else {
+        toast.success("Contact created successfully");
+      }
+      
       setOpen(false);
       form.reset();
       onOpenChange?.(false);
     },
-    onError: (error) => {
-      toast.error("Failed to create contact");
+    onError: (error: any) => {
+      // Extract error message from backend response
+      const errorMessage = error.response?.data || error.message || "Failed to create contact";
+      toast.error(errorMessage);
       console.error(error);
     },
   });
@@ -177,6 +210,35 @@ export function CreateContactDialog({ onOpenChange }: CreateContactDialogProps) 
                     <Input placeholder="vip, customer, newsletter" {...field} />
                   </FormControl>
                   <FormDescription>Comma separated tags</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="list_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Add to List (Optional)</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a list" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="">No list</SelectItem>
+                      {contactLists.map((list) => (
+                        <SelectItem key={list.id} value={list.id.toString()}>
+                          {list.name} ({list.member_count || 0} members)
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    Automatically add this contact to a specific list
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

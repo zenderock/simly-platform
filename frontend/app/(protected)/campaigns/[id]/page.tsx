@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { getCampaign, getCampaignAnalytics } from "@/lib/api/campaigns";
+import { listDevices } from "@/lib/api/devices";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { 
@@ -34,6 +35,9 @@ export default function CampaignDetailsPage() {
   const id = parseInt(params.id as string);
   const router = useRouter();
 
+  // Generate formatted campaign ID
+  const formattedCampaignId = `sy-c-${String(id).padStart(2, '0')}-${id}`;
+
   const { data: campaign, isLoading: isLoadingCampaign } = useQuery({
     queryKey: ["campaign", id],
     queryFn: () => getCampaign(id),
@@ -44,6 +48,18 @@ export default function CampaignDetailsPage() {
     queryFn: () => getCampaignAnalytics(id),
     refetchInterval: campaign?.status === "processing" ? 5000 : false, // Poll if processing
   });
+
+  // Fetch devices to get device name
+  const { data: devices = [] } = useQuery({
+    queryKey: ["devices"],
+    queryFn: listDevices,
+    enabled: !!campaign?.device_id, // Only fetch if campaign has a device_id
+  });
+
+  // Find device name
+  const deviceName = campaign?.device_id 
+    ? devices.find(d => d.id === campaign.device_id)?.name || `Device ${campaign.device_id}`
+    : null;
 
   if (isLoadingCampaign || isLoadingAnalytics) {
     return (
@@ -93,7 +109,7 @@ export default function CampaignDetailsPage() {
                 </div>
                 <p className="text-sm text-muted-foreground flex items-center gap-2">
                     <Calendar className="size-3" />
-                    Created {format(new Date(campaign.created_at), "MMM d, yyyy HH:mm")}
+                    {formattedCampaignId} • Created {format(new Date(campaign.created_at), "MMM d, yyyy HH:mm")}
                 </p>
             </div>
         </div>
@@ -108,7 +124,7 @@ export default function CampaignDetailsPage() {
 
       <div className="p-6 grid gap-6 grid-cols-1 md:grid-cols-3">
         {/* Key Stats */}
-        <Card className="md:col-span-1">
+        <Card className="md:col-span-1 shadow-none">
             <CardHeader pb-0>
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
                     <BarChart3 className="size-4 text-muted-foreground" />
@@ -149,7 +165,7 @@ export default function CampaignDetailsPage() {
 
         {/* Breakdown Cards */}
         <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Card>
+            <Card className="shadow-none">
                 <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
                         <div>
@@ -163,7 +179,7 @@ export default function CampaignDetailsPage() {
                 </CardContent>
             </Card>
 
-            <Card>
+            <Card className="shadow-none">
                 <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
                         <div>
@@ -183,7 +199,7 @@ export default function CampaignDetailsPage() {
                 </CardContent>
             </Card>
 
-            <Card>
+            <Card className="shadow-none">
                 <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
                         <div>
@@ -200,7 +216,7 @@ export default function CampaignDetailsPage() {
                 </CardContent>
             </Card>
 
-            <Card>
+            <Card className="shadow-none">
                 <CardContent className="pt-6">
                     <div className="flex items-center justify-between">
                         <div>
@@ -219,7 +235,7 @@ export default function CampaignDetailsPage() {
         </div>
 
         {/* Campaign Info */}
-        <Card className="md:col-span-3">
+        <Card className="md:col-span-3 shadow-none">
             <CardHeader>
                 <CardTitle>Campaign Configuration</CardTitle>
                 <CardDescription>Details of the template and target audience</CardDescription>
@@ -240,7 +256,7 @@ export default function CampaignDetailsPage() {
                                     List ID: <span className="text-foreground font-medium">{campaign.list_id || "N/A"}</span>
                                 </p>
                                 <p className="text-sm text-muted-foreground">
-                                    Preferred Device ID: <span className="text-foreground font-medium">{campaign.device_id || "Any available"}</span>
+                                    Preferred Device: <span className="text-foreground font-medium">{deviceName || "Any available"}</span>
                                 </p>
                             </div>
                             <div>
