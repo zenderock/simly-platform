@@ -120,6 +120,38 @@ func (h *DeviceHandler) DeleteDevice(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (h *DeviceHandler) UpdateDevice(w http.ResponseWriter, r *http.Request) {
+	deviceIDStr := chi.URLParam(r, "deviceID")
+	deviceID, err := strconv.Atoi(deviceIDStr)
+	if err != nil {
+		http.Error(w, "Invalid Device ID", http.StatusBadRequest)
+		return
+	}
+
+	orgID, err := GetActiveOrgID(r, h.orgService)
+	if err != nil {
+		http.Error(w, "Organization required", http.StatusForbidden)
+		return
+	}
+
+	var req model.UpdateDeviceRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.service.UpdateDevice(r.Context(), deviceID, orgID, req); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Audit
+	userID := GetUserID(r.Context())
+	h.auditService.Log(r.Context(), orgID, &userID, "device.updated", "device", deviceIDStr, map[string]string{"name": req.Name}, r.RemoteAddr)
+
+	w.WriteHeader(http.StatusOK)
+}
+
 // GenerateLinkToken creates a new device link token for QR code
 func (h *DeviceHandler) GenerateLinkToken(w http.ResponseWriter, r *http.Request) {
 	orgID, err := GetActiveOrgID(r, h.orgService)

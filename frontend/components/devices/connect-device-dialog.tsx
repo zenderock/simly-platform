@@ -102,7 +102,7 @@ export function ConnectDeviceDialog({ disabled }: ConnectDeviceDialogProps) {
       <DialogTrigger asChild>
         <Button 
           disabled={disabled}
-          className="shrink-0 gap-2 bg-[#6e3ff3] hover:bg-[#5b32cc] text-white border-none shadow-lg shadow-[#6e3ff3]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="shrink-0 gap-2 bg-black hover:bg-neutral-800 text-white border-none shadow-lg shadow-black/20 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Plus className="size-4" />
           Add a Device

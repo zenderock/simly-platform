@@ -50,3 +50,20 @@ export function useDeleteDevice() {
     },
   });
 }
+
+export function useUpdateDevice() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: { name: string; tags: string[] } }) => {
+      await api.put(`/devices/${id}`, data);
+      return { id, ...data };
+    },
+    onSuccess: (updatedDevice) => {
+      queryClient.setQueryData<Device[]>(deviceKeys.list(), (old) =>
+        old?.map((d) => (d.id === updatedDevice.id ? { ...d, ...updatedDevice } : d))
+      );
+      queryClient.invalidateQueries({ queryKey: deviceKeys.list() });
+    },
+  });
+}

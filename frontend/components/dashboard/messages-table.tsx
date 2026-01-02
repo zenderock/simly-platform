@@ -50,6 +50,7 @@ import {
 import { useDashboardStore } from "@/store/dashboard-store";
 import { useApplicationStore } from "@/store/application-store";
 import { useMessages } from "@/hooks/use-messages";
+import { useSearchParams } from "next/navigation";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 30, 50];
 
@@ -69,6 +70,14 @@ export function MessagesTable() {
   const { data: messages = [], isLoading: loading } = useMessages(activeAppId);
   const [currentPage, setCurrentPage] = React.useState(1);
   const [pageSize, setPageSize] = React.useState(10);
+  const searchParams = useSearchParams();
+
+  React.useEffect(() => {
+    const deviceParam = searchParams.get("device");
+    if (deviceParam) {
+      setDeviceFilter(deviceParam);
+    }
+  }, [searchParams, setDeviceFilter]);
 
   const hasActiveFilters =
     statusFilter !== "all" || appFilter !== "all" || deviceFilter !== "all";

@@ -31,9 +31,11 @@ import { motion } from "framer-motion";
 interface DeviceCardProps {
   device: Device;
   onDelete?: (id: number) => void;
+  onEdit?: (device: Device) => void;
+  onLogs?: (device: Device) => void;
 }
 
-export function DeviceCard({ device, onDelete }: DeviceCardProps) {
+export function DeviceCard({ device, onDelete, onEdit, onLogs }: DeviceCardProps) {
   const isOnline = device.status === "online";
   
   const getBatteryIcon = (level: number) => {
@@ -75,10 +77,16 @@ export function DeviceCard({ device, onDelete }: DeviceCardProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem className="gap-2"><Settings className="size-4" /> Settings</DropdownMenuItem>
-                <DropdownMenuItem className="gap-2"><History className="size-4" /> Logs</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onEdit?.(device)} className="gap-2 cursor-pointer">
+                  <Settings className="size-4" /> Settings
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onLogs?.(device)} className="gap-2 cursor-pointer">
+                  <History className="size-4" /> Logs
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => onDelete?.(device.id)} className="text-red-600 gap-2"><Trash2 className="size-4" /> Remove</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onDelete?.(device.id)} className="text-red-600 gap-2 cursor-pointer">
+                  <Trash2 className="size-4" /> Remove
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

@@ -36,6 +36,11 @@ type RegisterDeviceRequest struct {
 	Tags        []string `json:"tags,omitempty"`
 }
 
+type UpdateDeviceRequest struct {
+	Name string   `json:"name"`
+	Tags []string `json:"tags"`
+}
+
 type UpdateDeviceStatusRequest struct {
 	Status         string                 `json:"status"`
 	BatteryLevel   int                    `json:"battery_level,omitempty"`

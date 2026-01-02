@@ -7,7 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Device } from "@/types";
 import { DeviceCard } from "@/components/devices/device-card";
+import { DeviceSettingsDialog } from "@/components/devices/device-settings-dialog";
 import { ConnectDeviceDialog } from "@/components/devices/connect-device-dialog";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -15,7 +17,9 @@ import { useDevices, useDeleteDevice } from "@/hooks/use-devices";
 import { useCurrentOrganization } from "@/hooks/use-organizations";
 
 export default function DevicesPage() {
+  const [editingDevice, setEditingDevice] = useState<Device | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const router = useRouter();
   
   const { data: devices = [], isLoading, refetch, isFetching } = useDevices();
   const { data: org } = useCurrentOrganization();
@@ -38,6 +42,14 @@ export default function DevicesPage() {
         alert("Failed to delete device");
       }
     }
+  };
+
+  const handleEdit = (device: Device) => {
+    setEditingDevice(device);
+  };
+
+  const handleLogs = (device: Device) => {
+    router.push(`/messages?device=${encodeURIComponent(device.name)}`);
   };
 
   return (
@@ -159,6 +171,8 @@ export default function DevicesPage() {
                   key={device.id} 
                   device={device} 
                   onDelete={handleDelete}
+                  onEdit={handleEdit}
+                  onLogs={handleLogs}
                 />
               ))}
             </AnimatePresence>
@@ -178,6 +192,12 @@ export default function DevicesPage() {
           </div>
         )}
       </div>
+
+      <DeviceSettingsDialog 
+        device={editingDevice} 
+        open={!!editingDevice} 
+        onOpenChange={(open) => !open && setEditingDevice(null)} 
+      />
     </div>
   );
 }

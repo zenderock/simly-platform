@@ -130,6 +130,22 @@ func (s *DeviceService) DeleteDevice(ctx context.Context, deviceID, orgID int) e
 	return s.store.DeleteDevice(ctx, deviceID, orgID)
 }
 
+func (s *DeviceService) UpdateDevice(ctx context.Context, deviceID, orgID int, req model.UpdateDeviceRequest) error {
+	device, err := s.store.GetDeviceByID(ctx, deviceID)
+	if err != nil {
+		return err
+	}
+
+	if device.OrganizationID != orgID {
+		return fmt.Errorf("unauthorized")
+	}
+
+	device.Name = req.Name
+	device.Tags = req.Tags
+
+	return s.store.UpdateDevice(ctx, device)
+}
+
 // GenerateLinkToken creates a new device link token for QR code
 func (s *DeviceService) GenerateLinkToken(ctx context.Context, orgID int) (*model.DeviceLinkToken, error) {
 	// Check device limit before generating token
