@@ -90,7 +90,7 @@ class BackgroundHandler {
 
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-    // Polling Logic for SMS & Heartbeat (Fallback)
+    // Polling Logic for SMS only (no heartbeat - done by HomeController)
     Timer.periodic(const Duration(seconds: 30), (timer) async {
       service.invoke('updateNotificationMode', {'mode': 'Push (FCM)'});
       _pollMessages(dio, storage, service);
@@ -124,20 +124,10 @@ class BackgroundHandler {
     if (deviceToken == null || deviceId == null) return;
 
     try {
-      final battery = await Battery().batteryLevel;
-      int signal = 0;
-      try {
-        final s = await FlutterSignalStrength().getCellularSignalStrength();
-        signal = s.toInt();
-      } catch (_) {}
-
+      // Send minimal heartbeat just to get pending messages
       final response = await dio.post(
         'devices/$deviceId/heartbeat',
-        data: {
-          'battery_level': battery,
-          'signal_strength': signal,
-          'status': 'online',
-        },
+        data: {'status': 'online'},
         options: Options(headers: {'Authorization': 'Bearer $deviceToken'}),
       );
 

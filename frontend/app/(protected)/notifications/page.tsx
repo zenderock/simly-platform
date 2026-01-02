@@ -1,15 +1,18 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, Info, AlertTriangle, CheckCircle2, Bell, CheckCheck } from "lucide-react";
-import { useAuth } from "@/lib/auth";
-import api from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Alert } from "@/types";
 import LoaderQuater from "@/components/loader";
+import { 
+  useNotifications, 
+  useMarkAsRead, 
+  useMarkAllAsRead, 
+  useCreateTestAlert 
+} from "@/hooks/use-notifications";
 
 const severityConfig = {
   info: {
@@ -39,74 +42,20 @@ const severityConfig = {
 };
 
 export default function NotificationsPage() {
-  const { organizationId } = useAuth();
-  const [alerts, setAlerts] = useState<Alert[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const fetchAlerts = async () => {
-    if (!organizationId) return;
-    
-    setLoading(true);
-    try {
-      const response = await api.get(`/alerts`);
-      setAlerts(response.data || []);
-    } catch (error) {
-      console.error("Failed to fetch alerts", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchAlerts();
-  }, [organizationId]);
-
-  const markAsRead = async (alertId: number) => {
-    try {
-      await api.post(`/alerts/${alertId}/read`);
-      setAlerts(prev => 
-        prev.map(alert => 
-          alert.id === alertId ? { ...alert, is_read: true } : alert
-        )
-      );
-    } catch (error) {
-      console.error("Failed to mark alert as read", error);
-    }
-  };
-
-  const markAllAsRead = async () => {
-    const unreadAlerts = alerts.filter(alert => !alert.is_read);
-    
-    try {
-      await Promise.all(
-        unreadAlerts.map(alert => api.post(`/alerts/${alert.id}/read`))
-      );
-      setAlerts(prev => 
-        prev.map(alert => ({ ...alert, is_read: true }))
-      );
-    } catch (error) {
-      console.error("Failed to mark all alerts as read", error);
-    }
-  };
-
-  const createTestAlert = async () => {
-    try {
-      await api.post('/alerts/test');
-      // Refresh alerts after creating test alert
-      fetchAlerts();
-    } catch (error) {
-      console.error("Failed to create test alert", error);
-    }
-  };
+  const { data: alerts = [], isLoading } = useNotifications();
+  const markAsRead = useMarkAsRead();
+  const markAllAsRead = useMarkAllAsRead();
+  const createTestAlert = useCreateTestAlert();
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString() + " at " + date.toLocaleTimeString();
   };
 
-  const unreadCount = alerts.filter(alert => !alert.is_read).length;
+  const unreadCount = alerts.filter((alert: Alert) => !alert.is_read).length;
+  const unreadIds = alerts.filter((alert: Alert) => !alert.is_read).map((a: Alert) => a.id);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <LoaderQuater />
@@ -124,11 +73,19 @@ export default function NotificationsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button onClick={createTestAlert} variant="secondary">
+          <Button 
+            onClick={() => createTestAlert.mutate()} 
+            variant="secondary"
+            disabled={createTestAlert.isPending}
+          >
             Create Test Alert
           </Button>
           {unreadCount > 0 && (
-            <Button onClick={markAllAsRead} variant="outline">
+            <Button 
+              onClick={() => markAllAsRead.mutate(unreadIds)} 
+              variant="outline"
+              disabled={markAllAsRead.isPending}
+            >
               <CheckCheck className="size-4 mr-2" />
               Mark all as read ({unreadCount})
             </Button>
@@ -148,8 +105,8 @@ export default function NotificationsPage() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {alerts.map((alert) => {
-            const config = severityConfig[alert.severity];
+          {alerts.map((alert: Alert) => {
+            const config = severityConfig[alert.severity as keyof typeof severityConfig] || severityConfig.info;
             const IconComponent = config.icon;
             
             return (
@@ -194,7 +151,8 @@ export default function NotificationsPage() {
                       <Button 
                         variant="ghost" 
                         size="sm"
-                        onClick={() => markAsRead(alert.id)}
+                        onClick={() => markAsRead.mutate(alert.id)}
+                        disabled={markAsRead.isPending}
                       >
                         Mark as read
                       </Button>

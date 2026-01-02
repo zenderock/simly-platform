@@ -1,59 +1,44 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Smartphone, Search, Filter, Terminal, ShieldAlert } from "lucide-react";
+import { useState } from "react";
+import { Smartphone, Search, Filter, Terminal, ShieldAlert, RefreshCw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import api from "@/lib/api";
-import { Device, Organization } from "@/types";
+import { Device } from "@/types";
 import { DeviceCard } from "@/components/devices/device-card";
 import { ConnectDeviceDialog } from "@/components/devices/connect-device-dialog";
-import { useAuth } from "@/lib/auth";
 import { AnimatePresence, motion } from "framer-motion";
-import { useDashboardStore } from "@/store/dashboard-store";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useDevices, useDeleteDevice } from "@/hooks/use-devices";
+import { useCurrentOrganization } from "@/hooks/use-organizations";
 
 export default function DevicesPage() {
-  const [devices, setDevices] = useState<Device[]>([]);
-  const [org, setOrg] = useState<Organization | null>(null);
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const refreshKey = useDashboardStore((state) => state.refreshKey);
+  
+  const { data: devices = [], isLoading, refetch, isFetching } = useDevices();
+  const { data: org } = useCurrentOrganization();
+  const deleteDevice = useDeleteDevice();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [devicesRes, orgsRes] = await Promise.all([
-          api.get<Device[]>("/devices"),
-          api.get<Organization[]>("/organizations") 
-        ]);
-        
-        setDevices(devicesRes.data || []);
-        
-        // Find active org (simple for now)
-        if (orgsRes.data.length > 0) {
-          setOrg(orgsRes.data[0]);
-        }
-      } catch (error) {
-        console.error("Failed to fetch devices", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, [refreshKey]);
-
-  const filteredDevices = devices.filter(d => 
+  const filteredDevices = devices.filter((d: Device) => 
     d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (d.model || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-    d.sim_cards.some(s => s.phone_number?.includes(searchQuery))
+    d.sim_cards?.some(s => s.phone_number?.includes(searchQuery))
   );
 
-  const activeCount = devices.filter(d => d.status === "online").length;
+  const activeCount = devices.filter((d: Device) => d.status === "online").length;
   const limitReached = org ? devices.length >= org.max_devices : false;
+
+  const handleDelete = async (id: number) => {
+    if (confirm("Are you sure you want to remove this device?")) {
+      try {
+        await deleteDevice.mutateAsync(id);
+      } catch (e) {
+        alert("Failed to delete device");
+      }
+    }
+  };
 
   return (
     <div className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 space-y-8 bg-background">
@@ -71,7 +56,18 @@ export default function DevicesPage() {
           </p>
         </div>
         
-        <ConnectDeviceDialog disabled={limitReached} />
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="icon" 
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="h-10 w-10"
+          >
+            <RefreshCw className={`size-4 ${isFetching ? 'animate-spin' : ''}`} />
+          </Button>
+          <ConnectDeviceDialog disabled={limitReached} />
+        </div>
       </div>
 
       {/* Stats / Limit info */}
@@ -136,7 +132,7 @@ export default function DevicesPage() {
           </Button>
         </div>
 
-        {loading ? (
+        {isLoading ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3].map(i => (
               <Card key={i} className="border shadow-none h-[280px]">
@@ -158,21 +154,11 @@ export default function DevicesPage() {
         ) : filteredDevices.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             <AnimatePresence mode="popLayout">
-              {filteredDevices.map((device) => (
+              {filteredDevices.map((device: Device) => (
                 <DeviceCard 
                   key={device.id} 
                   device={device} 
-                  onDelete={async (id) => {
-                    if (confirm("Are you sure you want to remove this device?")) {
-                      try {
-                        await api.delete(`/devices/${id}`);
-                        setDevices(prev => prev.filter(d => d.id !== id));
-                        // trigger global refresh too
-                      } catch (e) {
-                        alert("Failed to delete device");
-                      }
-                    }
-                  }}
+                  onDelete={handleDelete}
                 />
               ))}
             </AnimatePresence>

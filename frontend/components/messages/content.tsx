@@ -1,36 +1,16 @@
 "use client";
 
 import { MessageSquare, CheckCircle2, AlertCircle, Clock } from "lucide-react";
-import React, { useEffect, useState } from "react";
-import api from "@/lib/api";
-import { DashboardStats } from "@/types";
-import { useDashboardStore } from "@/store/dashboard-store";
+import React from "react";
 import { useApplicationStore } from "@/store/application-store";
 import { NewMessageDialog } from "@/components/dashboard/new-message-dialog";
 import { MessagesTable } from "@/components/dashboard/messages-table";
 import { motion } from "framer-motion";
+import { useDashboardStats } from "@/hooks/use-dashboard-stats";
 
 export function MessagesContent() {
-  const refreshKey = useDashboardStore((state) => state.refreshKey);
   const activeAppId = useApplicationStore((state) => state.activeAppId);
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        setLoading(true);
-        const params = activeAppId ? { application_id: activeAppId } : {};
-        const res = await api.get<DashboardStats>("/dashboard/stats", { params });
-        setStats(res.data);
-      } catch (error) {
-        console.error("Failed to fetch message stats", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchStats();
-  }, [refreshKey, activeAppId]);
+  const { data: stats, isLoading: loading } = useDashboardStats(activeAppId);
 
   const delivered = stats?.delivered_messages || 0;
   const failed = stats?.failed_messages || 0;

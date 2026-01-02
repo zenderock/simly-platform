@@ -48,17 +48,20 @@ export default function ContactsPage() {
     queryKey: ["contacts"],
     queryFn: listContacts,
     enabled: selectedList === null,
+    staleTime: 60000, // Contacts don't change often - 1 minute
   });
 
   const { data: listDetails, isLoading: listDetailsLoading } = useQuery({
     queryKey: ["list-details", selectedList],
     queryFn: () => getListDetails(selectedList!),
     enabled: selectedList !== null,
+    staleTime: 60000,
   });
 
   const { data: lists, isLoading: listsLoading } = useQuery({
     queryKey: ["contact-lists"],
     queryFn: listLists,
+    staleTime: 60000,
   });
 
   // Mutations

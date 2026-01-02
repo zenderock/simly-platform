@@ -1,18 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { 
-  Key, 
-  Search, 
-  ShieldCheck, 
-  ShieldAlert, 
-  Info,
-  Terminal,
-  Activity,
-  Trash2,
-  Lock
-} from "lucide-react";
-import { Input } from "@/components/ui/input";
+
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import api from "@/lib/api";
@@ -20,51 +9,47 @@ import { Application, APIKey } from "@/types";
 import { APIKeyCard } from "@/components/api-keys/api-key-card";
 import { CreateKeyDialog } from "@/components/api-keys/create-key-dialog";
 import { motion, AnimatePresence } from "framer-motion";
+import { useApplications } from "@/hooks/use-applications";
+import { useApiKeysByApp, useRevokeApiKey, apiKeyKeys } from "@/hooks/use-api-keys";
+import { useQueries, useQueryClient } from "@tanstack/react-query";
+import { IconInfoSquareRounded, IconKey, IconLock, IconShieldCheck, IconShieldExclamation } from "@tabler/icons-react";
+import { Terminal } from "lucide-react";
 
 export function APIKeysContent() {
-  const [apps, setApps] = useState<Application[]>([]);
-  const [keysByApp, setKeysByApp] = useState<Record<number, APIKey[]>>({});
-  const [loading, setLoading] = useState(true);
-  const [refreshToggle, setRefreshToggle] = useState(0);
+  const queryClient = useQueryClient();
+  const { data: apps = [], isLoading: appsLoading } = useApplications();
+  const revokeMutation = useRevokeApiKey();
 
-  useEffect(() => {
-    const fetchEverything = async () => {
-      try {
-        setLoading(true);
-        const appsRes = await api.get<Application[]>("/applications");
-        const availableApps = appsRes.data || [];
-        setApps(availableApps);
+  // Fetch keys for all apps in parallel
+  const keysQueries = useQueries({
+    queries: apps.map((app) => ({
+      queryKey: apiKeyKeys.byApp(app.id),
+      queryFn: async () => {
+        const res = await api.get<APIKey[]>(`/api-keys?application_id=${app.id}`);
+        return { appId: app.id, keys: res.data || [] };
+      },
+      staleTime: 60000,
+      enabled: apps.length > 0,
+    })),
+  });
 
-        const keysMap: Record<number, APIKey[]> = {};
-        await Promise.all(availableApps.map(async (app) => {
-          try {
-            const keysRes = await api.get<APIKey[]>(`/api-keys?application_id=${app.id}`);
-            keysMap[app.id] = keysRes.data || [];
-          } catch (e) {
-            console.error(`Failed to fetch keys for app ${app.id}`, e);
-            keysMap[app.id] = [];
-          }
-        }));
-        
-        setKeysByApp(keysMap);
-      } catch (error) {
-        console.error("Failed to fetch API keys context", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchEverything();
-  }, [refreshToggle]);
+  const loading = appsLoading || keysQueries.some(q => q.isLoading);
+  
+  const keysByApp: Record<number, APIKey[]> = {};
+  keysQueries.forEach(q => {
+    if (q.data) {
+      keysByApp[q.data.appId] = q.data.keys;
+    }
+  });
 
   const handleRevoke = async (id: number) => {
     if (confirm("Are you sure? This will immediately stop any integration using this key.")) {
-      try {
-        await api.delete(`/api-keys/${id}`);
-        setRefreshToggle(prev => prev + 1);
-      } catch (e) {
-        alert("Failed to revoke key");
-      }
+      revokeMutation.mutate(id);
     }
+  };
+
+  const handleKeyCreated = () => {
+    queryClient.invalidateQueries({ queryKey: apiKeyKeys.all });
   };
 
   return (
@@ -73,7 +58,7 @@ export function APIKeysContent() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-primary font-bold uppercase tracking-[0.2em] text-[10px]">
-            <Lock className="size-3.5" />
+            <IconLock className="size-3.5" />
             Security & Access
           </div>
           <h1 className="text-3xl font-extrabold tracking-tight">API Keys</h1>
@@ -82,7 +67,7 @@ export function APIKeysContent() {
             All requests are rate-limited based on your current organization plan.
           </p>
         </div>
-        <CreateKeyDialog applications={apps} onCreated={() => setRefreshToggle(prev => prev + 1)} />
+        <CreateKeyDialog applications={apps} onCreated={handleKeyCreated} />
       </div>
 
       {loading ? (
@@ -110,11 +95,11 @@ export function APIKeysContent() {
                   <div className="flex items-center gap-2">
                     {app.is_sandbox ? (
                       <div className="size-8 rounded-lg bg-orange-500/10 flex items-center justify-center">
-                        <ShieldAlert className="size-4 text-orange-600" />
+                        <IconShieldExclamation className="size-4 text-orange-600" />
                       </div>
                     ) : (
                       <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <ShieldCheck className="size-4 text-primary" />
+                        <IconShieldCheck className="size-4 text-primary" />
                       </div>
                     )}
                     <div>
@@ -145,7 +130,7 @@ export function APIKeysContent() {
                       ))
                     ) : (
                       <div className="py-8 flex flex-col items-center justify-center text-center border translate-y-2 border-dashed rounded-xl bg-zinc-50/50 dark:bg-zinc-900/10">
-                         <Key className="size-6 text-zinc-300 mb-2" />
+                         <IconKey className="size-6 text-zinc-300 mb-2" />
                          <p className="text-xs text-muted-foreground">No active keys for this application</p>
                       </div>
                     )}
@@ -169,7 +154,7 @@ export function APIKeysContent() {
       {/* Info Box */}
       <div className="rounded-xl border bg-[#6e3ff3]/5 p-4 sm:p-6 flex gap-4">
          <div className="size-10 bg-[#6e3ff3]/10 rounded-xl flex items-center justify-center shrink-0">
-           <Info className="size-5 text-[#6e3ff3]" />
+           <IconInfoSquareRounded className="size-5 text-[#6e3ff3]" />
          </div>
          <div className="space-y-1">
             <h4 className="text-sm font-bold tracking-tight">Understanding Environments</h4>

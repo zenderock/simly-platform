@@ -49,13 +49,11 @@ import {
 } from "lucide-react";
 import { useDashboardStore } from "@/store/dashboard-store";
 import { useApplicationStore } from "@/store/application-store";
-import { Message } from "@/types";
-import api from "@/lib/api";
+import { useMessages } from "@/hooks/use-messages";
 
 const PAGE_SIZE_OPTIONS = [10, 20, 30, 50];
 
 export function MessagesTable() {
-  const refreshKey = useDashboardStore((state) => state.refreshKey);
   const activeAppId = useApplicationStore((state) => state.activeAppId);
   const searchQuery = useDashboardStore((state) => state.searchQuery);
   const statusFilter = useDashboardStore((state) => state.statusFilter);
@@ -68,28 +66,9 @@ export function MessagesTable() {
   const setDeviceFilter = useDashboardStore((state) => state.setDeviceFilter);
   const clearFilters = useDashboardStore((state) => state.clearFilters);
 
-  const [messages, setMessages] = React.useState<Message[]>([]);
-  const [loading, setLoading] = React.useState(true);
+  const { data: messages = [], isLoading: loading } = useMessages(activeAppId);
   const [currentPage, setCurrentPage] = React.useState(1);
   const [pageSize, setPageSize] = React.useState(10);
-
-  // Fetch messages from API
-  React.useEffect(() => {
-    const fetchMessages = async () => {
-      try {
-        setLoading(true);
-        const params = activeAppId ? { application_id: activeAppId } : {};
-        const response = await api.get<Message[]>("/messages", { params });
-        setMessages(response.data || []);
-      } catch (error) {
-        console.error("Failed to fetch messages:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchMessages();
-  }, [refreshKey, activeAppId]);
 
   const hasActiveFilters =
     statusFilter !== "all" || appFilter !== "all" || deviceFilter !== "all";

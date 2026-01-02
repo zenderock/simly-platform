@@ -1,13 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useAuth } from "@/lib/auth";
+import { useState } from "react";
 import { 
   Folder, 
-  Plus, 
   Search, 
   ShieldAlert, 
-  ShieldCheck, 
   MoreVertical,
   Trash2,
   Calendar,
@@ -17,10 +14,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import api from "@/lib/api";
 import { Application } from "@/types";
 import { CreateApplicationDialog } from "@/components/applications/create-application-dialog";
-import { useApplicationStore } from "@/store/application-store";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   DropdownMenu,
@@ -28,40 +23,30 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useApplications, useDeleteApplication } from "@/hooks/use-applications";
+import { useQueryClient } from "@tanstack/react-query";
+import { applicationKeys } from "@/hooks/use-applications";
 
 export default function ApplicationsPage() {
-  const { applications, setApplications } = useApplicationStore();
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [refreshToggle, setRefreshToggle] = useState(0);
-
-  useEffect(() => {
-    const fetchApps = async () => {
-      try {
-        setLoading(true);
-        const res = await api.get<Application[]>("/applications");
-        setApplications(res.data || []);
-      } catch (e) {
-        console.error("Failed to fetch apps", e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchApps();
-  }, [refreshToggle, setApplications]);
+  const queryClient = useQueryClient();
+  
+  const { data: applications = [], isLoading } = useApplications();
+  const deleteApplication = useDeleteApplication();
 
   const handleDelete = async (id: number) => {
     if (confirm("Are you sure? This will delete all API keys and history for this application.")) {
       try {
-        await api.delete(`/applications/${id}`);
-        setRefreshToggle(prev => prev + 1);
+        await deleteApplication.mutateAsync(id);
       } catch (e) {
         alert("Failed to delete application");
       }
     }
   };
 
-  const filteredApps = applications.filter((a: Application) => a.name.toLowerCase().includes(search.toLowerCase()));
+  const filteredApps = applications.filter((a: Application) => 
+    a.name.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 space-y-8 bg-background">
@@ -76,7 +61,9 @@ export default function ApplicationsPage() {
             Manage your project environments. Separate Production from Sandbox to test your logic safely.
           </p>
         </div>
-        <CreateApplicationDialog onCreated={() => setRefreshToggle(prev => prev + 1)} />
+        <CreateApplicationDialog 
+          onCreated={() => queryClient.invalidateQueries({ queryKey: applicationKeys.list() })} 
+        />
       </div>
 
       <div className="relative group max-w-md">
@@ -90,7 +77,7 @@ export default function ApplicationsPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {loading ? (
+        {isLoading ? (
           [1, 2, 3].map(i => <Skeleton key={i} className="h-32 rounded-2xl w-full" />)
         ) : filteredApps.length > 0 ? (
           <AnimatePresence mode="popLayout">

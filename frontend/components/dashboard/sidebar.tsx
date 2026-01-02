@@ -30,26 +30,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  LayoutGrid,
-  Mail,
-  FileText,
   ChevronRight,
   ChevronDown,
-  Atom,
   LogOut,
   UserCircle,
-  CreditCard,
   Folder,
-  Smartphone,
-  Key,
-  MoreHorizontal,
-  Globe,
   ShieldAlert,
   ShieldCheck,
   Plus,
   Crown,
   ArrowUp,
-  Webhook,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { useApplicationStore } from "@/store/application-store";

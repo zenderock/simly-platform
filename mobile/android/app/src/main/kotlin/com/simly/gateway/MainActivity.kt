@@ -86,11 +86,28 @@ class MainActivity : FlutterActivity() {
                 val activeSubscriptions = subscriptionManager.activeSubscriptionInfoList
                 
                 activeSubscriptions?.forEach { subInfo ->
+                    // Try multiple ways to get phone number
+                    var phoneNumber = subInfo.number
+                    
+                    // If number is null or empty, try TelephonyManager
+                    if (phoneNumber.isNullOrEmpty()) {
+                        try {
+                            val telephonyManager = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                                phoneNumber = telephonyManager.getLine1Number(subInfo.subscriptionId)
+                            }
+                        } catch (e: SecurityException) {
+                            // Permission denied
+                        }
+                    }
+                    
                     val simCard = mapOf(
                         "slot_index" to subInfo.simSlotIndex,
-                        "phone_number" to subInfo.number,
+                        "phone_number" to (phoneNumber ?: ""),
                         "operator" to subInfo.carrierName?.toString(),
-                        "is_active" to true
+                        "is_active" to true,
+                        "subscription_id" to subInfo.subscriptionId,
+                        "display_name" to subInfo.displayName?.toString()
                     )
                     simCards.add(simCard)
                 }

@@ -1,33 +1,13 @@
 "use client";
 
 import { Smartphone, MessageSquare, CheckCircle2, ListOrdered } from "lucide-react";
-import React, { useEffect, useState } from "react";
-import api from "@/lib/api";
-import { DashboardStats } from "@/types";
-import { useDashboardStore } from "@/store/dashboard-store";
+import React from "react";
 import { useApplicationStore } from "@/store/application-store";
+import { useDashboardStats } from "@/hooks/use-dashboard-stats";
 
 export function StatsCards() {
-  const refreshKey = useDashboardStore((state) => state.refreshKey);
   const activeAppId = useApplicationStore((state) => state.activeAppId);
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        setLoading(true);
-        const params = activeAppId ? { application_id: activeAppId } : {};
-        const res = await api.get<DashboardStats>("/dashboard/stats", { params });
-        setStats(res.data);
-      } catch (error) {
-        console.error("Failed to fetch dashboard stats", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchStats();
-  }, [refreshKey, activeAppId]);
+  const { data: stats, isLoading: loading } = useDashboardStats(activeAppId);
 
   const totalMessages = stats?.total_messages || 0;
   const delivered = stats?.delivered_messages || 0;

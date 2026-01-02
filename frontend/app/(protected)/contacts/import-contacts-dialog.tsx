@@ -4,7 +4,6 @@ import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { FileDown, Upload, Info } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
 
@@ -37,6 +36,7 @@ import {
 } from "@/components/ui/select";
 import { importContacts, listLists } from "@/lib/api/contacts";
 import LoaderQuater from "@/components/loader";
+import { IconFileDownload, IconInfoSquareRounded, IconUpload } from "@tabler/icons-react";
 
 const schema = z.object({
   file: z.any().refine((files) => files?.length > 0, "File is required"),
@@ -88,7 +88,7 @@ export function ImportContactsDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
-          <FileDown className="mr-2 size-4" />
+          <IconFileDownload className="mr-2 size-4" />
           Import CSV
         </Button>
       </DialogTrigger>
@@ -102,7 +102,7 @@ export function ImportContactsDialog() {
         
         <div className="bg-muted/30 p-4 rounded-lg border border-dashed flex flex-col gap-2 mb-4">
             <h4 className="text-xs font-semibold flex items-center gap-2">
-                <Info className="size-3" />
+                <IconInfoSquareRounded className="size-3" />
                 CSV Format Requirements
             </h4>
             <ul className="text-[11px] text-muted-foreground list-disc pl-4 space-y-1">
@@ -177,7 +177,7 @@ export function ImportContactsDialog() {
                     </>
                 ) : (
                     <>
-                        <Upload className="mr-2 size-4" />
+                        <IconUpload className="mr-2 size-4" />
                         Import CSV
                     </>
                 )}

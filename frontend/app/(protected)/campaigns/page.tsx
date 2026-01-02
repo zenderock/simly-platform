@@ -32,6 +32,9 @@ export default function CampaignsPage() {
   const { data: campaigns, isLoading } = useQuery({
     queryKey: ["campaigns"],
     queryFn: listCampaigns,
+    refetchInterval: 10000, // Refetch every 10s to track processing campaigns
+    refetchIntervalInBackground: false,
+    staleTime: 5000,
   });
 
   const deleteMutation = useMutation({

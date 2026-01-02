@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus } from "lucide-react";
+
 import { toast } from "sonner";
 import { useState } from "react";
 
@@ -31,6 +31,7 @@ import { Input } from "@/components/ui/input";
 import { createContact } from "@/lib/api/contacts";
 import { PhoneInput } from "@/components/ui/phone-input";
 import LoaderQuater from "@/components/loader";
+import { IconPlus } from "@tabler/icons-react";
 
 const schema = z.object({
   first_name: z.string().min(1, "First name is required"),
@@ -90,7 +91,7 @@ export function CreateContactDialog({ onOpenChange }: CreateContactDialogProps) 
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button>
-          <Plus className="mr-2 size-4" />
+          <IconPlus className="mr-2 size-4" />
           Add Contact
         </Button>
       </DialogTrigger>

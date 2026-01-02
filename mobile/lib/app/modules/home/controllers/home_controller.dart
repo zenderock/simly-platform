@@ -223,6 +223,8 @@ class HomeController extends GetxController {
           )
           .toList();
 
+      debugPrint("SIM cards data: $simCardsData");
+
       await _apiProvider.post('devices/${_authService.deviceId}/heartbeat', {
         'battery_level': batteryLevel.value,
         'signal_strength': signalStrength.value,

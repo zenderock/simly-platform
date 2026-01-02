@@ -7,11 +7,10 @@ import {
   DialogDescription, 
   DialogHeader, 
   DialogTitle, 
-  DialogTrigger,
+  DialogTrigger, 
   DialogFooter
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Plus, Key, Copy, Check, Eye, EyeOff, Loader2, ShieldCheck, ShieldAlert } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -24,6 +23,9 @@ import {
 import { Application, APIKey } from "@/types";
 import api from "@/lib/api";
 import { useToast } from "@/components/ui/use-toast";
+import {  IconCopy, IconKey, IconPlus, IconShieldCheck, IconShieldX } from "@tabler/icons-react";
+import LoaderQuater from "../loader";
+import { EyeOff, Eye, Check } from "lucide-react";
 
 interface CreateKeyDialogProps {
   applications: Application[];
@@ -79,7 +81,7 @@ export function CreateKeyDialog({ applications, onCreated }: CreateKeyDialogProp
     }}>
       <DialogTrigger asChild>
         <Button className="gap-2 bg-foreground text-background shadow-lg shadow-zinc-200 dark:shadow-none font-bold">
-          <Plus className="size-4" />
+          <IconPlus className="size-4" />
           Generate New Key
         </Button>
       </DialogTrigger>
@@ -104,7 +106,7 @@ export function CreateKeyDialog({ applications, onCreated }: CreateKeyDialogProp
                   className="h-10"
                 />
               </div>
-              <div className="grid gap-2">
+              <div className="grid gap-2 w-full">
                 <Label htmlFor="app" className="font-bold text-xs uppercase text-muted-foreground tracking-widest">Application</Label>
                 <Select
                   value={formData.application_id}
@@ -114,11 +116,11 @@ export function CreateKeyDialog({ applications, onCreated }: CreateKeyDialogProp
                   <SelectTrigger className="h-10">
                     <SelectValue placeholder="Select an application" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="w-full">
                     {applications.map((app) => (
                       <SelectItem key={app.id} value={app.id.toString()}>
                         <div className="flex items-center gap-2">
-                          {app.is_sandbox ? <ShieldAlert className="size-3.5 text-orange-500" /> : <ShieldCheck className="size-3.5 text-primary" />}
+                          {app.is_sandbox ? <IconShieldX className="size-3.5 text-orange-500" /> : <IconShieldCheck className="size-3.5 text-primary" />}
                           <span>{app.name}</span>
                           {app.is_sandbox && <span className="text-[10px] text-orange-500 font-bold ml-1">(Sandbox)</span>}
                         </div>
@@ -136,7 +138,7 @@ export function CreateKeyDialog({ applications, onCreated }: CreateKeyDialogProp
             </div>
             <DialogFooter>
               <Button type="submit" className="w-full font-bold h-11" disabled={loading}>
-                {loading ? <Loader2 className="mr-2 size-4 animate-spin" /> : <Key className="mr-2 size-4" />}
+                {loading ? <LoaderQuater className="mr-2 size-4" /> : <IconKey className="mr-2 size-4" />}
                 Generate Secret Key
               </Button>
             </DialogFooter>
@@ -178,7 +180,7 @@ export function CreateKeyDialog({ applications, onCreated }: CreateKeyDialogProp
                         }
                     }}
                   >
-                    <Copy className="size-4" />
+                    <IconCopy className="size-4" />
                   </Button>
                 </div>
               </div>
