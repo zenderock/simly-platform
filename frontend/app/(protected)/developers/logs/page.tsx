@@ -115,13 +115,6 @@ export default function RequestLogsPage() {
     <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 space-y-6 bg-background">
       {/* Header */}
       <div className="space-y-1">
-        <Link
-          href="/developers"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors mb-2"
-        >
-          <IconArrowLeft className="size-3.5" />
-          Back to Developer Portal
-        </Link>
         <div className="flex items-center gap-2 text-primary font-bold uppercase tracking-[0.2em] text-[10px]">
           <IconList className="size-3.5" />
           Request Logs

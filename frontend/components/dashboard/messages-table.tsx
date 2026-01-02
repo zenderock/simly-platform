@@ -347,7 +347,7 @@ export function MessagesTable() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-xs font-medium text-muted-foreground">
-                    {msg.device_name || "Unknown"}
+                    {msg.device_name || (msg.status === "pending" || msg.status === "scheduled" ? "Auto" : "—")}
                   </TableCell>
                   <TableCell className="text-right text-[10px] text-muted-foreground italic">
                     {msg.scheduled_at ? (

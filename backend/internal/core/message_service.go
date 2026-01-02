@@ -274,10 +274,12 @@ func (s *MessageService) NotifyDeviceWithExclusion(ctx context.Context, msg *mod
 		device, err = s.store.GetDeviceByID(ctx, *msg.DeviceID)
 	} else {
 		device, err = s.selectBestDevice(ctx, msg.OrganizationID, msg.RequiredTags, excludeID)
-		if err == nil {
+		if err == nil && device != nil {
 			// Update message with selected device
 			if updateErr := s.store.UpdateMessageDevice(ctx, msg.ID, device.ID); updateErr != nil {
 				log.Printf("Warning: failed to update message %d with device %d: %v\n", msg.ID, device.ID, updateErr)
+			} else {
+				log.Printf("Message %d assigned to device %d (%s)\n", msg.ID, device.ID, device.Name)
 			}
 			msg.DeviceID = &device.ID
 		}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bell, AlertCircle, Info, AlertTriangle, CheckCircle2, X } from "lucide-react";
+import { Bell, AlertCircle, Info, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import api from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -60,11 +60,12 @@ export function NotificationDropdown() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [initialLoaded, setInitialLoaded] = useState(false);
 
-  const fetchAlerts = async () => {
+  const fetchAlerts = useCallback(async (showLoader = true) => {
     if (!organizationId) return;
     
-    setLoading(true);
+    if (showLoader) setLoading(true);
     try {
       const response = await api.get(`/alerts`);
       setAlerts(response.data || []);
@@ -72,14 +73,36 @@ export function NotificationDropdown() {
       console.error("Failed to fetch alerts", error);
     } finally {
       setLoading(false);
+      setInitialLoaded(true);
     }
-  };
+  }, [organizationId]);
 
+  // Fetch alerts on mount to show badge count
   useEffect(() => {
-    if (open) {
-      fetchAlerts();
+    if (organizationId && !initialLoaded) {
+      fetchAlerts(false);
     }
-  }, [open, organizationId]);
+  }, [organizationId, initialLoaded, fetchAlerts]);
+
+  // Refresh when dropdown opens
+  useEffect(() => {
+    if (open && organizationId) {
+      fetchAlerts(true);
+    }
+  }, [open, organizationId, fetchAlerts]);
+
+  // Poll for new notifications every 30 seconds
+  useEffect(() => {
+    if (!organizationId) return;
+    
+    const interval = setInterval(() => {
+      if (!open) {
+        fetchAlerts(false);
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [organizationId, open, fetchAlerts]);
 
   const markAsRead = async (alertId: number) => {
     try {

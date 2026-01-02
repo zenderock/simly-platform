@@ -13,7 +13,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -102,8 +101,6 @@ export default function PlaygroundPage() {
       });
     }
   });
-
-  const selectedKey = allKeys.find((k) => k.id.toString() === selectedKeyId);
 
   // Auto-select first key when keys are loaded
   useEffect(() => {
@@ -227,13 +224,6 @@ export default function PlaygroundPage() {
     <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 space-y-6 bg-background">
       {/* Header */}
       <div className="space-y-1">
-        <Link
-          href="/developers"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-primary transition-colors mb-2"
-        >
-          <IconArrowLeft className="size-3.5" />
-          Back to Developer Portal
-        </Link>
         <div className="flex items-center gap-2 text-primary font-bold uppercase tracking-[0.2em] text-[10px]">
           <IconPlayerPlay className="size-3.5" />
           API Playground
