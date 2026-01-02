@@ -74,7 +74,7 @@ export function CreateContactDialog({ onOpenChange }: CreateContactDialogProps) 
       phone_number: "",
       email: "",
       tags: "",
-      list_id: "",
+      list_id: "none",
     },
   });
 
@@ -85,7 +85,7 @@ export function CreateContactDialog({ onOpenChange }: CreateContactDialogProps) 
       
       // If a list was selected, add the contact to that list
       const selectedListId = form.getValues("list_id");
-      if (selectedListId && selectedListId !== "") {
+      if (selectedListId && selectedListId !== "" && selectedListId !== "none") {
         try {
           await addContactsToList(parseInt(selectedListId), [contact.id]);
           queryClient.invalidateQueries({ queryKey: ["contact-lists"] });
@@ -228,7 +228,7 @@ export function CreateContactDialog({ onOpenChange }: CreateContactDialogProps) 
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">No list</SelectItem>
+                      <SelectItem value="none">No list</SelectItem>
                       {contactLists.map((list) => (
                         <SelectItem key={list.id} value={list.id.toString()}>
                           {list.name} ({list.member_count || 0} members)
