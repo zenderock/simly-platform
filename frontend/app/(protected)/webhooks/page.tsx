@@ -1,3 +1,10 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Webhooks - Simly",
+  description: "Configure webhook endpoints to receive real-time notifications about SMS events and message status updates.",
+};
+
 "use client";
 
 import { useEffect, useState } from "react";

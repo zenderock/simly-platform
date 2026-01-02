@@ -1,3 +1,10 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Create Campaign - Simly",
+  description: "Create a new SMS marketing campaign. Set up your message template, select target audience, and launch your campaign.",
+};
+
 "use client";
 
 import { useState } from "react";

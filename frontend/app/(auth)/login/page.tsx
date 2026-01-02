@@ -1,4 +1,11 @@
 
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Sign In - Simly",
+  description: "Sign in to your Simly account to access your SMS gateway dashboard and manage your messaging campaigns.",
+};
+
 "use client";
 
 import * as React from "react";

@@ -1,3 +1,10 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "API Documentation - Simly",
+  description: "Complete REST API reference for Simly SMS Gateway. Learn how to send messages, manage webhooks, and integrate with your applications.",
+};
+
 "use client";
 
 import { useState } from "react";
@@ -221,7 +228,7 @@ export default function APIDocsPage() {
       </div>
 
       {/* API Key Selector */}
-      <Card>
+      <Card className="shadow-none">
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             <div className="flex-1">
@@ -274,7 +281,7 @@ export default function APIDocsPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
-        <Card>
+        <Card className="shadow-none">
           <CardHeader>
             <div className="flex items-center gap-2">
               <div className="size-8 rounded-lg bg-green-500/10 flex items-center justify-center">
@@ -333,7 +340,7 @@ export default function APIDocsPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15 }}
       >
-        <Card>
+        <Card className="shadow-none">
           <CardHeader>
             <CardTitle className="text-lg">Base URL</CardTitle>
           </CardHeader>
@@ -384,7 +391,7 @@ export default function APIDocsPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
       >
-        <Card>
+        <Card className="shadow-none">
           <CardHeader>
             <div className="flex items-center gap-2">
               <div className="size-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
@@ -429,7 +436,7 @@ export default function APIDocsPage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.35 }}
       >
-        <Card>
+        <Card className="shadow-none">
           <CardHeader>
             <div className="flex items-center gap-2">
               <div className="size-8 rounded-lg bg-red-500/10 flex items-center justify-center">

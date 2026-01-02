@@ -1,3 +1,10 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Profile Settings - Simly",
+  description: "Manage your personal account settings, update your profile information, and change your password.",
+};
+
 "use client";
 
 import { useState } from "react";

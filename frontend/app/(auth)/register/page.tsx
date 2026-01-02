@@ -1,4 +1,11 @@
 
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Create Account - Simly",
+  description: "Create your free Simly account to start using your Android phone as a professional SMS gateway. Get started in minutes.",
+};
+
 "use client";
 
 import * as React from "react";

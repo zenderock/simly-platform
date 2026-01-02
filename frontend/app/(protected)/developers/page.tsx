@@ -1,3 +1,10 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Developer Portal - Simly",
+  description: "Access API documentation, test endpoints, and manage your SMS gateway integrations. Get started with code examples and guides.",
+};
+
 "use client";
 
 import { useState } from "react";
@@ -21,8 +28,6 @@ import {
   IconKey,
   IconWebhook,
   IconArrowRight,
-  IconCheck,
-  IconCopy,
 } from "@tabler/icons-react";
 import {
   Select,
@@ -145,8 +150,8 @@ export default function DevelopersPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
           >
-            <Link href={link.href}>
-              <Card className="h-full hover:border-primary/50 hover:shadow-md transition-all cursor-pointer group">
+            <Link href={link.href}> 
+              <Card className="h-full hover:border-primary/50 transition-all cursor-pointer group shadow-none">
                 <CardContent className="p-4 flex flex-col gap-3">
                   <div className={`size-10 rounded-lg ${link.color} flex items-center justify-center`}>
                     <link.icon className="size-5" />
@@ -165,7 +170,7 @@ export default function DevelopersPage() {
       </div>
 
       {/* Quick Start Guide */}
-      <Card>
+      <Card className="shadow-none">
         <CardHeader>
           <div className="flex items-center gap-2">
             <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center">
@@ -274,7 +279,7 @@ export default function DevelopersPage() {
 
       {/* Additional Resources */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
+        <Card className="shadow-none">
           <CardHeader>
             <CardTitle className="text-base">Check Message Status</CardTitle>
             <CardDescription>Query the delivery status of a sent message</CardDescription>
@@ -289,7 +294,7 @@ export default function DevelopersPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="shadow-none">
           <CardHeader>
             <CardTitle className="text-base">Error Handling</CardTitle>
             <CardDescription>All errors follow a consistent JSON format</CardDescription>

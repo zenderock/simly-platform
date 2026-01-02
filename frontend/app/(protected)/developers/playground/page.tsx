@@ -1,3 +1,10 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "API Playground - Simly",
+  description: "Test Simly API endpoints interactively. Send test messages, explore responses, and debug your integration in real-time.",
+};
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -247,7 +254,7 @@ export default function PlaygroundPage() {
         {/* Request Builder */}
         <div className="space-y-4">
           {/* API Key Selector */}
-          <Card>
+          <Card className="shadow-none">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Authentication</CardTitle>
               <CardDescription>Select an API key to authenticate your requests</CardDescription>
@@ -297,7 +304,7 @@ export default function PlaygroundPage() {
           </Card>
 
           {/* Endpoint Selector */}
-          <Card>
+          <Card className="shadow-none">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Endpoint</CardTitle>
               <CardDescription>Choose the API endpoint to test</CardDescription>
@@ -354,7 +361,7 @@ export default function PlaygroundPage() {
           </Card>
 
           {/* Request Parameters */}
-          <Card>
+          <Card className="shadow-none">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Parameters</CardTitle>
               <CardDescription>Configure the request parameters</CardDescription>
@@ -433,7 +440,7 @@ export default function PlaygroundPage() {
 
         {/* Response Panel */}
         <div className="space-y-4">
-          <Card className="h-full">
+          <Card className="h-full shadow-none">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div>

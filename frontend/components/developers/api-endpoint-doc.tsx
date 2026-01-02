@@ -187,7 +187,7 @@ export function APIEndpointDoc({
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden shadow-none">
       <CardHeader 
         className="cursor-pointer hover:bg-muted/30 transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}

@@ -1,3 +1,10 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Request Logs - Simly",
+  description: "Monitor and debug your API requests. View detailed logs, response times, and error details for troubleshooting.",
+};
+
 "use client";
 
 import { useState } from "react";
@@ -133,7 +140,7 @@ export default function RequestLogsPage() {
       </div>
 
       {/* Filters */}
-      <Card>
+      <Card className="shadow-none">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -189,7 +196,7 @@ export default function RequestLogsPage() {
       </Card>
 
       {/* Logs Table */}
-      <Card>
+      <Card className="shadow-none">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div>

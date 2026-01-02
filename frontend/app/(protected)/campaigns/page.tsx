@@ -1,3 +1,10 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Campaigns - Simly",
+  description: "Create and manage SMS marketing campaigns. Track delivery status and campaign performance.",
+};
+
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
