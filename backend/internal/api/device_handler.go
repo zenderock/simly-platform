@@ -81,6 +81,9 @@ func (h *DeviceHandler) Heartbeat(w http.ResponseWriter, r *http.Request) {
 		// If body is empty, we just treat it as a presence heartbeat
 	}
 
+	log.Printf("Heartbeat from device %d: battery=%d, signal=%d, sim_cards=%d",
+		deviceID, req.BatteryLevel, req.SignalStrength, len(req.SimCards))
+
 	messages, err := h.service.Heartbeat(r.Context(), deviceID, req.BatteryLevel, req.SignalStrength, req.SimCards)
 	if err != nil {
 		http.Error(w, "Heartbeat failed: "+err.Error(), http.StatusInternalServerError)

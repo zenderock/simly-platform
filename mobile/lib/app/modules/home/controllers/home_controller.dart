@@ -188,7 +188,10 @@ class HomeController extends GetxController {
     try {
       final result = await _channel.invokeMethod('getSimCards');
       if (result is List) {
-        simCards.value = result.cast<Map<String, dynamic>>();
+        simCards.value = List<Map<String, dynamic>>.from(
+          result.map((e) => Map<String, dynamic>.from(e as Map)),
+        );
+        debugPrint("Updated SIM cards: ${simCards.length} found");
       }
     } catch (e) {
       debugPrint("Failed to get SIM cards: $e");
@@ -206,12 +209,27 @@ class HomeController extends GetxController {
     if (!_authService.isAuthenticated.value) return;
 
     try {
+      debugPrint("Sending heartbeat with ${simCards.length} SIM cards");
+
+      // Convert SIM cards to proper format
+      final simCardsData = simCards
+          .map(
+            (sim) => {
+              'slot_index': sim['slot_index'],
+              'phone_number': sim['phone_number'],
+              'operator': sim['operator'],
+              'is_active': sim['is_active'],
+            },
+          )
+          .toList();
+
       await _apiProvider.post('devices/${_authService.deviceId}/heartbeat', {
         'battery_level': batteryLevel.value,
         'signal_strength': signalStrength.value,
         'status': 'online',
-        'sim_cards': simCards.toList(),
+        'sim_cards': simCardsData,
       });
+      debugPrint("Heartbeat sent successfully");
     } catch (e) {
       debugPrint("Heartbeat failed: $e");
     }

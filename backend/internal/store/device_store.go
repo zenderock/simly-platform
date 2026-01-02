@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/zenderock/simly-backend/internal/model"
@@ -136,6 +137,8 @@ func (s *Store) UpdateDeviceHealth(ctx context.Context, deviceID int, battery in
 }
 
 func (s *Store) UpdateDeviceSimCards(ctx context.Context, deviceID int, simCards []model.UpdateSimCardRequest) error {
+	log.Printf("UpdateDeviceSimCards called for device %d with %d SIM cards", deviceID, len(simCards))
+
 	return s.ExecTx(ctx, func(tx *Store) error {
 		// Delete existing SIM cards for this device
 		_, err := tx.db.Exec(ctx, "DELETE FROM device_sims WHERE device_id = $1", deviceID)
@@ -145,6 +148,7 @@ func (s *Store) UpdateDeviceSimCards(ctx context.Context, deviceID int, simCards
 
 		// Insert new SIM cards
 		for _, sim := range simCards {
+			log.Printf("Inserting SIM: slot=%d, number=%s, operator=%s", sim.SlotIndex, sim.PhoneNumber, sim.Operator)
 			query := `
 				INSERT INTO device_sims (device_id, slot_index, phone_number, operator, is_active, created_at, updated_at)
 				VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
@@ -155,6 +159,7 @@ func (s *Store) UpdateDeviceSimCards(ctx context.Context, deviceID int, simCards
 			}
 		}
 
+		log.Printf("Successfully updated %d SIM cards for device %d", len(simCards), deviceID)
 		return nil
 	})
 }
