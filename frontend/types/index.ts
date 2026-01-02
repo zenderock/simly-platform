@@ -8,6 +8,10 @@ export interface Organization {
   sms_burst_limit: number;
   max_devices: number;
   max_sims_per_device: number;
+  max_applications: number;
+  max_contacts: number;
+  max_campaigns: number;
+  max_recipients_per_campaign: number;
   created_at: string;
 }
 
@@ -88,6 +92,7 @@ export interface DashboardStats {
   pending_messages: number;
   active_devices: number;
   total_devices: number;
+  current_month_cost: number;
 }
 
 export interface TrafficStat {

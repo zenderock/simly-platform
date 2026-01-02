@@ -1,6 +1,6 @@
 "use client";
 
-import { Smartphone, MessageSquare, CheckCircle2, ListOrdered } from "lucide-react";
+import { Smartphone, MessageSquare, CheckCircle2, ListOrdered, CreditCard as IconCreditCard } from "lucide-react";
 import React from "react";
 import { useApplicationStore } from "@/store/application-store";
 import { useDashboardStats } from "@/hooks/use-dashboard-stats";
@@ -46,6 +46,14 @@ export function StatsCards() {
       changeValue: "",
       isPositive: activeDevices > 0,
       icon: Smartphone,
+    },
+    {
+      title: "Current Bill",
+      value: `$${(stats?.current_month_cost || 0).toFixed(2)}`,
+      change: "estimated",
+      changeValue: "",
+      isPositive: true,
+      icon: IconCreditCard,
     },
     {
       title: "Message Queue",

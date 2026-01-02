@@ -346,18 +346,20 @@ export default function ProfilePage() {
                     {currentOrg.plan}
                   </Badge>
                 </div>
-                <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Devices</span>
-                  <span className="text-sm">
+                  <span className="text-xs font-medium bg-muted px-2 py-0.5 rounded">
                     {currentOrg.max_devices === -1
                       ? "Unlimited"
                       : currentOrg.max_devices}
                   </span>
                 </div>
-                <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">SMS/month</span>
-                  <span className="text-sm">
-                    {currentOrg.sms_monthly_limit?.toLocaleString() || "N/A"}
+                  <span className="text-xs font-medium bg-muted px-2 py-0.5 rounded">
+                    {currentOrg.sms_monthly_limit && currentOrg.sms_monthly_limit > 0
+                      ? currentOrg.sms_monthly_limit.toLocaleString()
+                      : "Pay-per-use"}
                   </span>
                 </div>
               </CardContent>

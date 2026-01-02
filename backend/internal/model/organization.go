@@ -52,6 +52,7 @@ type OrganizationStats struct {
 	ActiveDevices     int     `json:"active_devices"`
 	TotalDevices      int     `json:"total_devices"`
 	SuccessRate       float64 `json:"success_rate"`
+	CurrentMonthCost  float64 `json:"current_month_cost"` // New field for dashboard
 }
 
 // UsageRecord tracks usage events for billing purposes

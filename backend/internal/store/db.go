@@ -87,11 +87,35 @@ func RunMigrations(databaseURL string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create migration instance: %w", err)
 	}
+	defer m.Close()
 
 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
 		return fmt.Errorf("failed to run migrations: %w", err)
 	}
 
 	log.Println("Database migration executed successfully")
+	return nil
+}
+
+func ForceVersion(databaseURL string, version int) error {
+	driver, err := iofs.New(migrations.FS, ".")
+	if err != nil {
+		return fmt.Errorf("failed to create iofs source: %w", err)
+	}
+
+	m, err := migrate.NewWithSourceInstance(
+		"iofs",
+		driver,
+		databaseURL,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to create migration instance: %w", err)
+	}
+	defer m.Close()
+
+	if err := m.Force(version); err != nil {
+		return fmt.Errorf("failed to force version: %w", err)
+	}
+
 	return nil
 }

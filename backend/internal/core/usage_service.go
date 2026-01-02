@@ -97,10 +97,14 @@ func (s *UsageService) GetUsageByType(ctx context.Context, orgID int, period str
 
 // GetUsageSummary provides aggregated usage data for billing purposes
 func (s *UsageService) GetUsageSummary(ctx context.Context, orgID int, period string) (*UsageSummary, error) {
-	// Get total cost
-	totalCost, err := s.store.GetUsageSummaryByPeriod(ctx, orgID, period)
+	// Calculate total cost from all records
+	totalCost := 0.0
+	allRecords, err := s.store.GetUsageRecordsByPeriod(ctx, orgID, period)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get total cost: %w", err)
+		return nil, fmt.Errorf("failed to get usage records for cost calculation: %w", err)
+	}
+	for _, r := range allRecords {
+		totalCost += r.Cost
 	}
 
 	// Get SMS count and cost

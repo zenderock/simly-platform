@@ -221,6 +221,17 @@ func (s *Store) GetOrganizationStats(ctx context.Context, orgID int) (*model.Org
 		return nil, fmt.Errorf("failed to get success rate: %w", err)
 	}
 
+	// Current Month Cost
+	currentPeriod := time.Now().Format("2006-01")
+	cost, err := s.GetUsageSummaryByPeriod(ctx, orgID, currentPeriod)
+	if err != nil {
+		// Log error but don't fail stats entirely? Or return 0?
+		// Ensure GetUsageSummaryByPeriod handles no rows gracefully (it returns 0)
+		stats.CurrentMonthCost = 0.0
+	} else {
+		stats.CurrentMonthCost = cost
+	}
+
 	return stats, nil
 }
 

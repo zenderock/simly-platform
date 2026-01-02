@@ -21,6 +21,14 @@ func NewFeatureLimitManager(store *store.Store) *FeatureLimitManager {
 	}
 }
 
+// WithStore creates a copy of the manager with a new store (for transactions)
+func (f *FeatureLimitManager) WithStore(store *store.Store) *FeatureLimitManager {
+	return &FeatureLimitManager{
+		store:         store,
+		pricingEngine: f.pricingEngine.WithStore(store),
+	}
+}
+
 // ValidateApplicationCreation checks if an organization can create a new application
 func (f *FeatureLimitManager) ValidateApplicationCreation(ctx context.Context, orgID int) error {
 	currentCount, err := f.store.CountApplicationsByOrganization(ctx, orgID)

@@ -9,7 +9,7 @@ import { useAuth } from "@/lib/auth";
 import api from "@/lib/api";
 import { Plan } from "@/types/plan";
 import { useToast } from "@/components/ui/use-toast";
-import { IconRocket, IconBolt, IconBuilding, IconMessage, IconDeviceMobile } from "@tabler/icons-react";
+import { IconRocket, IconBolt, IconBuilding, IconMessage, IconDeviceMobile, IconUsers, IconCategory2 } from "@tabler/icons-react";
 
 export default function PlansPage() {
   const { organizations, organizationId, refreshOrganizations } = useAuth();
@@ -130,7 +130,7 @@ export default function PlansPage() {
               key={plan.id}
               className={`relative rounded-xl border p-6 flex flex-col transition-colors ${
                 isPopular 
-                  ? "border-primary bg-primary/[0.02] dark:bg-primary/[0.03]" 
+                  ? "border-primary bg-primary/2 dark:bg-primary/3" 
                   : "border-border hover:border-muted-foreground/30"
               } ${isCurrent ? "ring-2 ring-primary/20" : ""}`}
             >
@@ -168,15 +168,29 @@ export default function PlansPage() {
               </div>
 
               {/* Limits */}
-              <div className="flex gap-3 mb-6">
-                <div className="flex-1 rounded-lg bg-muted/50 p-3 text-center">
+              <div className="grid grid-cols-2 gap-3 mb-6">
+                <div className="rounded-lg bg-muted/50 p-2 text-center">
                   <IconMessage className="size-4 mx-auto mb-1 text-muted-foreground" />
                   <div className="font-semibold text-sm">
-                    {plan.limits.sms_monthly >= 1000 ? `${plan.limits.sms_monthly / 1000}k` : plan.limits.sms_monthly}
+                    {formatPrice(plan.limits.sms_rate_per_message)}
                   </div>
-                  <div className="text-[10px] text-muted-foreground uppercase tracking-wide">SMS/mo</div>
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Per SMS</div>
                 </div>
-                <div className="flex-1 rounded-lg bg-muted/50 p-3 text-center">
+                <div className="rounded-lg bg-muted/50 p-2 text-center">
+                  <IconCategory2 className="size-4 mx-auto mb-1 text-muted-foreground" />
+                  <div className="font-semibold text-sm">
+                    {plan.limits.max_applications === -1 ? "∞" : plan.limits.max_applications}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Apps</div>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-2 text-center">
+                  <IconUsers className="size-4 mx-auto mb-1 text-muted-foreground" />
+                  <div className="font-semibold text-sm">
+                    {plan.limits.max_contacts === -1 ? "∞" : plan.limits.max_contacts}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Contacts</div>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-2 text-center">
                   <IconDeviceMobile className="size-4 mx-auto mb-1 text-muted-foreground" />
                   <div className="font-semibold text-sm">
                     {plan.limits.max_devices === -1 ? "∞" : plan.limits.max_devices}

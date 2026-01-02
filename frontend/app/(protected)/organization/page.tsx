@@ -212,18 +212,25 @@ export default function OrganizationPage() {
                     <div className="flex justify-between text-sm">
                       <span>This Month</span>
                       <span className="font-medium">
-                        {stats?.messages_this_month?.toLocaleString() || 0} / {organization.sms_monthly_limit.toLocaleString()}
+                        {stats?.messages_this_month?.toLocaleString() || 0}
+                        {organization.sms_monthly_limit > 0 ? ` / ${organization.sms_monthly_limit.toLocaleString()}` : ""}
                       </span>
                     </div>
-                    <div className="w-full bg-muted rounded-full h-2">
-                      <div 
-                        className="bg-blue-500 h-2 rounded-full transition-all" 
-                        style={{ width: `${Math.min(usagePercentage, 100)}%` }}
-                      />
-                    </div>
+                    {organization.sms_monthly_limit > 0 && (
+                      <div className="w-full bg-muted rounded-full h-2">
+                        <div 
+                          className="bg-blue-500 h-2 rounded-full transition-all" 
+                          style={{ width: `${Math.min(usagePercentage, 100)}%` }}
+                        />
+                      </div>
+                    )}
                     <div className="flex justify-between text-sm text-muted-foreground">
                       <span>Burst Limit: {organization.sms_burst_limit.toLocaleString()}</span>
-                      <span>{usagePercentage}% used</span>
+                      {organization.sms_monthly_limit > 0 ? (
+                        <span>{usagePercentage}% used</span>
+                      ) : (
+                        <span className="text-xs uppercase tracking-wider font-semibold text-blue-600 dark:text-blue-400">Pay-per-use</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -237,18 +244,24 @@ export default function OrganizationPage() {
                     <div className="flex justify-between text-sm">
                       <span>Active Devices</span>
                       <span className="font-medium">
-                        {stats?.active_devices || 0} / {organization.max_devices}
+                        {stats?.active_devices || 0} / {organization.max_devices === -1 ? "∞" : organization.max_devices}
                       </span>
                     </div>
-                    <div className="w-full bg-muted rounded-full h-2">
-                      <div 
-                        className="bg-green-500 h-2 rounded-full transition-all" 
-                        style={{ width: `${Math.min(deviceUsagePercentage, 100)}%` }}
-                      />
-                    </div>
+                    {organization.max_devices > 0 && (
+                      <div className="w-full bg-muted rounded-full h-2">
+                        <div 
+                          className="bg-green-500 h-2 rounded-full transition-all" 
+                          style={{ width: `${Math.min(deviceUsagePercentage, 100)}%` }}
+                        />
+                      </div>
+                    )}
                     <div className="flex justify-between text-sm text-muted-foreground">
                       <span>SIMs per Device: {organization.max_sims_per_device}</span>
-                      <span>{deviceUsagePercentage}% used</span>
+                      {organization.max_devices > 0 ? (
+                        <span>{deviceUsagePercentage}% used</span>
+                      ) : (
+                        <span className="text-xs uppercase tracking-wider font-semibold text-green-600 dark:text-green-400">Unlimited</span>
+                      )}
                     </div>
                   </div>
                 </div>

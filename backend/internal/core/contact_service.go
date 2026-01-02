@@ -13,14 +13,23 @@ import (
 )
 
 type ContactService struct {
-	store *store.Store
+	store         *store.Store
+	featureLimits *FeatureLimitManager
 }
 
-func NewContactService(store *store.Store) *ContactService {
-	return &ContactService{store: store}
+func NewContactService(store *store.Store, featureLimits *FeatureLimitManager) *ContactService {
+	return &ContactService{
+		store:         store,
+		featureLimits: featureLimits,
+	}
 }
 
 func (s *ContactService) CreateContact(ctx context.Context, orgID int, req model.CreateContactRequest) (*model.Contact, error) {
+	// Check feature limits
+	if err := s.featureLimits.ValidateContactCreation(ctx, orgID, 1); err != nil {
+		return nil, err
+	}
+
 	// Normalize phone number (strip whitespace, ensure starts with +)
 	phone := strings.ReplaceAll(req.PhoneNumber, " ", "")
 
@@ -252,6 +261,11 @@ func (s *ContactService) ImportContacts(ctx context.Context, orgID int, listID *
 
 	if len(contactsToCreate) == 0 {
 		return 0, errors.New("no valid contacts found in CSV")
+	}
+
+	// Check feature limits before bulk creation
+	if err := s.featureLimits.ValidateContactCreation(ctx, orgID, len(contactsToCreate)); err != nil {
+		return 0, err
 	}
 
 	// 3. Bulk Create

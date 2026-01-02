@@ -8,18 +8,30 @@ import (
 )
 
 type ApplicationService struct {
-	store *store.Store
+	store         *store.Store
+	featureLimits *FeatureLimitManager
 }
 
-func NewApplicationService(store *store.Store) *ApplicationService {
-	return &ApplicationService{store: store}
+func NewApplicationService(store *store.Store, featureLimits *FeatureLimitManager) *ApplicationService {
+	return &ApplicationService{
+		store:         store,
+		featureLimits: featureLimits,
+	}
 }
 
 func (s *ApplicationService) WithStore(store *store.Store) *ApplicationService {
-	return &ApplicationService{store: store}
+	return &ApplicationService{
+		store:         store,
+		featureLimits: s.featureLimits.WithStore(store),
+	}
 }
 
 func (s *ApplicationService) CreateApplication(ctx context.Context, orgID int, name string, isSandbox bool) (*model.Application, error) {
+	// Check feature limits
+	if err := s.featureLimits.ValidateApplicationCreation(ctx, orgID); err != nil {
+		return nil, err
+	}
+
 	app := &model.Application{
 		OrganizationID: orgID,
 		Name:           name,

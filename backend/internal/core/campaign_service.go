@@ -12,13 +12,31 @@ import (
 type CampaignService struct {
 	store          *store.Store
 	messageService *MessageService
+	featureLimits  *FeatureLimitManager
 }
 
-func NewCampaignService(store *store.Store, messageService *MessageService) *CampaignService {
-	return &CampaignService{store: store, messageService: messageService}
+func NewCampaignService(store *store.Store, messageService *MessageService, featureLimits *FeatureLimitManager) *CampaignService {
+	return &CampaignService{
+		store:          store,
+		messageService: messageService,
+		featureLimits:  featureLimits,
+	}
+}
+
+func (s *CampaignService) WithStore(store *store.Store) *CampaignService {
+	return &CampaignService{
+		store:          store,
+		messageService: s.messageService, // MessageService might also need WithStore if it uses store?
+		featureLimits:  s.featureLimits.WithStore(store),
+	}
 }
 
 func (s *CampaignService) CreateCampaign(ctx context.Context, orgID int, req model.CreateCampaignRequest) (*model.Campaign, error) {
+	// Check feature limits
+	if err := s.featureLimits.ValidateCampaignCreation(ctx, orgID); err != nil {
+		return nil, err
+	}
+
 	campaign := &model.Campaign{
 		OrganizationID:  orgID,
 		Name:            req.Name,
@@ -109,6 +127,11 @@ func (s *CampaignService) LaunchCampaign(ctx context.Context, id, orgID int) err
 
 	if len(contacts) == 0 {
 		return errors.New("no contacts found")
+	}
+
+	// Check limit
+	if err := s.featureLimits.ValidateCampaignRecipients(ctx, orgID, len(contacts)); err != nil {
+		return err
 	}
 
 	// Prepare Messages

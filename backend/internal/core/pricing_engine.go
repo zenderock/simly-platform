@@ -21,6 +21,13 @@ func NewPricingEngine(store *store.Store) *PricingEngine {
 	}
 }
 
+// WithStore creates a copy of the pricing engine with a new store (for transactions)
+func (p *PricingEngine) WithStore(store *store.Store) *PricingEngine {
+	return &PricingEngine{
+		store: store,
+	}
+}
+
 // CalculateSMSCost calculates the cost of an SMS based on the organization's plan
 // Includes volume discount calculations for higher tiers
 func (p *PricingEngine) CalculateSMSCost(ctx context.Context, orgID int, volume int) (float64, error) {

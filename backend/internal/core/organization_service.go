@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/zenderock/simly-backend/internal/model"
 	"github.com/zenderock/simly-backend/internal/store"
@@ -11,15 +12,22 @@ import (
 var ErrNoOrganization = errors.New("user has no organization")
 
 type OrganizationService struct {
-	store *store.Store
+	store          *store.Store
+	billingService *BillingService
 }
 
-func NewOrganizationService(store *store.Store) *OrganizationService {
-	return &OrganizationService{store: store}
+func NewOrganizationService(store *store.Store, billingService *BillingService) *OrganizationService {
+	return &OrganizationService{
+		store:          store,
+		billingService: billingService,
+	}
 }
 
 func (s *OrganizationService) WithStore(store *store.Store) *OrganizationService {
-	return &OrganizationService{store: store}
+	return &OrganizationService{
+		store:          store,
+		billingService: s.billingService,
+	}
 }
 
 func (s *OrganizationService) CreateOrganization(ctx context.Context, userID int, name, slug string, role string) (*model.Organization, error) {
@@ -76,6 +84,17 @@ func (s *OrganizationService) GetOrganizationStats(ctx context.Context, orgID in
 
 func (s *OrganizationService) UpdatePlan(ctx context.Context, orgID int, planID string) error {
 	limits := model.GetPlanLimits(planID)
+	plan := model.GetPlanByID(planID)
+
+	// Update Stripe Subscription if applicable
+	if s.billingService != nil && plan != nil && plan.StripePriceID != "" {
+		if err := s.billingService.UpdateSubscription(ctx, orgID, plan.StripePriceID); err != nil {
+			// Log error but proceed? Or fail?
+			// Failing is safer to keep sync
+			return fmt.Errorf("failed to update subscription in billing provider: %w", err)
+		}
+	}
+
 	// Note: We keep SMSMonthlyLimit as 0 for backward compatibility during transition
 	return s.store.UpdateOrganizationPlan(ctx, orgID, planID, 0, limits.SMSBurst, limits.MaxDevices, limits.MaxSimsPerDevice, limits.MaxApplications, limits.MaxContacts, limits.MaxCampaigns, limits.MaxRecipientsPerCampaign)
 }

@@ -81,8 +81,15 @@ func (s *Server) setupRoutes() {
 	emailProvider := core.NewResendEmailProvider(s.Config.ResendAPIKey, s.Config.ResendFromEmail)
 	alertService := core.NewAlertService(s.DB, emailProvider)
 
-	orgService := core.NewOrganizationService(s.DB)
-	appService := core.NewApplicationService(s.DB)
+	// Billing (Initialize early for OrgService)
+	billingService := core.NewBillingService(s.DB, s.Config.StripeSecretKey, s.Config.StripeWebhookSecret, "http://localhost:3000", s.Config.StripePricePro, s.Config.StripePriceAgency) // TODO: get frontend URL from config/env
+
+	// Initialize Feature Limit Manager
+	featureLimitManager := core.NewFeatureLimitManager(s.DB)
+
+	// Organization Service with Billing
+	orgService := core.NewOrganizationService(s.DB, billingService)
+	appService := core.NewApplicationService(s.DB, featureLimitManager)
 	apiKeyService := core.NewAPIKeyService(s.DB)
 	apiKeyService.SetApplicationService(appService) // Enable sandbox detection for API key creation
 	webhookService := core.NewWebhookService(s.DB)
@@ -141,8 +148,7 @@ func (s *Server) setupRoutes() {
 	// Request Log Handler (for dashboard)
 	requestLogHandler := api.NewRequestLogHandler(requestLogService, orgService)
 
-	// Billing
-	billingService := core.NewBillingService(s.DB, s.Config.StripeSecretKey, s.Config.StripeWebhookSecret, "http://localhost:3000", s.Config.StripePricePro, s.Config.StripePriceAgency) // TODO: get frontend URL from config
+	// Billing Handler
 	billingHandler := api.NewBillingHandler(billingService, orgService)
 
 	// Routing
@@ -293,7 +299,7 @@ func (s *Server) setupRoutes() {
 		})
 
 		// Contacts & Lists/Groups
-		contactService := core.NewContactService(s.DB)
+		contactService := core.NewContactService(s.DB, featureLimitManager)
 		contactHandler := api.NewContactHandler(contactService, orgService)
 
 		r.Route("/api/contacts", func(r chi.Router) {
@@ -314,7 +320,7 @@ func (s *Server) setupRoutes() {
 		})
 
 		// Campaigns
-		campaignService := core.NewCampaignService(s.DB, messageService)
+		campaignService := core.NewCampaignService(s.DB, messageService, featureLimitManager)
 		campaignHandler := api.NewCampaignHandler(campaignService, orgService)
 
 		r.Route("/api/campaigns", func(r chi.Router) {
