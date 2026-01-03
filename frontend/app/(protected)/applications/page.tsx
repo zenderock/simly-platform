@@ -103,8 +103,10 @@ export default function ApplicationsPage() {
       await api.put(`/applications/${editingApp.id}`, {
         name: renamingName,
         is_sandbox: editingApp.is_sandbox,
+        slack_webhook_url: editingApp.slack_webhook_url,
+        ntfy_topic: editingApp.ntfy_topic,
       });
-      updateApplication(editingApp.id, renamingName);
+      fetchApplications();
       toast({ title: "Application updated", variant: "success" });
       setEditingApp(null);
     } catch (e) {
@@ -221,7 +223,7 @@ export default function ApplicationsPage() {
                             onClick={() => openRenameDialog(app)}
                           >
                             <Pencil className="size-4 mr-2" />
-                            Rename
+                            Edit
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
@@ -242,7 +244,7 @@ export default function ApplicationsPage() {
         </div>
       </div>
 
-      {/* Rename Dialog */}
+      {/* Edit Dialog */}
       <Dialog
         open={!!editingApp}
         onOpenChange={(open) => !open && setEditingApp(null)}
@@ -250,12 +252,12 @@ export default function ApplicationsPage() {
         <DialogContent className="sm:max-w-[425px]">
           <form onSubmit={handleRenameSubmit}>
             <DialogHeader>
-              <DialogTitle>Rename Application</DialogTitle>
+              <DialogTitle>Edit Application</DialogTitle>
               <DialogDescription>
-                Change the name of your application.
+                Update application settings and alerts.
               </DialogDescription>
             </DialogHeader>
-            <div className="grid gap-4 py-4">
+            <div className="grid gap-6 py-6">
               <div className="space-y-2">
                 <Label
                   htmlFor="rename-input"
@@ -269,6 +271,45 @@ export default function ApplicationsPage() {
                   onChange={(e) => setRenamingName(e.target.value)}
                   className="h-10"
                   required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label
+                  htmlFor="edit-slack"
+                  className="font-bold text-xs uppercase text-muted-foreground"
+                >
+                  Slack Webhook URL (Optional)
+                </Label>
+                <Input
+                  id="edit-slack"
+                  placeholder="https://hooks.slack.com/services/..."
+                  value={editingApp?.slack_webhook_url || ""}
+                  onChange={(e) =>
+                    setEditingApp({
+                      ...editingApp,
+                      slack_webhook_url: e.target.value,
+                    })
+                  }
+                  className="h-10"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label
+                  htmlFor="edit-ntfy"
+                  className="font-bold text-xs uppercase text-muted-foreground"
+                >
+                  Ntfy Topic (Optional)
+                </Label>
+                <Input
+                  id="edit-ntfy"
+                  placeholder="e.g. my-secure-topic-123"
+                  value={editingApp?.ntfy_topic || ""}
+                  onChange={(e) =>
+                    setEditingApp({ ...editingApp, ntfy_topic: e.target.value })
+                  }
+                  className="h-10"
                 />
               </div>
             </div>

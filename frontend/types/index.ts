@@ -36,6 +36,8 @@ export interface Application {
   name: string;
   description?: string;
   is_sandbox: boolean;
+  slack_webhook_url?: string;
+  ntfy_topic?: string;
   created_at: string;
   updated_at: string;
 }

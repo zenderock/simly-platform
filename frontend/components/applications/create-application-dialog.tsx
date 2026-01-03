@@ -35,6 +35,8 @@ export function CreateApplicationDialog({
   const [formData, setFormData] = useState({
     name: "",
     is_sandbox: false,
+    slack_webhook_url: "",
+    ntfy_topic: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,7 +51,12 @@ export function CreateApplicationDialog({
       });
       onCreated();
       setOpen(false);
-      setFormData({ name: "", is_sandbox: false });
+      setFormData({
+        name: "",
+        is_sandbox: false,
+        slack_webhook_url: "",
+        ntfy_topic: "",
+      });
     } catch (error) {
       toast({
         title: "Error",
@@ -98,6 +105,51 @@ export function CreateApplicationDialog({
                 required
                 className="h-10"
               />
+            </div>
+
+            <div className="grid gap-2">
+              <Label
+                htmlFor="slack_webhook_url"
+                className="font-bold text-xs uppercase text-muted-foreground tracking-widest"
+              >
+                Slack Webhook URL (Optional)
+              </Label>
+              <Input
+                id="slack_webhook_url"
+                placeholder="https://hooks.slack.com/services/..."
+                value={formData.slack_webhook_url}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    slack_webhook_url: e.target.value,
+                  })
+                }
+                className="h-10"
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Receive device offline alerts directly in Slack.
+              </p>
+            </div>
+
+            <div className="grid gap-2">
+              <Label
+                htmlFor="ntfy_topic"
+                className="font-bold text-xs uppercase text-muted-foreground tracking-widest"
+              >
+                Ntfy Topic (Optional)
+              </Label>
+              <Input
+                id="ntfy_topic"
+                placeholder="e.g. my-secure-topic-123"
+                value={formData.ntfy_topic}
+                onChange={(e) =>
+                  setFormData({ ...formData, ntfy_topic: e.target.value })
+                }
+                className="h-10"
+              />
+              <p className="text-[10px] text-muted-foreground">
+                Receive alerts via Ntfy.sh app.
+              </p>
             </div>
 
             <div

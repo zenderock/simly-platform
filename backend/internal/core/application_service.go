@@ -26,16 +26,19 @@ func (s *ApplicationService) WithStore(store *store.Store) *ApplicationService {
 	}
 }
 
-func (s *ApplicationService) CreateApplication(ctx context.Context, orgID int, name string, isSandbox bool) (*model.Application, error) {
+func (s *ApplicationService) CreateApplication(ctx context.Context, orgID int, req model.CreateApplicationRequest) (*model.Application, error) {
 	// Check feature limits
 	if err := s.featureLimits.ValidateApplicationCreation(ctx, orgID); err != nil {
 		return nil, err
 	}
 
 	app := &model.Application{
-		OrganizationID: orgID,
-		Name:           name,
-		IsSandbox:      isSandbox,
+		OrganizationID:  orgID,
+		Name:            req.Name,
+		IsSandbox:       req.IsSandbox,
+		SlackWebhookURL: req.SlackWebhookURL,
+		NtfyTopic:       req.NtfyTopic,
+		AlertSettings:   req.AlertSettings,
 	}
 	if err := s.store.CreateApplication(ctx, app); err != nil {
 		return nil, err
@@ -51,8 +54,8 @@ func (s *ApplicationService) GetApplication(ctx context.Context, appID int) (*mo
 	return s.store.GetApplicationByID(ctx, appID)
 }
 
-func (s *ApplicationService) UpdateApplication(ctx context.Context, appID, orgID int, name string) (*model.Application, error) {
-	if err := s.store.UpdateApplication(ctx, appID, orgID, name); err != nil {
+func (s *ApplicationService) UpdateApplication(ctx context.Context, appID, orgID int, req model.UpdateApplicationRequest) (*model.Application, error) {
+	if err := s.store.UpdateApplication(ctx, appID, orgID, req.Name, req.SlackWebhookURL, req.NtfyTopic, req.AlertSettings); err != nil {
 		return nil, err
 	}
 	return s.store.GetApplicationByID(ctx, appID)

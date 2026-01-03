@@ -77,7 +77,10 @@ func (s *UserService) Register(ctx context.Context, req model.CreateUserRequest)
 		}
 
 		// 3. Create Default Application
-		_, err = txAppService.CreateApplication(ctx, org.ID, "Default App", false)
+		_, err = txAppService.CreateApplication(ctx, org.ID, model.CreateApplicationRequest{
+			Name:      "Default App",
+			IsSandbox: false,
+		})
 		if err != nil {
 			return fmt.Errorf("failed to create default application: %w", err)
 		}
