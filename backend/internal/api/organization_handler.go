@@ -210,7 +210,7 @@ func (h *OrganizationHandler) GetOrganizationStats(w http.ResponseWriter, r *htt
 
 	stats, err := h.service.GetOrganizationStats(r.Context(), orgID)
 	if err != nil {
-		http.Error(w, "Failed to fetch organization stats", http.StatusInternalServerError)
+		http.Error(w, "Failed to fetch organization stats: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 

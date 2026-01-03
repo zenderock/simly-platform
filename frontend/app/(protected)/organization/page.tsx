@@ -77,28 +77,42 @@ export default function OrganizationPage() {
 
     setLoading(true);
     try {
-      const [orgResponse, statsResponse, dispatchResponse] = await Promise.all([
-        api.get("/organizations/current"),
-        api.get("/organizations/current/stats"),
-        api.get("/organizations/current/dispatch-settings"),
-      ]);
-
-      setOrganization(orgResponse.data);
-      setStats(statsResponse.data);
-      setDispatchSettings(dispatchResponse.data);
-      setFormData({
-        name: orgResponse.data.name,
-      });
-    } catch (error) {
-      console.error("Failed to fetch organization data", error);
-      // Fallback to organizations from auth store
-      const activeOrg = organizations.find((org) => org.id === organizationId);
-      if (activeOrg) {
-        setOrganization(activeOrg);
-        setFormData({
-          name: activeOrg.name,
+      // Fetch data independently to allow partial loading
+      const fetchOrg = api
+        .get("/organizations/current")
+        .then((res) => {
+          setOrganization(res.data);
+          setFormData({ name: res.data.name });
+        })
+        .catch((err) => {
+          console.error("Failed to fetch organization", err);
+          // Fallback to auth store
+          const activeOrg = organizations.find(
+            (org) => org.id === organizationId
+          );
+          if (activeOrg) {
+            setOrganization(activeOrg);
+            setFormData({ name: activeOrg.name });
+          }
         });
-      }
+
+      const fetchStats = api
+        .get("/organizations/current/stats")
+        .then((res) => setStats(res.data))
+        .catch((err) => console.error("Failed to fetch stats", err));
+
+      const fetchDispatch = api
+        .get("/organizations/current/dispatch-settings")
+        .then((res) => {
+          if (res.data) {
+            setDispatchSettings(res.data);
+          }
+        })
+        .catch((err) =>
+          console.error("Failed to fetch dispatch settings", err)
+        );
+
+      await Promise.all([fetchOrg, fetchStats, fetchDispatch]);
     } finally {
       setLoading(false);
     }
@@ -291,134 +305,178 @@ export default function OrganizationPage() {
                 <CardTitle>Dispatch Configuration</CardTitle>
               </div>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-6 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="throttle" className="flex items-center gap-2">
-                    <Zap className="size-4 text-amber-500" />
-                    Throttle Rate (seconds)
-                  </Label>
-                  <Input
-                    id="throttle"
-                    type="number"
-                    min={1}
-                    value={dispatchSettings.sms_throttle_rate_seconds}
-                    onChange={(e) =>
-                      setDispatchSettings((prev) => ({
-                        ...prev,
-                        sms_throttle_rate_seconds:
-                          parseInt(e.target.value) || 1,
-                      }))
-                    }
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Minimum delay between SMS sent from the same SIM
+            <CardContent className="space-y-6 relative">
+              {organization.plan === "free" && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg">
+                  <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] rounded-lg" />
+                  <div className="relative z-20 text-center space-y-4 p-6 bg-background/95 rounded-xl shadow-sm border max-w-sm mx-4">
+                    <div className="p-3 bg-amber-500/10 rounded-full w-fit mx-auto">
+                      <Crown className="size-8 text-amber-500" />
+                    </div>
+                    <div className="space-y-2">
+                      <h3 className="font-semibold text-lg">
+                        Advanced Scheduling
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Upgrade to the Professional plan to configure custom
+                        send windows, timezones, and throttle rates.
+                      </p>
+                    </div>
+                    <Button
+                      asChild
+                      className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0"
+                    >
+                      <Link href="/organization/plans">Upgrade to Pro</Link>
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              <div
+                className={
+                  organization.plan === "free"
+                    ? "opacity-40 pointer-events-none select-none filter blur-[1px]"
+                    : ""
+                }
+              >
+                <div className="grid gap-6 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="throttle"
+                      className="flex items-center gap-2"
+                    >
+                      <Zap className="size-4 text-amber-500" />
+                      Throttle Rate (seconds)
+                    </Label>
+                    <Input
+                      id="throttle"
+                      type="number"
+                      min={1}
+                      disabled={organization.plan === "free"}
+                      value={dispatchSettings.sms_throttle_rate_seconds}
+                      onChange={(e) =>
+                        setDispatchSettings((prev) => ({
+                          ...prev,
+                          sms_throttle_rate_seconds:
+                            parseInt(e.target.value) || 1,
+                        }))
+                      }
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Minimum delay between SMS sent from the same SIM
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label
+                      htmlFor="timezone"
+                      className="flex items-center gap-2"
+                    >
+                      <Globe className="size-4 text-blue-500" />
+                      Timezone
+                    </Label>
+                    <Select
+                      disabled={organization.plan === "free"}
+                      value={dispatchSettings.send_window_timezone}
+                      onValueChange={(value) =>
+                        setDispatchSettings((prev) => ({
+                          ...prev,
+                          send_window_timezone: value,
+                        }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select timezone" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {commonTimezones.map((tz) => (
+                          <SelectItem key={tz} value={tz}>
+                            {tz}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Send Window Start</Label>
+                    <Select
+                      disabled={organization.plan === "free"}
+                      value={dispatchSettings.send_window_start.toString()}
+                      onValueChange={(value) =>
+                        setDispatchSettings((prev) => ({
+                          ...prev,
+                          send_window_start: parseInt(value),
+                        }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Start Time" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {hours.map((h) => (
+                          <SelectItem key={h.value} value={h.value}>
+                            {h.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Send Window End</Label>
+                    <Select
+                      disabled={organization.plan === "free"}
+                      value={dispatchSettings.send_window_end.toString()}
+                      onValueChange={(value) =>
+                        setDispatchSettings((prev) => ({
+                          ...prev,
+                          send_window_end: parseInt(value),
+                        }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="End Time" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {hours.map((h) => (
+                          <SelectItem key={h.value} value={h.value}>
+                            {h.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="bg-muted/50 p-4 rounded-lg text-sm text-muted-foreground mt-6">
+                  <p>
+                    Messages scheduled outside of the sending window (
+                    {dispatchSettings.send_window_start}:00 -{" "}
+                    {dispatchSettings.send_window_end}:00{" "}
+                    {dispatchSettings.send_window_timezone}) will be queued and
+                    sent automatically when the window opens.
                   </p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="timezone" className="flex items-center gap-2">
-                    <Globe className="size-4 text-blue-500" />
-                    Timezone
-                  </Label>
-                  <Select
-                    value={dispatchSettings.send_window_timezone}
-                    onValueChange={(value) =>
-                      setDispatchSettings((prev) => ({
-                        ...prev,
-                        send_window_timezone: value,
-                      }))
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select timezone" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {commonTimezones.map((tz) => (
-                        <SelectItem key={tz} value={tz}>
-                          {tz}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Send Window Start</Label>
-                  <Select
-                    value={dispatchSettings.send_window_start.toString()}
-                    onValueChange={(value) =>
-                      setDispatchSettings((prev) => ({
-                        ...prev,
-                        send_window_start: parseInt(value),
-                      }))
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Start Time" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {hours.map((h) => (
-                        <SelectItem key={h.value} value={h.value}>
-                          {h.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Send Window End</Label>
-                  <Select
-                    value={dispatchSettings.send_window_end.toString()}
-                    onValueChange={(value) =>
-                      setDispatchSettings((prev) => ({
-                        ...prev,
-                        send_window_end: parseInt(value),
-                      }))
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="End Time" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {hours.map((h) => (
-                        <SelectItem key={h.value} value={h.value}>
-                          {h.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <Button
+                  onClick={handleSaveDispatch}
+                  disabled={savingDispatch || organization.plan === "free"}
+                  className="w-full sm:w-auto mt-6"
+                >
+                  {savingDispatch ? (
+                    <>
+                      <LoaderQuater className="size-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="size-4 mr-2" />
+                      Update Settings
+                    </>
+                  )}
+                </Button>
               </div>
-
-              <div className="bg-muted/50 p-4 rounded-lg text-sm text-muted-foreground">
-                <p>
-                  Messages scheduled outside of the sending window (
-                  {dispatchSettings.send_window_start}:00 -{" "}
-                  {dispatchSettings.send_window_end}:00{" "}
-                  {dispatchSettings.send_window_timezone}) will be queued and
-                  sent automatically when the window opens.
-                </p>
-              </div>
-
-              <Button
-                onClick={handleSaveDispatch}
-                disabled={savingDispatch}
-                className="w-full sm:w-auto"
-              >
-                {savingDispatch ? (
-                  <>
-                    <LoaderQuater className="size-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="size-4 mr-2" />
-                    Update Settings
-                  </>
-                )}
-              </Button>
             </CardContent>
           </Card>
 
