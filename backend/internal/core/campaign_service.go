@@ -37,11 +37,16 @@ func (s *CampaignService) CreateCampaign(ctx context.Context, orgID int, req mod
 		return nil, err
 	}
 
+	status := model.CampaignStatusDraft
+	if req.ScheduledAt != nil {
+		status = model.CampaignStatusScheduled
+	}
+
 	campaign := &model.Campaign{
 		OrganizationID:  orgID,
 		Name:            req.Name,
 		TemplateBody:    req.TemplateBody,
-		Status:          model.CampaignStatusDraft,
+		Status:          status,
 		SimSlot:         req.SimSlot,
 		ScheduledAt:     req.ScheduledAt,
 		SendWindowStart: req.SendWindowStart,
@@ -108,7 +113,7 @@ func (s *CampaignService) LaunchCampaign(ctx context.Context, id, orgID int) err
 		return err
 	}
 
-	if c.Status != model.CampaignStatusDraft {
+	if c.Status != model.CampaignStatusDraft && c.Status != model.CampaignStatusScheduled {
 		return errors.New("campaign already launched or processing")
 	}
 

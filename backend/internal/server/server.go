@@ -119,7 +119,7 @@ func (s *Server) setupRoutes() {
 	campaignService := core.NewCampaignService(s.DB, messageService, featureLimitManager)
 
 	// Workers
-	scheduler := core.NewSchedulerService(s.DB, messageService)
+	scheduler := core.NewSchedulerService(s.DB, messageService, campaignService)
 	go scheduler.Start(context.Background())
 
 	monitoringService := core.NewMonitoringService(s.DB, alertService, messageService)

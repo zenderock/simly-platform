@@ -38,10 +38,12 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
-  Rocket,
+  Calendar,
+  Clock,
+  Info,
   Smartphone,
   Users,
-  Info,
+  Rocket,
 } from "lucide-react";
 import { listLists } from "@/lib/api/contacts";
 import { listDevices } from "@/lib/api/devices";
@@ -52,7 +54,7 @@ import { useAuth } from "@/lib/auth";
 
 const steps = [
   { id: 1, title: "Details" },
-  { id: 2, title: "Target" },
+  { id: 2, title: "Target & Schedule" },
   { id: 3, title: "Review" },
 ];
 
@@ -62,6 +64,7 @@ const schema = z.object({
   list_id: z.string().min(1, "Contact list is required"), // Select is string usually
   device_id: z.string().min(1, "Device is required"),
   sim_slot: z.string().optional(),
+  scheduled_at: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -83,9 +86,13 @@ export default function CreateCampaignPage() {
       list_id: "",
       device_id: "",
       sim_slot: "auto",
+      scheduled_at: "",
     },
     mode: "onChange",
   });
+
+  const scheduledAt = form.watch("scheduled_at");
+  const isScheduled = !!scheduledAt;
 
   // Fetch Data
   const { data: lists } = useQuery({
@@ -119,11 +126,15 @@ export default function CreateCampaignPage() {
     mutationFn: createCampaign,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["campaigns"] });
-      // If launching immediately
-      if (isLaunching) {
+      // If launching immediately AND NOT scheduled
+      if (isLaunching && !isScheduled) {
         launchMutation.mutate(data.id);
       } else {
-        toast.success("Campaign draft created");
+        toast.success(
+          isScheduled
+            ? "Campaign scheduled successfully"
+            : "Campaign draft created"
+        );
         router.push("/campaigns");
       }
     },
@@ -148,7 +159,7 @@ export default function CreateCampaignPage() {
     if (currentStep === 1) {
       valid = await form.trigger(["name", "template_body"]);
     } else if (currentStep === 2) {
-      valid = await form.trigger(["list_id", "device_id"]);
+      valid = await form.trigger(["list_id", "device_id", "scheduled_at"]);
     }
 
     if (valid) setCurrentStep((prev) => prev + 1);
@@ -158,6 +169,16 @@ export default function CreateCampaignPage() {
 
   const onSubmit = (data: FormData) => {
     const listId = parseInt(data.list_id);
+    let formattedScheduledAt = undefined;
+
+    if (data.scheduled_at) {
+      // Input datetime-local gives YYYY-MM-DDTHH:mm
+      // We create a Date object which assumes local time (browser)
+      // and then format it to ISO (UTC) for the backend
+      const date = new Date(data.scheduled_at);
+      formattedScheduledAt = date.toISOString();
+    }
+
     createMutation.mutate({
       name: data.name,
       template_body: data.template_body,
@@ -165,6 +186,7 @@ export default function CreateCampaignPage() {
       device_id: parseInt(data.device_id),
       sim_slot:
         data.sim_slot === "auto" ? null : parseInt(data.sim_slot || "0"),
+      scheduled_at: formattedScheduledAt,
     });
   };
 
@@ -305,9 +327,9 @@ export default function CreateCampaignPage() {
               {currentStep === 2 && (
                 <Card>
                   <CardHeader>
-                    <CardTitle>Target Audience & Method</CardTitle>
+                    <CardTitle>Target, Device & Schedule</CardTitle>
                     <CardDescription>
-                      Select who to send to and which device to use.
+                      Who to send to, which device to use, and when to send.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -347,86 +369,115 @@ export default function CreateCampaignPage() {
                       )}
                     />
 
-                    <FormField
-                      control={form.control}
-                      name="device_id"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Sending Device</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a device" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {devices?.map((device) => {
-                                const phoneNumbers = device.sim_cards
-                                  ?.map((s: any) => s.phone_number)
-                                  .filter(Boolean)
-                                  .join(", ");
-                                return (
-                                  <SelectItem
-                                    key={device.id}
-                                    value={device.id.toString()}
-                                    disabled={device.status !== "online"}
-                                  >
-                                    <div className="flex items-center">
-                                      <div
-                                        className={`size-2 rounded-full mr-2 ${
-                                          device.status === "online"
-                                            ? "bg-green-500"
-                                            : "bg-gray-300"
-                                        }`}
-                                      />
-                                      <span>{device.name}</span>
-                                      {phoneNumbers && (
-                                        <span className="text-xs text-muted-foreground ml-2">
-                                          ({phoneNumbers})
-                                        </span>
-                                      )}
-                                    </div>
-                                  </SelectItem>
-                                );
-                              })}
-                            </SelectContent>
-                          </Select>
-                          <FormDescription>
-                            Only online devices are available.
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="device_id"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Sending Device</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select a device" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {devices?.map((device) => {
+                                  const phoneNumbers = device.sim_cards
+                                    ?.map((s: any) => s.phone_number)
+                                    .filter(Boolean)
+                                    .join(", ");
+                                  return (
+                                    <SelectItem
+                                      key={device.id}
+                                      value={device.id.toString()}
+                                      disabled={device.status !== "online"}
+                                    >
+                                      <div className="flex items-center">
+                                        <div
+                                          className={`size-2 rounded-full mr-2 ${
+                                            device.status === "online"
+                                              ? "bg-green-500"
+                                              : "bg-gray-300"
+                                          }`}
+                                        />
+                                        <span>{device.name}</span>
+                                        {phoneNumbers && (
+                                          <span className="text-xs text-muted-foreground ml-2">
+                                            ({phoneNumbers})
+                                          </span>
+                                        )}
+                                      </div>
+                                    </SelectItem>
+                                  );
+                                })}
+                              </SelectContent>
+                            </Select>
+                            <FormDescription>
+                              Only online devices are available.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="sim_slot"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>SIM Slot (Optional)</FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Automatic Selection" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="auto">
+                                  Automatic (Best SIM)
+                                </SelectItem>
+                                <SelectItem value="0">SIM Slot 1</SelectItem>
+                                <SelectItem value="1">SIM Slot 2</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormDescription>
+                              Choose a specific SIM slot if needed.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <Separator className="my-2" />
 
                     <FormField
                       control={form.control}
-                      name="sim_slot"
+                      name="scheduled_at"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>SIM Slot (Optional)</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Automatic Selection" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="auto">
-                                Automatic (Best SIM)
-                              </SelectItem>
-                              <SelectItem value="0">SIM Slot 1</SelectItem>
-                              <SelectItem value="1">SIM Slot 2</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <FormLabel className="flex items-center gap-2">
+                            <Clock className="size-3.5" /> Schedule for Later
+                            (Optional)
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="datetime-local"
+                              placeholder="Select date and time"
+                              {...field}
+                              min={new Date().toISOString().slice(0, 16)}
+                            />
+                          </FormControl>
                           <FormDescription>
-                            Choose a specific SIM slot if needed.
+                            Leave empty to launch manually or immediately.
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -480,6 +531,26 @@ export default function CreateCampaignPage() {
                       </div>
                     </div>
 
+                    {scheduledAt && (
+                      <div className="p-4 border border-blue-200 bg-blue-50 dark:bg-blue-900/10 rounded-md">
+                        <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 mb-1">
+                          <Calendar className="size-4" />
+                          <span className="text-sm font-medium">
+                            Scheduled for
+                          </span>
+                        </div>
+                        <div className="font-semibold text-lg">
+                          {new Date(scheduledAt).toLocaleString(undefined, {
+                            dateStyle: "full",
+                            timeStyle: "short",
+                          })}
+                        </div>
+                        <div className="text-xs text-blue-600/80 dark:text-blue-400/80 mt-1">
+                          This campaign will automatically start at this time.
+                        </div>
+                      </div>
+                    )}
+
                     <div>
                       <h4 className="text-sm font-medium text-muted-foreground mb-2">
                         Message Preview
@@ -494,8 +565,14 @@ export default function CreateCampaignPage() {
                     <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-md border border-blue-100 dark:border-blue-900 flex gap-3">
                       <Rocket className="size-5 text-blue-600 shrink-0" />
                       <p className="text-sm text-blue-900 dark:text-blue-100">
-                        You are about to queue{" "}
-                        <strong>{selectedList?.member_count} messages</strong>.
+                        You are about to{" "}
+                        {isScheduled ? (
+                          <strong>schedule</strong>
+                        ) : (
+                          <strong>launch</strong>
+                        )}{" "}
+                        messaging for{" "}
+                        <strong>{selectedList?.member_count} contacts</strong>.
                         Depending on your device connection, this might take
                         some time to process. Make sure your Android device is
                         charged and has a stable internet connection.
@@ -549,7 +626,7 @@ export default function CreateCampaignPage() {
                         launchMutation.isPending) && (
                         <LoaderQuater className="mr-2" />
                       )}
-                      Launch Campaign
+                      {isScheduled ? "Schedule Campaign" : "Launch Campaign"}
                     </Button>
                   </div>
                 )}

@@ -462,3 +462,47 @@ func (s *Store) CountCampaignsByOrganization(ctx context.Context, orgID int) (in
 	}
 	return count, nil
 }
+
+// GetDueScheduledCampaigns returns campaigns that are scheduled and due for execution
+func (s *Store) GetDueScheduledCampaigns(ctx context.Context) ([]model.Campaign, error) {
+	query := `
+		SELECT id, organization_id, name, template_body, list_id, device_id, sim_slot, status, scheduled_at, total_messages, sent_messages, failed_messages, send_window_start, send_window_end, pause_reason, estimated_completion_at, use_all_devices, created_at, updated_at
+		FROM campaigns
+		WHERE status = 'scheduled' AND scheduled_at <= NOW()
+	`
+	rows, err := s.db.Query(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get due scheduled campaigns: %w", err)
+	}
+	defer rows.Close()
+
+	var campaigns []model.Campaign
+	for rows.Next() {
+		var c model.Campaign
+		if err := rows.Scan(
+			&c.ID,
+			&c.OrganizationID,
+			&c.Name,
+			&c.TemplateBody,
+			&c.ListID,
+			&c.DeviceID,
+			&c.SimSlot,
+			&c.Status,
+			&c.ScheduledAt,
+			&c.TotalMessages,
+			&c.SentMessages,
+			&c.FailedMessages,
+			&c.SendWindowStart,
+			&c.SendWindowEnd,
+			&c.PauseReason,
+			&c.EstimatedCompletionAt,
+			&c.UseAllDevices,
+			&c.CreatedAt,
+			&c.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan scheduled campaign: %w", err)
+		}
+		campaigns = append(campaigns, c)
+	}
+	return campaigns, nil
+}
