@@ -37,10 +37,10 @@ func (h *ApplicationHandler) CreateApplication(w http.ResponseWriter, r *http.Re
 	app, err := h.service.CreateApplication(r.Context(), orgID, req)
 	if err != nil {
 		if errors.Is(err, core.ErrLimitExceeded) {
-			http.Error(w, err.Error(), http.StatusForbidden)
+			RespondWithError(w, http.StatusForbidden, err.Error())
 			return
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 

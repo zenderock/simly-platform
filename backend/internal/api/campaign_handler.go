@@ -51,10 +51,10 @@ func (h *CampaignHandler) CreateCampaign(w http.ResponseWriter, r *http.Request)
 	campaign, err := h.service.CreateCampaign(r.Context(), orgID, req)
 	if err != nil {
 		if errors.Is(err, core.ErrLimitExceeded) {
-			http.Error(w, err.Error(), http.StatusForbidden)
+			RespondWithError(w, http.StatusForbidden, err.Error())
 			return
 		}
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	w.WriteHeader(http.StatusCreated)

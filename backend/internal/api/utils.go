@@ -1,12 +1,26 @@
 package api
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
 
 	"github.com/zenderock/simly-backend/internal/core"
 )
+
+// RespondWithError sends a JSON error response
+func RespondWithError(w http.ResponseWriter, code int, message string) {
+	RespondWithJSON(w, code, map[string]string{"message": message})
+}
+
+// RespondWithJSON sends a JSON response
+func RespondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
+	response, _ := json.Marshal(payload)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	w.Write(response)
+}
 
 // GetActiveOrgID resolves the organization ID from the request context.
 // Priority:
