@@ -11,17 +11,20 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/hibiken/asynq"
 	"github.com/zenderock/simly-backend/internal/api"
 	"github.com/zenderock/simly-backend/internal/config"
 	"github.com/zenderock/simly-backend/internal/core"
 	"github.com/zenderock/simly-backend/internal/store"
+	"github.com/zenderock/simly-backend/internal/worker"
 )
 
 type Server struct {
-	Config     *config.Config
-	DB         *store.Store
-	Router     chi.Router
-	Dispatcher *core.DispatcherService
+	Config      *config.Config
+	DB          *store.Store
+	Router      chi.Router
+	RedisWorker *worker.RedisWorker
+	// Dispatcher is removed in favor of RedisWorker
 }
 
 func New(cfg *config.Config) (*Server, error) {
@@ -46,15 +49,20 @@ func New(cfg *config.Config) (*Server, error) {
 }
 
 func (s *Server) Close() {
-	// Stop dispatcher gracefully
-	if s.Dispatcher != nil {
-		s.Dispatcher.Stop()
+	// Stop worker gracefully
+	if s.RedisWorker != nil {
+		s.RedisWorker.Stop()
 	}
 	s.DB.Close()
 }
 
 func (s *Server) setupRoutes() {
 	jwtSecret := []byte(s.Config.JWTSecret)
+
+	// Redis Config
+	redisOpt := asynq.RedisClientOpt{Addr: s.Config.RedisAddr}
+	// Initialize Asynq Client
+	taskClient := asynq.NewClient(redisOpt)
 
 	// Dependency Injection
 	var notificationProvider core.NotificationProvider = &core.LogNotificationProvider{}
@@ -106,28 +114,33 @@ func (s *Server) setupRoutes() {
 	// Initialize AppDIDService for DID/Virtual Number resolution
 	appDIDService := core.NewAppDIDService(s.DB)
 
-	messageService := core.NewMessageService(s.DB, webhookService, notificationProvider, rateLimitService, appService, s.Config.SandboxSuccessNumber, s.Config.SandboxFailureNumber, alertService, devicePoolManager, appDIDService)
+	// Message Service with Asynq Client
+	messageService := core.NewMessageService(s.DB, webhookService, notificationProvider, rateLimitService, appService, s.Config.SandboxSuccessNumber, s.Config.SandboxFailureNumber, alertService, devicePoolManager, appDIDService, taskClient)
 
-	// Start Workers
+	// Workers
 	scheduler := core.NewSchedulerService(s.DB, messageService)
 	go scheduler.Start(context.Background())
 
 	monitoringService := core.NewMonitoringService(s.DB, alertService, messageService)
 	go monitoringService.Start(context.Background())
 
-	// Initialize and start DispatcherService (reuse devicePoolManager from MessageService)
+	// Initialize Redis Worker (instead of polling DispatcherService)
 	sendWindowManager := core.NewSendWindowManager(s.DB)
-	dispatchConfig := core.DefaultDispatchConfig()
-	dispatcher := core.NewDispatcherService(
+	redisWorker := worker.NewRedisWorker(
+		redisOpt,
 		s.DB,
 		messageService,
 		devicePoolManager,
 		sendWindowManager,
-		alertService,
-		dispatchConfig,
 	)
-	s.Dispatcher = dispatcher
-	go dispatcher.Start(context.Background())
+	s.RedisWorker = redisWorker
+
+	// Start Worker in background
+	go func() {
+		if err := redisWorker.Start(); err != nil {
+			log.Printf("Redis Worker failed to start: %v", err)
+		}
+	}()
 
 	// Handlers
 	authHandler := api.NewAuthHandler(authUserService, captchaService)
@@ -178,7 +191,7 @@ func (s *Server) setupRoutes() {
 
 	// Health Check
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Simly Gateway API v1.0 - Operating Normally"))
+		w.Write([]byte("Simly Gateway API v1.0 - Operating Normally (Redis Enabled)"))
 	})
 
 	// Public API v1 Routes (for external developers)

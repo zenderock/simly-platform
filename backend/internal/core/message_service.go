@@ -2,15 +2,26 @@ package core
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"strings"
 	"time"
 
+	"github.com/hibiken/asynq"
 	"github.com/zenderock/simly-backend/internal/model"
 	"github.com/zenderock/simly-backend/internal/store"
 )
+
+const (
+	TypeSMSDelivery = "sms:deliver"
+)
+
+// SMSDeliveryPayload is the payload for SMS delivery tasks
+type SMSDeliveryPayload struct {
+	MessageID int `json:"message_id"`
+}
 
 type MessageService struct {
 	store                *store.Store
@@ -21,6 +32,7 @@ type MessageService struct {
 	alertService         *AlertService
 	devicePoolManager    *DevicePoolManager
 	appDIDService        *AppDIDService
+	taskClient           *asynq.Client
 	sandboxSuccessNumber string
 	sandboxFailureNumber string
 }
@@ -36,6 +48,7 @@ func NewMessageService(
 	alertService *AlertService,
 	devicePoolManager *DevicePoolManager,
 	appDIDService *AppDIDService,
+	taskClient *asynq.Client,
 ) *MessageService {
 	return &MessageService{
 		store:                store,
@@ -46,6 +59,7 @@ func NewMessageService(
 		alertService:         alertService,
 		devicePoolManager:    devicePoolManager,
 		appDIDService:        appDIDService,
+		taskClient:           taskClient,
 		sandboxSuccessNumber: sandboxSuccessNumber,
 		sandboxFailureNumber: sandboxFailureNumber,
 	}
@@ -203,14 +217,8 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 		}
 	}
 
-	// 2. Device Selection - Use DevicePoolManager for intelligent selection
-	useQueuedDispatch := false // Flag to determine if we should use queued dispatch
-
-	if req.ScheduledAt != nil && req.ScheduledAt.After(time.Now()) {
-		// Valid Scheduled Message - device will be assigned later
-		useQueuedDispatch = true
-	} else if req.DeviceID != nil {
-		// Specific Device Requested
+	// 2. Pre-validate Device selection (if specific device requested)
+	if req.DeviceID != nil {
 		device, err := s.store.GetDeviceByID(ctx, *req.DeviceID)
 		if err != nil {
 			return nil, fmt.Errorf("device not found: %w", err)
@@ -218,43 +226,7 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 		if device.OrganizationID != orgID {
 			return nil, errors.New("unauthorized: device does not belong to your organization")
 		}
-
-		// If device is offline or unavailable, queue the message instead of rejecting
-		if device.Status != "online" {
-			log.Printf("Device %d is offline, message will be queued for dispatch when device comes online", device.ID)
-			useQueuedDispatch = true
-			targetDevice = device // Keep device assignment for queue
-		} else if s.devicePoolManager != nil && !s.devicePoolManager.IsDeviceAvailable(device.ID, org.SMSThrottleRateSeconds) {
-			log.Printf("Device %d is temporarily unavailable, message will be queued", device.ID)
-			useQueuedDispatch = true
-			targetDevice = device
-		} else {
-			targetDevice = device
-		}
-	} else {
-		// Smart Selection using DevicePoolManager
-		if s.devicePoolManager != nil {
-			targetDevice, err = s.devicePoolManager.GetNextAvailableDevice(ctx, orgID, req.Tags)
-			if err != nil || targetDevice == nil {
-				// No devices available right now - queue the message
-				log.Printf("No available devices for org %d, message will be queued", orgID)
-				useQueuedDispatch = true
-			}
-		} else {
-			// Fallback to old selection method if DevicePoolManager not available
-			targetDevice, err = s.selectBestDevice(ctx, orgID, req.Tags, nil)
-			if err != nil {
-				// No devices available - queue the message
-				log.Printf("No available devices for org %d, message will be queued", orgID)
-				useQueuedDispatch = true
-			}
-		}
-	}
-
-	// Only check FCM token if we're going to send immediately
-	if !useQueuedDispatch && targetDevice != nil && targetDevice.FCMToken == "" {
-		log.Printf("Device %d has no FCM token, message will be queued", targetDevice.ID)
-		useQueuedDispatch = true
+		targetDevice = device
 	}
 
 	// 3. Create Message Record
@@ -263,13 +235,18 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 		ApplicationID:  req.ApplicationID,
 		ToNumber:       req.To,
 		Body:           body,
-		Status:         "pending",
+		Status:         "queued", // Always start as queued for Redis
 		Direction:      "outbound",
 		Priority:       req.Priority,
 		RequiredTags:   req.Tags,
 		ScheduledAt:    req.ScheduledAt,
 		MaxRetries:     3, // Default retries
 		SimSlot:        req.SimSlot,
+	}
+
+	// If scheduled for future, set status accordingly
+	if req.ScheduledAt != nil && req.ScheduledAt.After(time.Now()) {
+		msg.Status = "scheduled"
 	}
 
 	if targetDevice != nil {
@@ -286,18 +263,17 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 		}
 	}
 
-	// Determine initial status based on dispatch strategy
-	if useQueuedDispatch {
-		msg.Status = "queued" // Will be picked up by DispatcherService
-	} else if req.ScheduledAt != nil && req.ScheduledAt.After(time.Now()) {
-		msg.Status = "scheduled"
+	// Enforce Plan-based Priority
+	if org.Plan == model.PlanFree {
+		// Free plan always gets low priority regardless of request
+		msg.Priority = "low"
 	} else {
-		msg.Status = "pending"
+		// Paid plans: default to normal if not specified, but allow "high" or "low"
+		if msg.Priority == "" {
+			msg.Priority = "normal"
+		}
 	}
 
-	if msg.Priority == "" {
-		msg.Priority = "normal"
-	}
 	if msg.RequiredTags == nil {
 		msg.RequiredTags = []string{}
 	}
@@ -306,14 +282,51 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 		return nil, err
 	}
 
-	// 4. Trigger FCM Push (ONLY IF NOT SCHEDULED AND NOT QUEUED)
-	if msg.Status == "pending" && targetDevice != nil {
-		if err := s.NotifyDevice(ctx, msg); err != nil {
-			logNotificationError(msg.ID, err)
+	// 4. Enqueue to Asynq (Redis)
+	if s.taskClient != nil {
+		if err := s.EnqueueSMSDelivery(ctx, msg); err != nil {
+			log.Printf("Failed to enqueue message %d: %v", msg.ID, err)
+			// Don't fail request, background dispatcher will need recover this
 		}
+	} else {
+		log.Printf("Warning: taskClient is nil, message %d stuck in queued state", msg.ID)
 	}
 
 	return msg, nil
+}
+
+// EnqueueSMSDelivery queues a message for delivery via Asynq
+func (s *MessageService) EnqueueSMSDelivery(ctx context.Context, msg *model.Message) error {
+	payload, err := json.Marshal(SMSDeliveryPayload{MessageID: msg.ID})
+	if err != nil {
+		return err
+	}
+
+	// Determine queue priority
+	queueName := "default"
+	if msg.Priority == "high" {
+		queueName = "critical" // Map high priority to critical queue
+	} else if msg.Priority == "low" {
+		queueName = "low"
+	}
+
+	opts := []asynq.Option{
+		asynq.Queue(queueName),
+		asynq.MaxRetry(msg.MaxRetries),
+	}
+
+	// ProcessAt for scheduled messages
+	if msg.ScheduledAt != nil && msg.ScheduledAt.After(time.Now()) {
+		opts = append(opts, asynq.ProcessAt(*msg.ScheduledAt))
+	}
+
+	task := asynq.NewTask(TypeSMSDelivery, payload, opts...)
+	info, err := s.taskClient.Enqueue(task)
+	if err != nil {
+		return err
+	}
+	log.Printf("Enqueued task: %s, queue: %s", info.ID, info.Queue)
+	return nil
 }
 
 func (s *MessageService) NotifyDevice(ctx context.Context, msg *model.Message) error {
@@ -430,22 +443,25 @@ func (s *MessageService) UpdateStatus(ctx context.Context, msgID int, status str
 	if status == "failed" {
 		if msg.RetryCount < msg.MaxRetries {
 			newRetryCount := msg.RetryCount + 1
-			log.Printf("Message %d failed, retrying (%d/%d) with failover...\n", msgID, newRetryCount, msg.MaxRetries)
+			log.Printf("Message %d failed, retrying (%d/%d) via Queue...\n", msgID, newRetryCount, msg.MaxRetries)
 
 			// 1. Clear device assignment and increment retry in DB
-			if err := s.store.UpdateMessageRetry(ctx, msgID, newRetryCount, "Last delivery attempt failed", "pending"); err != nil {
+			if err := s.store.UpdateMessageRetry(ctx, msgID, newRetryCount, "Last delivery attempt failed", "queued"); err != nil {
 				return fmt.Errorf("failed to update message retry: %w", err)
 			}
 
-			// 2. Refresh message model for notification
-			msg.RetryCount = newRetryCount
-			msg.Status = "pending"
-			// IMPORTANT: Clear DeviceID in model so NotifyDevice performs Late Binding / Smart Routing again
-			oldDeviceID := msg.DeviceID
-			msg.DeviceID = nil
+			// 2. Enqueue retry logic
+			if s.taskClient != nil {
+				// Update status in object
+				msg.RetryCount = newRetryCount
+				msg.Status = "queued"
+				msg.DeviceID = nil // Reset device ID
 
-			// 3. Trigger new routing & notification
-			return s.NotifyDeviceWithExclusion(ctx, msg, oldDeviceID)
+				if err := s.EnqueueSMSDelivery(ctx, msg); err != nil {
+					log.Printf("Failed to re-enqueue failed message %d: %v", msgID, err)
+				}
+			}
+			return nil
 		}
 	}
 

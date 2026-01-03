@@ -23,6 +23,7 @@ type Config struct {
 	FirebaseServiceAccount string
 	FrontendURL            string
 	TurnstileSecret        string
+	RedisAddr              string
 }
 
 func Load() *Config {
@@ -47,6 +48,7 @@ func Load() *Config {
 		FirebaseServiceAccount: getEnv("FIREBASE_SERVICE_ACCOUNT", ""),
 		FrontendURL:            getEnv("FRONTEND_URL", "http://localhost:3000"),
 		TurnstileSecret:        getEnv("TURNSTILE_SECRET_KEY", "1x0000000000000000000000000000000AA"),
+		RedisAddr:              getEnv("REDIS_ADDR", "localhost:6379"),
 	}
 }
 
