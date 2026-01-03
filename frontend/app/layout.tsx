@@ -15,6 +15,9 @@ const poppinsSans = Poppins({
 export const metadata: Metadata = {
   title: "Simly - Android SMS Gateway",
   description: "Transform your Android phone into a professional SMS gateway.",
+  other: {
+    google: "notranslate",
+  },
 };
 
 export default function RootLayout({
@@ -23,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning translate="no">
       <body className={`${poppinsSans.variable} antialiased`}>
         <Providers>
           <ThemeProvider
