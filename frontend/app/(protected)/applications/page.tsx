@@ -98,6 +98,21 @@ export default function ApplicationsPage() {
     e.preventDefault();
     if (!editingApp) return;
 
+    // Validation
+    if (
+      editingApp.slack_webhook_url &&
+      !editingApp.slack_webhook_url.startsWith(
+        "https://hooks.slack.com/services/"
+      )
+    ) {
+      toast({
+        title: "Invalid Slack Webhook",
+        description: "URL must start with https://hooks.slack.com/services/",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsRenaming(true);
     try {
       await api.put(`/applications/${editingApp.id}`, {
@@ -109,8 +124,12 @@ export default function ApplicationsPage() {
       fetchApplications();
       toast({ title: "Application updated", variant: "success" });
       setEditingApp(null);
-    } catch (e) {
-      toast({ title: "Failed to update", variant: "destructive" });
+    } catch (e: any) {
+      toast({
+        title: "Failed to update",
+        description: e.response?.data || "An error occurred",
+        variant: "destructive",
+      });
     } finally {
       setIsRenaming(false);
     }

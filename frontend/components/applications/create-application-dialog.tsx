@@ -41,6 +41,22 @@ export function CreateApplicationDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validation
+    if (
+      formData.slack_webhook_url &&
+      !formData.slack_webhook_url.startsWith(
+        "https://hooks.slack.com/services/"
+      )
+    ) {
+      toast({
+        title: "Invalid Slack Webhook",
+        description: "URL must start with https://hooks.slack.com/services/",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       await api.post("/applications", formData);
@@ -57,10 +73,10 @@ export function CreateApplicationDialog({
         slack_webhook_url: "",
         ntfy_topic: "",
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Failed to create application.",
+        description: error.response?.data || "Failed to create application.",
         variant: "destructive",
       });
     } finally {
