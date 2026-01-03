@@ -116,6 +116,7 @@ func (s *Server) setupRoutes() {
 
 	// Message Service with Asynq Client
 	messageService := core.NewMessageService(s.DB, webhookService, notificationProvider, rateLimitService, appService, s.Config.SandboxSuccessNumber, s.Config.SandboxFailureNumber, alertService, devicePoolManager, appDIDService, taskClient)
+	campaignService := core.NewCampaignService(s.DB, messageService, featureLimitManager)
 
 	// Workers
 	scheduler := core.NewSchedulerService(s.DB, messageService)
@@ -157,7 +158,8 @@ func (s *Server) setupRoutes() {
 	// Public API Handlers
 	requestLogService := core.NewRequestLogService(s.DB)
 	publicMessageHandler := api.NewPublicMessageHandler(messageService, orgService, appService)
-	publicAPIRouter := api.NewPublicAPIRouter(publicMessageHandler, apiKeyService, requestLogService)
+	publicCampaignHandler := api.NewPublicCampaignHandler(campaignService)
+	publicAPIRouter := api.NewPublicAPIRouter(publicMessageHandler, publicCampaignHandler, apiKeyService, requestLogService)
 
 	// Request Log Handler (for dashboard)
 	requestLogHandler := api.NewRequestLogHandler(requestLogService, orgService)
@@ -335,7 +337,7 @@ func (s *Server) setupRoutes() {
 		})
 
 		// Campaigns
-		campaignService := core.NewCampaignService(s.DB, messageService, featureLimitManager)
+		// campaignService initialized earlier
 		campaignHandler := api.NewCampaignHandler(campaignService, orgService)
 
 		r.Route("/api/campaigns", func(r chi.Router) {

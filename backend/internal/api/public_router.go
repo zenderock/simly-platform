@@ -10,16 +10,19 @@ type PublicAPIRouter struct {
 	messageHandler    *PublicMessageHandler
 	apiKeyService     *core.APIKeyService
 	requestLogService *core.RequestLogService
+	campaignHandler   *PublicCampaignHandler
 }
 
 // NewPublicAPIRouter creates a new PublicAPIRouter
 func NewPublicAPIRouter(
 	messageHandler *PublicMessageHandler,
+	campaignHandler *PublicCampaignHandler,
 	apiKeyService *core.APIKeyService,
 	requestLogService *core.RequestLogService,
 ) *PublicAPIRouter {
 	return &PublicAPIRouter{
 		messageHandler:    messageHandler,
+		campaignHandler:   campaignHandler,
 		apiKeyService:     apiKeyService,
 		requestLogService: requestLogService,
 	}
@@ -36,5 +39,10 @@ func (pr *PublicAPIRouter) RegisterRoutes(r chi.Router) {
 	r.Route("/messages", func(r chi.Router) {
 		r.Post("/", pr.messageHandler.SendMessage)   // POST /v1/messages
 		r.Get("/{id}", pr.messageHandler.GetMessage) // GET /v1/messages/{id}
+	})
+
+	// Campaign endpoints
+	r.Route("/campaigns", func(r chi.Router) {
+		r.Post("/{id}/launch", pr.campaignHandler.LaunchCampaign) // POST /v1/campaigns/{id}/launch
 	})
 }
