@@ -250,7 +250,7 @@ func (s *Store) GetPendingMessagesForCampaign(ctx context.Context, campaignID in
 // GetQueuedMessagesForCampaign retrieves all queued messages for a campaign.
 func (s *Store) GetQueuedMessagesForCampaign(ctx context.Context, campaignID int) ([]model.Message, error) {
 	query := `
-		SELECT id, organization_id, device_id, to_number, body, status, direction, created_at, updated_at, sim_slot
+		SELECT id, organization_id, device_id, to_number, body, status, direction, created_at, updated_at, sim_slot, max_retries
 		FROM messages
 		WHERE campaign_id = $1 AND status = 'queued'
 	`
@@ -274,6 +274,7 @@ func (s *Store) GetQueuedMessagesForCampaign(ctx context.Context, campaignID int
 			&m.CreatedAt,
 			&m.UpdatedAt,
 			&m.SimSlot,
+			&m.MaxRetries,
 		); err != nil {
 			return nil, err
 		}

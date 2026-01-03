@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { 
-  Building2, 
+
+import {
+  Building2,
   Save,
   Crown,
   MessageSquare,
@@ -18,13 +19,24 @@ import {
   Users,
   Key,
   Download,
-  Trash2
+  Trash2,
+  Clock,
+  Zap,
+  Globe,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { Organization } from "@/types";
 import Link from "next/link";
 import api from "@/lib/api";
 import LoaderQuater from "@/components/loader";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "sonner";
 
 interface OrganizationStats {
   messages_today: number;
@@ -34,36 +46,53 @@ interface OrganizationStats {
   success_rate: number;
 }
 
+interface DispatchSettings {
+  sms_throttle_rate_seconds: number;
+  send_window_start: number;
+  send_window_end: number;
+  send_window_timezone: string;
+}
+
 export default function OrganizationPage() {
   const { organizationId, organizations } = useAuth();
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [stats, setStats] = useState<OrganizationStats | null>(null);
+  const [dispatchSettings, setDispatchSettings] = useState<DispatchSettings>({
+    sms_throttle_rate_seconds: 1,
+    send_window_start: 8,
+    send_window_end: 21,
+    send_window_timezone: "UTC",
+  });
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  
+  const [savingDispatch, setSavingDispatch] = useState(false);
+
   const [formData, setFormData] = useState({
     name: "",
   });
 
   const fetchOrganizationData = async () => {
     if (!organizationId) return;
-    
+
     setLoading(true);
     try {
-      const [orgResponse, statsResponse] = await Promise.all([
-        api.get('/organizations/current'),
-        api.get('/organizations/current/stats')
+      const [orgResponse, statsResponse, dispatchResponse] = await Promise.all([
+        api.get("/organizations/current"),
+        api.get("/organizations/current/stats"),
+        api.get("/organizations/current/dispatch-settings"),
       ]);
-      
+
       setOrganization(orgResponse.data);
       setStats(statsResponse.data);
+      setDispatchSettings(dispatchResponse.data);
       setFormData({
         name: orgResponse.data.name,
       });
     } catch (error) {
       console.error("Failed to fetch organization data", error);
       // Fallback to organizations from auth store
-      const activeOrg = organizations.find(org => org.id === organizationId);
+      const activeOrg = organizations.find((org) => org.id === organizationId);
       if (activeOrg) {
         setOrganization(activeOrg);
         setFormData({
@@ -81,16 +110,37 @@ export default function OrganizationPage() {
 
   const handleSave = async () => {
     if (!organizationId) return;
-    
+
     setSaving(true);
     try {
-      await api.put('/organizations/current', formData);
+      await api.put("/organizations/current", formData);
+      toast.success("Organization details updated successfully");
       // Refresh data after successful update
       await fetchOrganizationData();
     } catch (error) {
       console.error("Failed to update organization", error);
+      toast.error("Failed to update organization details");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSaveDispatch = async () => {
+    if (!organizationId) return;
+
+    setSavingDispatch(true);
+    try {
+      await api.put(
+        "/organizations/current/dispatch-settings",
+        dispatchSettings
+      );
+      toast.success("Dispatch settings updated successfully");
+      await fetchOrganizationData();
+    } catch (error) {
+      console.error("Failed to update dispatch settings", error);
+      toast.error("Failed to update dispatch settings");
+    } finally {
+      setSavingDispatch(false);
     }
   };
 
@@ -108,9 +158,12 @@ export default function OrganizationPage() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Building2 className="size-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No organization selected</h3>
+            <h3 className="text-lg font-semibold mb-2">
+              No organization selected
+            </h3>
             <p className="text-muted-foreground text-center">
-              Please select an organization from the header to manage its settings.
+              Please select an organization from the header to manage its
+              settings.
             </p>
           </CardContent>
         </Card>
@@ -119,20 +172,45 @@ export default function OrganizationPage() {
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
     });
   };
 
-  const usagePercentage = organization.sms_monthly_limit > 0 
-    ? Math.round(((stats?.messages_this_month || 0) / organization.sms_monthly_limit) * 100)
-    : 0;
+  const usagePercentage =
+    organization.sms_monthly_limit > 0
+      ? Math.round(
+          ((stats?.messages_this_month || 0) / organization.sms_monthly_limit) *
+            100
+        )
+      : 0;
 
-  const deviceUsagePercentage = organization.max_devices > 0
-    ? Math.round(((stats?.active_devices || 0) / organization.max_devices) * 100)
-    : 0;
+  const deviceUsagePercentage =
+    organization.max_devices > 0
+      ? Math.round(
+          ((stats?.active_devices || 0) / organization.max_devices) * 100
+        )
+      : 0;
+
+  // Generate hours for select
+  const hours = Array.from({ length: 24 }, (_, i) => ({
+    value: i.toString(),
+    label: `${i.toString().padStart(2, "0")}:00`,
+  }));
+
+  // Standard timezones
+  const commonTimezones = [
+    "UTC",
+    "Europe/Paris",
+    "Europe/London",
+    "America/New_York",
+    "America/Los_Angeles",
+    "Asia/Tokyo",
+    "Asia/Singapore",
+    "Australia/Sydney",
+  ];
 
   return (
     <div className="space-y-8 p-6 max-w-9xl mx-auto">
@@ -150,7 +228,10 @@ export default function OrganizationPage() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Badge variant="secondary" className="flex items-center gap-2 px-3 py-1">
+          <Badge
+            variant="secondary"
+            className="flex items-center gap-2 px-3 py-1"
+          >
             <Crown className="size-3" />
             {organization.plan} Plan
           </Badge>
@@ -176,11 +257,17 @@ export default function OrganizationPage() {
                 <Input
                   id="name"
                   value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  onChange={(e) =>
+                    setFormData((prev) => ({ ...prev, name: e.target.value }))
+                  }
                   placeholder="Enter organization name"
                 />
               </div>
-              <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto">
+              <Button
+                onClick={handleSave}
+                disabled={saving}
+                className="w-full sm:w-auto"
+              >
                 {saving ? (
                   <>
                     <LoaderQuater className="size-4 mr-2 animate-spin" />
@@ -190,6 +277,145 @@ export default function OrganizationPage() {
                   <>
                     <Save className="size-4 mr-2" />
                     Save Changes
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Dispatch Configuration */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Clock className="size-5 text-primary" />
+                <CardTitle>Dispatch Configuration</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid gap-6 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="throttle" className="flex items-center gap-2">
+                    <Zap className="size-4 text-amber-500" />
+                    Throttle Rate (seconds)
+                  </Label>
+                  <Input
+                    id="throttle"
+                    type="number"
+                    min={1}
+                    value={dispatchSettings.sms_throttle_rate_seconds}
+                    onChange={(e) =>
+                      setDispatchSettings((prev) => ({
+                        ...prev,
+                        sms_throttle_rate_seconds:
+                          parseInt(e.target.value) || 1,
+                      }))
+                    }
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Minimum delay between SMS sent from the same SIM
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="timezone" className="flex items-center gap-2">
+                    <Globe className="size-4 text-blue-500" />
+                    Timezone
+                  </Label>
+                  <Select
+                    value={dispatchSettings.send_window_timezone}
+                    onValueChange={(value) =>
+                      setDispatchSettings((prev) => ({
+                        ...prev,
+                        send_window_timezone: value,
+                      }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select timezone" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {commonTimezones.map((tz) => (
+                        <SelectItem key={tz} value={tz}>
+                          {tz}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Send Window Start</Label>
+                  <Select
+                    value={dispatchSettings.send_window_start.toString()}
+                    onValueChange={(value) =>
+                      setDispatchSettings((prev) => ({
+                        ...prev,
+                        send_window_start: parseInt(value),
+                      }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Start Time" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {hours.map((h) => (
+                        <SelectItem key={h.value} value={h.value}>
+                          {h.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Send Window End</Label>
+                  <Select
+                    value={dispatchSettings.send_window_end.toString()}
+                    onValueChange={(value) =>
+                      setDispatchSettings((prev) => ({
+                        ...prev,
+                        send_window_end: parseInt(value),
+                      }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="End Time" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {hours.map((h) => (
+                        <SelectItem key={h.value} value={h.value}>
+                          {h.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="bg-muted/50 p-4 rounded-lg text-sm text-muted-foreground">
+                <p>
+                  Messages scheduled outside of the sending window (
+                  {dispatchSettings.send_window_start}:00 -{" "}
+                  {dispatchSettings.send_window_end}:00{" "}
+                  {dispatchSettings.send_window_timezone}) will be queued and
+                  sent automatically when the window opens.
+                </p>
+              </div>
+
+              <Button
+                onClick={handleSaveDispatch}
+                disabled={savingDispatch}
+                className="w-full sm:w-auto"
+              >
+                {savingDispatch ? (
+                  <>
+                    <LoaderQuater className="size-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="size-4 mr-2" />
+                    Update Settings
                   </>
                 )}
               </Button>
@@ -213,23 +439,32 @@ export default function OrganizationPage() {
                       <span>This Month</span>
                       <span className="font-medium">
                         {stats?.messages_this_month?.toLocaleString() || 0}
-                        {organization.sms_monthly_limit > 0 ? ` / ${organization.sms_monthly_limit.toLocaleString()}` : ""}
+                        {organization.sms_monthly_limit > 0
+                          ? ` / ${organization.sms_monthly_limit.toLocaleString()}`
+                          : ""}
                       </span>
                     </div>
                     {organization.sms_monthly_limit > 0 && (
                       <div className="w-full bg-muted rounded-full h-2">
-                        <div 
-                          className="bg-blue-500 h-2 rounded-full transition-all" 
-                          style={{ width: `${Math.min(usagePercentage, 100)}%` }}
+                        <div
+                          className="bg-blue-500 h-2 rounded-full transition-all"
+                          style={{
+                            width: `${Math.min(usagePercentage, 100)}%`,
+                          }}
                         />
                       </div>
                     )}
                     <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>Burst Limit: {organization.sms_burst_limit.toLocaleString()}</span>
+                      <span>
+                        Burst Limit:{" "}
+                        {organization.sms_burst_limit.toLocaleString()}
+                      </span>
                       {organization.sms_monthly_limit > 0 ? (
                         <span>{usagePercentage}% used</span>
                       ) : (
-                        <span className="text-xs uppercase tracking-wider font-semibold text-blue-600 dark:text-blue-400">Pay-per-use</span>
+                        <span className="text-xs uppercase tracking-wider font-semibold text-blue-600 dark:text-blue-400">
+                          Pay-per-use
+                        </span>
                       )}
                     </div>
                   </div>
@@ -244,23 +479,32 @@ export default function OrganizationPage() {
                     <div className="flex justify-between text-sm">
                       <span>Active Devices</span>
                       <span className="font-medium">
-                        {stats?.active_devices || 0} / {organization.max_devices === -1 ? "∞" : organization.max_devices}
+                        {stats?.active_devices || 0} /{" "}
+                        {organization.max_devices === -1
+                          ? "∞"
+                          : organization.max_devices}
                       </span>
                     </div>
                     {organization.max_devices > 0 && (
                       <div className="w-full bg-muted rounded-full h-2">
-                        <div 
-                          className="bg-green-500 h-2 rounded-full transition-all" 
-                          style={{ width: `${Math.min(deviceUsagePercentage, 100)}%` }}
+                        <div
+                          className="bg-green-500 h-2 rounded-full transition-all"
+                          style={{
+                            width: `${Math.min(deviceUsagePercentage, 100)}%`,
+                          }}
                         />
                       </div>
                     )}
                     <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>SIMs per Device: {organization.max_sims_per_device}</span>
+                      <span>
+                        SIMs per Device: {organization.max_sims_per_device}
+                      </span>
                       {organization.max_devices > 0 ? (
                         <span>{deviceUsagePercentage}% used</span>
                       ) : (
-                        <span className="text-xs uppercase tracking-wider font-semibold text-green-600 dark:text-green-400">Unlimited</span>
+                        <span className="text-xs uppercase tracking-wider font-semibold text-green-600 dark:text-green-400">
+                          Unlimited
+                        </span>
                       )}
                     </div>
                   </div>
@@ -283,7 +527,9 @@ export default function OrganizationPage() {
                   <Calendar className="size-4 text-muted-foreground" />
                   <span className="text-sm">Created</span>
                 </div>
-                <span className="text-sm font-medium">{formatDate(organization.created_at)}</span>
+                <span className="text-sm font-medium">
+                  {formatDate(organization.created_at)}
+                </span>
               </div>
               <Separator />
               <div className="flex items-center justify-between">
@@ -297,15 +543,25 @@ export default function OrganizationPage() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Messages today</span>
-                  <span className="font-medium">{stats?.messages_today || 0}</span>
+                  <span className="font-medium">
+                    {stats?.messages_today || 0}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Active devices</span>
-                  <span className="font-medium">{stats?.active_devices || 0}</span>
+                  <span className="font-medium">
+                    {stats?.active_devices || 0}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Success rate</span>
-                  <span className={`font-medium ${(stats?.success_rate || 0) >= 95 ? 'text-green-600' : 'text-yellow-600'}`}>
+                  <span
+                    className={`font-medium ${
+                      (stats?.success_rate || 0) >= 95
+                        ? "text-green-600"
+                        : "text-yellow-600"
+                    }`}
+                  >
                     {stats?.success_rate?.toFixed(1) || 0}%
                   </span>
                 </div>
@@ -331,7 +587,10 @@ export default function OrganizationPage() {
                 <Download className="size-4 mr-2" />
                 Export Data
               </Button>
-              <Button variant="outline" className="w-full justify-start text-destructive hover:text-destructive">
+              <Button
+                variant="outline"
+                className="w-full justify-start text-destructive hover:text-destructive"
+              >
                 <Trash2 className="size-4 mr-2" />
                 Delete Organization
               </Button>
