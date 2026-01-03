@@ -49,3 +49,36 @@ func (h *PublicCampaignHandler) LaunchCampaign(w http.ResponseWriter, r *http.Re
 		"campaign_id": idStr,
 	})
 }
+
+// GetCampaign retrieves campaign details including status
+func (h *PublicCampaignHandler) GetCampaign(w http.ResponseWriter, r *http.Request) {
+	// 1. Get Context Info (from Middleware)
+	orgID, ok := r.Context().Value(orgIDKey).(int)
+	if !ok || orgID == 0 {
+		http.Error(w, "Unauthorized: Invalid Organization Context", http.StatusUnauthorized)
+		return
+	}
+
+	// 2. Get Campaign ID
+	idStr := chi.URLParam(r, "id")
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid campaign ID", http.StatusBadRequest)
+		return
+	}
+
+	// 3. Get Campaign via Service
+	campaign, err := h.service.GetCampaign(r.Context(), id, orgID)
+	if err != nil {
+		if err.Error() == "unauthorized" {
+			http.Error(w, "Campaign not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// 4. Return Campaign Details
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(campaign)
+}

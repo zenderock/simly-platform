@@ -44,5 +44,6 @@ func (pr *PublicAPIRouter) RegisterRoutes(r chi.Router) {
 	// Campaign endpoints
 	r.Route("/campaigns", func(r chi.Router) {
 		r.Post("/{id}/launch", pr.campaignHandler.LaunchCampaign) // POST /v1/campaigns/{id}/launch
+		r.Get("/{id}", pr.campaignHandler.GetCampaign)            // GET /v1/campaigns/{id}
 	})
 }

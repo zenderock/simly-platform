@@ -91,6 +91,17 @@ const ENDPOINTS = [
     ],
     bodyFields: [],
   },
+  {
+    id: "get-campaign",
+    method: "GET" as const,
+    path: "/v1/campaigns/{id}",
+    name: "Get Campaign Status",
+    description: "Get campaign details and status",
+    hasBody: false,
+    pathParams: [
+      { name: "id", label: "Campaign ID", placeholder: "123", required: true },
+    ],
+  },
 ];
 
 interface APIResponse {
