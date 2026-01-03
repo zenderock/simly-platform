@@ -28,7 +28,62 @@ import {
   IconMessage,
   IconShieldCheck,
   IconAlertTriangle,
+  IconRocket,
 } from "@tabler/icons-react";
+
+const CAMPAIGN_ENDPOINTS: APIEndpoint[] = [
+  {
+    method: "POST",
+    path: "/v1/campaigns/{id}/launch",
+    summary: "Launch a campaign",
+    description:
+      "Triggers the sending process for a previously created campaign draft. The campaign must be in 'draft' status.",
+    headers: [
+      {
+        name: "Authorization",
+        required: true,
+        description: "Bearer token with your API key",
+        example: "Bearer sk_live_...",
+      },
+    ],
+    pathParams: [
+      {
+        name: "id",
+        type: "string",
+        required: true,
+        description: "The unique campaign ID (e.g., 123)",
+        example: "123",
+      },
+    ],
+    responseExample: {
+      status: "success",
+      message: "Campaign launched successfully",
+      campaign_id: 123,
+    },
+    errorResponses: [
+      {
+        status: 400,
+        code: "invalid_request",
+        description: "Campaign is not in draft status or already processing",
+      },
+      {
+        status: 404,
+        code: "resource_not_found",
+        description: "Campaign not found",
+      },
+      {
+        status: 401,
+        code: "invalid_api_key",
+        description: "API key is invalid",
+      },
+      {
+        status: 500,
+        code: "internal_error",
+        description: "Server error",
+      },
+    ],
+  },
+];
 import {
   Select,
   SelectContent,
@@ -381,34 +436,69 @@ export default function APIDocsPage() {
       </motion.div>
 
       {/* Endpoints Section */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <div className="size-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
-            <IconSend className="size-4 text-blue-600" />
+      <div className="space-y-12">
+        {/* Messages */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <div className="size-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+              <IconSend className="size-4 text-blue-600" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">Messages</h2>
+              <p className="text-sm text-muted-foreground">
+                Send and retrieve SMS messages
+              </p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-xl font-bold">Messages</h2>
-            <p className="text-sm text-muted-foreground">
-              Send and retrieve SMS messages
-            </p>
+
+          <div className="space-y-4">
+            {API_ENDPOINTS.map((endpoint, index) => (
+              <motion.div
+                key={`${endpoint.method}-${endpoint.path}`}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 + index * 0.05 }}
+              >
+                <APIEndpointDoc
+                  endpoint={endpoint}
+                  apiKey={selectedKey?.prefix}
+                  defaultExpanded={index === 0}
+                />
+              </motion.div>
+            ))}
           </div>
         </div>
 
+        {/* Campaigns */}
         <div className="space-y-4">
-          {API_ENDPOINTS.map((endpoint, index) => (
-            <motion.div
-              key={`${endpoint.method}-${endpoint.path}`}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 + index * 0.05 }}
-            >
-              <APIEndpointDoc
-                endpoint={endpoint}
-                apiKey={selectedKey?.prefix}
-                defaultExpanded={index === 0}
-              />
-            </motion.div>
-          ))}
+          <div className="flex items-center gap-2">
+            <div className="size-8 rounded-lg bg-pink-500/10 flex items-center justify-center">
+              <IconRocket className="size-4 text-pink-600" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">Campaigns</h2>
+              <p className="text-sm text-muted-foreground">
+                Manage and trigger SMS campaigns
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {CAMPAIGN_ENDPOINTS.map((endpoint, index) => (
+              <motion.div
+                key={`${endpoint.method}-${endpoint.path}`}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 + index * 0.05 }}
+              >
+                <APIEndpointDoc
+                  endpoint={endpoint}
+                  apiKey={selectedKey?.prefix}
+                  defaultExpanded={false}
+                />
+              </motion.div>
+            ))}
+          </div>
         </div>
       </div>
 
