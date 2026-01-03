@@ -21,6 +21,7 @@ type Config struct {
 	StripePricePro         string
 	StripePriceAgency      string
 	FirebaseServiceAccount string
+	FrontendURL            string
 }
 
 func Load() *Config {
@@ -43,6 +44,7 @@ func Load() *Config {
 		StripePricePro:         getEnv("STRIPE_PRICE_PRO", "price_pro_default"),
 		StripePriceAgency:      getEnv("STRIPE_PRICE_AGENCY", "price_agency_default"),
 		FirebaseServiceAccount: getEnv("FIREBASE_SERVICE_ACCOUNT", ""),
+		FrontendURL:            getEnv("FRONTEND_URL", "http://localhost:3000"),
 	}
 }
 

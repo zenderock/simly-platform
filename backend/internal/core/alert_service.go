@@ -59,9 +59,9 @@ func (s *AlertService) NotifyOrganization(ctx context.Context, orgID int, alertT
 		}
 	}
 
-	// 4. If we successfully sent an external alert AND the type is 'device_offline' (cost reduction), skip email
+	// 4. If we successfully sent an external alert AND the type is 'device_offline' or 'low_battery' (cost reduction), skip email
 	// Or maybe we want to skip email for all alerts if external is configured? user said "pour l'envoie des alertes comme ca" (offline)
-	if externalAlertSent && alertType == "device_offline" {
+	if externalAlertSent && (alertType == "device_offline" || alertType == "low_battery") {
 		// log.Printf("Skipping email alert for org %d (external channel used)", orgID)
 		return nil
 	}

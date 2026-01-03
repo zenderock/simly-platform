@@ -82,7 +82,7 @@ func (s *Server) setupRoutes() {
 	alertService := core.NewAlertService(s.DB, emailProvider)
 
 	// Billing (Initialize early for OrgService)
-	billingService := core.NewBillingService(s.DB, s.Config.StripeSecretKey, s.Config.StripeWebhookSecret, "http://localhost:3000", s.Config.StripePricePro, s.Config.StripePriceAgency) // TODO: get frontend URL from config/env
+	billingService := core.NewBillingService(s.DB, s.Config.StripeSecretKey, s.Config.StripeWebhookSecret, s.Config.FrontendURL, s.Config.StripePricePro, s.Config.StripePriceAgency)
 
 	// Initialize Feature Limit Manager
 	featureLimitManager := core.NewFeatureLimitManager(s.DB)
