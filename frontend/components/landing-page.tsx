@@ -1,4 +1,5 @@
 "use client";
+
 import React, { useEffect, useRef } from "react";
 import {
   Menu,
@@ -20,72 +21,10 @@ import {
   Newspaper,
   RefreshCw,
 } from "lucide-react";
-
-// Navigation Component
-const Navigation: React.FC = () => {
-  return (
-    <header className="sticky bg-[#000000] w-full z-50 top-0 backdrop-blur-md border-b border-white/10">
-      <div className="grid grid-cols-12 h-16 sm:h-20">
-        {/* Left Links */}
-        <div className="col-span-4 hidden md:flex items-center">
-          <a
-            href="#"
-            className="flex items-center justify-center hover:text-white transition-colors text-xs font-medium tracking-wide h-full border-white/10 border-r pr-8 pl-8"
-          >
-            FEATURES
-          </a>
-          <a
-            href="#"
-            className="h-full px-8 flex items-center justify-center text-xs font-medium tracking-wide hover:text-white transition-colors border-r border-white/10"
-          >
-            PRICING
-          </a>
-          <a
-            href="#"
-            className="h-full px-8 flex items-center justify-center text-xs font-medium tracking-wide hover:text-white transition-colors border-r border-white/10"
-          >
-            USE CASES
-          </a>
-        </div>
-
-        {/* Mobile Menu */}
-        <div className="col-span-2 md:hidden flex items-center pl-6 border-r border-white/10">
-          <Menu className="w-6 h-6 text-white" />
-        </div>
-
-        {/* Logo Center */}
-        <div className="col-span-8 md:col-span-4 flex relative items-center justify-center">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-[#6e3ff3] rounded-sm flex items-center justify-center text-black font-bold text-xs">
-              S
-            </div>
-            <span className="font-semibold text-white tracking-tight">
-              SIMLY
-            </span>
-          </div>
-        </div>
-
-        {/* Right Links */}
-        <div className="col-span-2 md:col-span-4 flex items-center justify-end">
-          <a
-            href="#"
-            className="h-full px-8 hidden md:flex items-center justify-center text-xs font-medium tracking-wide hover:text-white transition-colors border-r border-white/10 border-l"
-          >
-            CLIENT LOGIN
-          </a>
-          <a
-            href="#"
-            className="h-full w-full md:w-auto px-8 flex items-center justify-center text-xs font-medium tracking-wide text-white hover:text-[#6e3ff3] transition-colors gap-2"
-          >
-            CONTACT
-            <ArrowRight className="w-4 h-4" />
-          </a>
-        </div>
-      </div>
-      <div className="absolute bottom-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
-    </header>
-  );
-};
+import Image from "next/image";
+import Link from "next/link";
+import { Footer } from "./landing/footer";
+import { Header } from "./landing/header";
 
 // Hero Section Component
 const HeroSection: React.FC = () => {
@@ -127,13 +66,19 @@ const HeroSection: React.FC = () => {
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 border border-white/10 max-w-lg rounded-sm overflow-hidden gap-4">
-            <button className="group flex items-center bg-[#474747] justify-center gap-3 px-8 py-5 hover:bg-[#575656] transition-all duration-300 border-b sm:border-b-0 sm:border-r border-white/10">
+            <Link
+              href="/register"
+              className="group flex items-center bg-[#474747] justify-center gap-3 px-8 py-5 hover:bg-[#575656] transition-all duration-300 border-b sm:border-b-0 sm:border-r border-white/10"
+            >
               <span className="text-white font-medium tracking-wide text-xs uppercase">
                 Start for Free
               </span>
-            </button>
+            </Link>
 
-            <button className="group flex items-center justify-center gap-3 px-8 py-5 hover:bg-white/5 transition-all duration-300">
+            <Link
+              href="/docs"
+              className="group flex items-center justify-center gap-3 px-8 py-5 hover:bg-white/5 transition-all duration-300"
+            >
               <span className="text-white font-medium tracking-wide text-xs uppercase">
                 Documentation
               </span>
@@ -146,7 +91,7 @@ const HeroSection: React.FC = () => {
               >
                 <path d="M7 7h10v10M7 17 17 7" />
               </svg>
-            </button>
+            </Link>
           </div>
         </div>
       </div>
@@ -160,146 +105,34 @@ const HeroSection: React.FC = () => {
 // Dashboard Mockup Component
 const DashboardMockup: React.FC = () => {
   return (
-    <div
-      className="overflow-hidden bg-gradient-to-r from-[#6e3ff3] to-[#000000] z-10 relative"
-      style={{
-        maskImage:
-          "linear-gradient(210deg, transparent, black 0%, black 100%, transparent)",
-      }}
-    >
-      <div className="absolute inset-0 bg-gradient-to-br from-[#6e3ff3]/10 via-[#05080A] to-[#05080A] opacity-40"></div>
-      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#6e3ff3]/5 blur-[120px] rounded-full pointer-events-none"></div>
-
-      <div className="z-10 flex lg:p-16 h-full pt-8 pr-8 pb-8 pl-8 relative items-center justify-center">
-        <div className="overflow-hidden flex flex-col md:flex-row md:h-[500px] bg-[#0B0F13] w-full h-[600px] max-w-2xl border-white/10 border rounded-xl shadow-2xl backdrop-blur-xl">
-          {/* Sidebar */}
-          <div className="md:w-64 flex flex-col bg-[#080B0E]/60 w-full border-white/5 border-r pt-4 pr-4 pb-4 pl-4">
-            <div className="flex items-center gap-3 mb-8 px-2">
-              <div className="w-8 h-8 rounded bg-[#6e3ff3] flex items-center justify-center text-black font-semibold">
-                S
-              </div>
-              <div className="flex flex-col">
-                <span className="text-xs font-semibold text-white">Simly</span>
-                <span className="text-[10px] text-slate-500">Dashboard</span>
-              </div>
-            </div>
-
-            <div className="space-y-1 overflow-y-auto no-scrollbar flex-1">
-              <div className="flex items-center gap-3 px-3 py-2 bg-[#6e3ff3]/10 text-[#6e3ff3] border border-[#6e3ff3]/20 rounded-lg cursor-pointer text-xs font-medium">
-                <LayoutGrid className="w-4 h-4" />
-                Overview
-              </div>
-              <div className="flex items-center gap-3 px-3 py-2 text-slate-500 hover:text-slate-300 cursor-pointer text-xs">
-                <FileText className="w-4 h-4" />
-                SMS Campaigns
-              </div>
-              <div className="flex items-center gap-3 px-3 py-2 text-slate-500 hover:text-slate-300 cursor-pointer text-xs">
-                <Cpu className="w-4 h-4" />
-                Devices
-              </div>
-              <div className="flex items-center gap-3 px-3 py-2 text-slate-500 hover:text-slate-300 cursor-pointer text-xs">
-                <RefreshCw className="w-4 h-4" />
-                Developers
-              </div>
-            </div>
-          </div>
-
-          {/* Main Dashboard Content */}
-          <div className="flex-1 p-6 flex flex-col bg-transparent relative">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-white font-medium text-sm">Sent SMS</h3>
-              <span className="text-[10px] bg-white/5 px-2 py-1 rounded text-slate-400 border border-white/5">
-                This month
-              </span>
-            </div>
-
-            <div className="mb-8">
-              <div className="text-4xl text-white mb-1 font-light tracking-tighter">
-                14,203
-              </div>
-              <div className="text-xs text-slate-500 flex items-center gap-2">
-                <span className="text-[#6e3ff3] bg-[#6e3ff3]/10 px-1 rounded">
-                  99.8%
-                </span>
-                Delivery Rate
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 gap-6">
-              <div className="bg-[#0E1216]/60 border border-white/5 rounded-lg p-5">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <div className="text-xs text-slate-400 mb-1">Pending</div>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-lg font-medium text-white">0</span>
-                    </div>
-                  </div>
-                  <MoreHorizontal className="w-4 h-4 text-slate-600" />
-                </div>
-
-                <div className="h-32 w-full relative mt-2">
-                  <div className="absolute inset-0 flex flex-col justify-between text-[10px] text-slate-700">
-                    <div className="border-b border-white/5 w-full h-0"></div>
-                    <div className="border-b border-white/5 w-full h-0"></div>
-                    <div className="border-b border-white/5 w-full h-0"></div>
-                    <div className="border-b border-white/5 w-full h-0"></div>
-                  </div>
-                  <svg
-                    className="absolute inset-0 w-full h-full"
-                    preserveAspectRatio="none"
-                  >
-                    <defs>
-                      <linearGradient
-                        id="chartGradient"
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
-                      >
-                        <stop
-                          offset="0%"
-                          stopColor="#6e3ff3"
-                          stopOpacity="0.2"
-                        />
-                        <stop
-                          offset="100%"
-                          stopColor="#6e3ff3"
-                          stopOpacity="0"
-                        />
-                      </linearGradient>
-                    </defs>
-                    <path
-                      d="M0,80 C40,75 80,90 120,60 C160,30 200,45 240,20 C280,5 300,15 310,5 L310,128 L0,128 Z"
-                      fill="url(#chartGradient)"
-                    />
-                    <path
-                      d="M0,80 C40,75 80,90 120,60 C160,30 200,45 240,20 C280,5 300,15 310,5"
-                      fill="none"
-                      stroke="#6e3ff3"
-                      strokeWidth="2"
-                    />
-                    <circle
-                      cx="98%"
-                      cy="5%"
-                      r="3"
-                      fill="#6e3ff3"
-                      stroke="#05080A"
-                      strokeWidth="2"
-                    />
-                  </svg>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+    <div className="relative w-full max-w-[600px] mx-auto md:max-w-none">
+      <div className="relative z-10  overflow-hidden shadow-2xl border border-white/10 bg-[#6e3ff3]">
+        <Image
+          src="/hero.png"
+          alt="Simly Dashboard"
+          width={1200}
+          height={800}
+          className="w-full h-auto object-cover"
+          priority
+        />
       </div>
+
+      {/* Background Glow Effect */}
+      <div className="absolute -inset-4 bg-[#6e3ff3]/20 blur-3xl -z-10 rounded-full opacity-50"></div>
     </div>
   );
 };
 
 // Logo Marquee Component
 const LogoMarquee: React.FC = () => {
-  const logos = ["NODE.JS", "PYTHON", "PHP", "GOLANG", "JAVA", "CURL"];
+  const logos = [
+    "SERVELINK SPACE",
+    "FOCUST AGENCY",
+    "AUBIGO PLATFORM",
+    "UNIVERSAL SALE C",
+    "COMMERCIFY",
+    "WOILA DIGITAL",
+  ];
 
   return (
     <div className="border bg-[#05080A] border-white/10 border-b group/footer">
@@ -307,7 +140,7 @@ const LogoMarquee: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-12">
           <div className="col-span-12 md:col-span-2 py-8 px-6 md:px-10 border-b md:border-b-0 md:border-r border-white/10 flex items-center bg-[#05080A] relative z-20">
             <span className="text-xs font-medium tracking-widest text-slate-500 uppercase">
-              COMPATIBILITY
+              COMPANIES
             </span>
           </div>
 
@@ -412,7 +245,10 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({
 // Services Section
 const ServicesSection: React.FC = () => {
   return (
-    <section className="border bg-[#05080A] border-white/10 border-b pt-24 pb-24">
+    <section
+      className="border bg-[#05080A] border-white/10 border-b pt-24 pb-24"
+      id="features"
+    >
       <div className="max-w-6xl mr-auto ml-auto pr-6 pl-6">
         <SectionHeader
           number="01"
@@ -421,6 +257,7 @@ const ServicesSection: React.FC = () => {
           subtitle="power."
           description="A complete suite of tools to manage your marketing SMS, transactional messages, and system notifications."
           buttonText="View documentation"
+          buttonLink="/docs"
         />
 
         <section className="border z-10 bg-[#05080A] border-white/10 border-b relative">
@@ -565,7 +402,10 @@ const MiniFeature: React.FC<MiniFeatureProps> = ({ icon, title, subtitle }) => {
 // Why Us Section
 const WhyUsSection: React.FC = () => {
   return (
-    <section className="border bg-[#05080A] border-white/10 border-b pt-24 pb-24">
+    <section
+      className="border bg-[#05080A] border-white/10 border-b pt-24 pb-24"
+      id="use-cases"
+    >
       <div className="max-w-6xl mr-auto ml-auto pr-6 pl-6">
         <SectionHeader
           number="02"
@@ -801,41 +641,93 @@ const AssetGrid: React.FC = () => {
 
 // Insights Section
 const InsightsSection: React.FC = () => {
-  const reports = [
+  return (
+    <section className="border bg-[#05080A] border-white/10 border-b pt-24 pb-24">
+      <div className="max-w-6xl mr-auto ml-auto pr-6 pl-6">
+        <SectionHeader
+          number="03"
+          label="Insights"
+          title="Designed for"
+          subtitle="growth."
+          description="Detailed analytics and reporting to optimize your campaigns."
+        />
+        {/* Simplified Insights content placeholder or additional components if they were here */}
+        <div className="bg-white/5 border border-white/10 p-12 text-center text-white/50">
+          More insights and reporting features available in the dashboard.
+        </div>
+      </div>
+    </section>
+  );
+};
+
+// Pricing Section
+const PricingSection: React.FC = () => {
+  const plans = [
     {
       icon: <Sprout className="w-4.5 h-4.5" />,
       category: "Free",
       title: "Discovery",
-      description:
-        "Ideal for testing. 1 Android Device. 100 SMS/month via API.",
-      author: "0€",
-      role: "/month",
+      description: "For hobbyists and testing",
+      price: "$0",
+      period: "/month",
       initials: "D",
+      features: [
+        "100 SMS / month included",
+        "1 application",
+        "100 contacts",
+        "1 campaign",
+        "100 recipients per campaign",
+        "1 device connection",
+        "Basic receipt webhooks",
+        "Community support",
+      ],
     },
     {
       icon: <Gem className="w-4.5 h-4.5" />,
-      category: "Recommended",
-      title: "Pro",
-      description:
-        "For startups and SMEs. Unlimited devices. Unlimited sends. Priority support.",
-      author: "19€",
-      role: "/month",
+      category: "Popular",
+      title: "Professional",
+      description: "For startups and small businesses",
+      price: "$10",
+      period: "/month",
       initials: "P",
+      features: [
+        "Unlimited SMS",
+        "5 applications",
+        "1,000 contacts",
+        "5 campaigns",
+        "1,000 recipients per campaign",
+        "Up to 2 devices",
+        "1 SIM per device",
+        "Priority support",
+        "API access & Advanced webhooks",
+      ],
     },
     {
       icon: <Building2 className="w-4.5 h-4.5" />,
       category: "Enterprise",
-      title: "Agency",
-      description:
-        "White label solution for resellers and large fleet managers.",
-      author: "Quote",
-      role: "Custom",
-      initials: "A",
+      title: "Enterprise",
+      description: "For large campaigns and fleets",
+      price: "$99",
+      period: "/month",
+      initials: "E",
+      features: [
+        "Unlimited SMS & Apps",
+        "Unlimited contacts & campaigns",
+        "Unlimited recipients",
+        "Unlimited devices",
+        "4 SIMs per device",
+        "White-label options",
+        "Dedicated support",
+        "Full API access & Advanced webhooks",
+      ],
     },
   ];
 
   return (
-    <section className="border bg-[#05080A] border-white/10 border-b pt-24 pb-24">
+    <section
+      className="border bg-[#05080A] border-white/10 border-b pt-24 pb-24"
+      id="pricing"
+    >
       <div className="max-w-6xl mr-auto ml-auto pr-6 pl-6">
         <SectionHeader
           number="03"
@@ -846,8 +738,8 @@ const InsightsSection: React.FC = () => {
         />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-white/10 border border-white/10">
-          {reports.map((report, i) => (
-            <ReportCard key={i} {...report} />
+          {plans.map((plan, i) => (
+            <PricingCard key={i} {...plan} />
           ))}
         </div>
       </div>
@@ -855,25 +747,27 @@ const InsightsSection: React.FC = () => {
   );
 };
 
-// Report Card Component
-interface ReportCardProps {
+// Pricing Card Component (Renamed from ReportCard)
+interface PricingCardProps {
   icon: React.ReactNode;
   category: string;
   title: string;
   description: string;
-  author: string;
-  role: string;
+  price: string;
+  period: string;
   initials: string;
+  features: string[];
 }
 
-const ReportCard: React.FC<ReportCardProps> = ({
+const PricingCard: React.FC<PricingCardProps> = ({
   icon,
   category,
   title,
   description,
-  author,
-  role,
+  price,
+  period,
   initials,
+  features,
 }) => {
   return (
     <div className="group relative flex h-full flex-col bg-[#05080A]">
@@ -890,12 +784,34 @@ const ReportCard: React.FC<ReportCardProps> = ({
 
         <h3 className="text-2xl font-semibold text-white mb-4">{title}</h3>
 
-        <p className="text-sm leading-relaxed text-white/70 min-h-[100px]">
+        <p className="text-sm leading-relaxed text-white/70 min-h-[60px] mb-8">
           {description}
         </p>
-        <div className="mt-10 flex justify-end">
-          <a
-            href="#"
+
+        <ul className="space-y-3 mb-8">
+          {features.map((feature, i) => (
+            <li key={i} className="flex items-start gap-3">
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="text-[#c6f91f] flex-shrink-0 mt-0.5"
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              <span className="text-white/70 text-xs font-light leading-relaxed">
+                {feature}
+              </span>
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-auto flex justify-end">
+          <Link
+            href="/register"
             className="inline-flex items-center gap-2 text-sm text-white/80 hover:text-white transition-colors border-b border-white/20 hover:border-white/50 pb-0.5"
           >
             Choose this plan
@@ -909,7 +825,7 @@ const ReportCard: React.FC<ReportCardProps> = ({
             >
               <path d="M7 7h10v10M7 17 17 7" />
             </svg>
-          </a>
+          </Link>
         </div>
       </div>
       <div className="flex items-center gap-3 border-t border-white/10 p-7 h-[88px]">
@@ -917,8 +833,8 @@ const ReportCard: React.FC<ReportCardProps> = ({
           {initials}
         </div>
         <div>
-          <div className="text-sm font-semibold text-white">{author}</div>
-          <div className="text-xs text-white/70">{role}</div>
+          <div className="text-sm font-semibold text-white">{price}</div>
+          <div className="text-xs text-white/70">{period}</div>
         </div>
       </div>
     </div>
@@ -935,6 +851,7 @@ const ContactSection: React.FC = () => {
         "Start by installing our gateway on your Android phone. 2-minute setup via QR Code.",
       buttonText: "Download .APK",
       features: ["Android 8.0+", "Background Service"],
+      link: "/releases/simly-gateway-v1.apk",
     },
     {
       label: "Web",
@@ -943,6 +860,7 @@ const ContactSection: React.FC = () => {
         "Connect your devices, manage API keys, and track your sends from the dashboard.",
       buttonText: "Create Account",
       features: ["Dashboard", "API Management"],
+      link: "/register",
     },
   ];
 
@@ -974,6 +892,7 @@ interface ContactCardProps {
   description: string;
   buttonText: string;
   features: string[];
+  link: string;
 }
 
 const ContactCard: React.FC<ContactCardProps> = ({
@@ -982,6 +901,7 @@ const ContactCard: React.FC<ContactCardProps> = ({
   description,
   buttonText,
   features,
+  link,
 }) => {
   return (
     <div className="flex flex-col group hover:bg-white/[0.04] transition-colors duration-300 h-full border-white/10 border rounded-none p-10 relative">
@@ -1001,9 +921,12 @@ const ContactCard: React.FC<ContactCardProps> = ({
         </span>
       </div>
       <p className="text-white/70 text-sm mb-8 font-light">{description}</p>
-      <button className="w-full py-4 mb-10 rounded-lg border border-white/10 bg-transparent text-white group-hover:bg-[#6e3ff3] group-hover:text-white group-hover:border-[#6e3ff3] transition-all duration-300 text-sm font-medium">
+      <Link
+        href={link}
+        className="w-full block text-center items-center gap-2 py-4 mb-10 rounded-lg border border-white/10 bg-transparent text-white group-hover:bg-[#6e3ff3] group-hover:text-white group-hover:border-[#6e3ff3] transition-all duration-300 text-sm font-medium"
+      >
         {buttonText}
-      </button>
+      </Link>
       <div className="mt-auto">
         <ul className="space-y-4">
           {features.map((feature, i) => (
@@ -1027,117 +950,6 @@ const ContactCard: React.FC<ContactCardProps> = ({
         </ul>
       </div>
     </div>
-  );
-};
-
-// Footer Component
-const Footer: React.FC = () => {
-  return (
-    <footer className="border bg-[#05080A] border-white/10 border-t pt-20 pb-10">
-      <div className="max-w-6xl mx-auto w-full flex flex-col">
-        {/* Green Section */}
-        <div className="relative bg-[#6e3ff3] text-black w-full overflow-hidden border-x border-t border-white/10">
-          <div className="absolute inset-0 grid grid-cols-4 w-full h-full pointer-events-none">
-            <div className="border-r border-black/10 h-full"></div>
-            <div className="border-r border-black/10 h-full"></div>
-            <div className="border-r border-black/10 h-full"></div>
-            <div className="h-full"></div>
-          </div>
-
-          <div className="relative z-10 px-6 py-16 md:px-12 md:py-20 flex flex-col justify-between min-h-[400px]">
-            <a
-              href="mailto:hello@simly.io"
-              className="group flex items-start justify-between w-full mb-24 md:mb-32"
-            >
-              <span className="text-4xl sm:text-6xl md:text-7xl lg:text-[7rem] leading-none font-semibold tracking-tighter break-all">
-                HELLO@SIMLY.IO
-              </span>
-              <div className="pt-2 md:pt-6">
-                <svg
-                  width="48"
-                  height="48"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  className="w-10 h-10 md:w-20 md:h-20 transform group-hover:-translate-y-2 group-hover:translate-x-2 transition-transform duration-300"
-                >
-                  <path d="M7 7h10v10M7 17 17 7" />
-                </svg>
-              </div>
-            </a>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-12 md:gap-8 md:text-base leading-relaxed z-20 text-sm font-medium relative">
-              <div className="flex flex-col gap-4">
-                <p className="font-semibold">Simly Inc.</p>
-                <p className="max-w-[200px] text-black/80">Paris, France</p>
-              </div>
-
-              <div className="flex flex-col gap-4">
-                <span className="block text-black/50 font-semibold tracking-tight">
-                  Product
-                </span>
-                <div className="flex flex-col gap-2">
-                  <a href="#" className="hover:text-black/60 transition-colors">
-                    Download
-                  </a>
-                  <a href="#" className="hover:text-black/60 transition-colors">
-                    Pricing
-                  </a>
-                  <a href="#" className="hover:text-black/60 transition-colors">
-                    API Documentation
-                  </a>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-4">
-                <span className="block text-black/50 font-semibold tracking-tight">
-                  Legal
-                </span>
-                <div className="flex flex-col gap-2">
-                  <a href="#" className="hover:text-black/60 transition-colors">
-                    Terms & Conditions
-                  </a>
-                  <a href="#" className="hover:text-black/60 transition-colors">
-                    Privacy
-                  </a>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-4">
-                <span className="block text-black/50 font-semibold tracking-tight">
-                  Follow Us
-                </span>
-                <div className="flex flex-col gap-2">
-                  <a href="#" className="hover:text-black/60 transition-colors">
-                    GitHub
-                  </a>
-                  <a href="#" className="hover:text-black/60 transition-colors">
-                    Twitter
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Black Section */}
-        <div className="relative bg-[#05080A] text-white w-full overflow-hidden border-x border-b border-white/10">
-          <div className="absolute inset-0 grid grid-cols-4 w-full h-full pointer-events-none opacity-20">
-            <div className="border-r border-white/20 h-full"></div>
-            <div className="border-r border-white/20 h-full"></div>
-            <div className="border-r border-white/20 h-full"></div>
-            <div className="h-full"></div>
-          </div>
-
-          <div className="relative z-10 w-full flex justify-center items-end leading-none select-none pt-12">
-            <h1 className="text-[24vw] md:text-[20rem] font-semibold tracking-tighter text-center leading-[0.75] mb-[-0.08em] mix-blend-screen text-outline">
-              SIMLY
-            </h1>
-          </div>
-        </div>
-      </div>
-    </footer>
   );
 };
 
@@ -1225,13 +1037,14 @@ export default function SimlyLandingPage() {
         }
       `}</style>
 
-      <Navigation />
+      <Header />
       <main className="grow flex flex-col">
         <HeroSection />
         <LogoMarquee />
         <ServicesSection />
         <WhyUsSection />
         <InsightsSection />
+        <PricingSection />
         <ContactSection />
       </main>
       <Footer />
