@@ -35,6 +35,12 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate Email
+	if err := h.emailValidator.Validate(r.Context(), req.Email); err != nil {
+		RespondWithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	user, err := h.service.Register(r.Context(), req)
 	if err != nil {
 		if err.Error() == "email already registered" {
@@ -60,6 +66,12 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	// Verify Turnstile Token
 	if err := h.captchaService.VerifyToken(r.Context(), req.TurnstileToken); err != nil {
 		http.Error(w, "Security check failed", http.StatusForbidden)
+		return
+	}
+
+	// Validate Email
+	if err := h.emailValidator.Validate(r.Context(), req.Email); err != nil {
+		RespondWithError(w, http.StatusForbidden, "Email address is no longer valid: "+err.Error())
 		return
 	}
 
