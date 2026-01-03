@@ -35,7 +35,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { createContact, listLists, addContactsToList } from "@/lib/api/contacts";
+import {
+  createContact,
+  listLists,
+  addContactsToList,
+} from "@/lib/api/contacts";
 import { PhoneInput } from "@/components/ui/phone-input";
 import LoaderQuater from "@/components/loader";
 import { IconPlus } from "@tabler/icons-react";
@@ -55,16 +59,19 @@ interface CreateContactDialogProps {
   onOpenChange?: (open: boolean) => void;
 }
 
-export function CreateContactDialog({ onOpenChange }: CreateContactDialogProps) {
+export function CreateContactDialog({
+  onOpenChange,
+}: CreateContactDialogProps) {
   const [open, setOpen] = useState(false);
   const queryClient = useQueryClient();
 
   // Fetch contact lists
-  const { data: contactLists = [] } = useQuery({
+  const { data } = useQuery({
     queryKey: ["contact-lists"],
     queryFn: listLists,
     enabled: open, // Only fetch when dialog is open
   });
+  const contactLists = data || [];
 
   const form = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -82,10 +89,14 @@ export function CreateContactDialog({ onOpenChange }: CreateContactDialogProps) 
     mutationFn: createContact,
     onSuccess: async (contact) => {
       queryClient.invalidateQueries({ queryKey: ["contacts"] });
-      
+
       // If a list was selected, add the contact to that list
       const selectedListId = form.getValues("list_id");
-      if (selectedListId && selectedListId !== "" && selectedListId !== "none") {
+      if (
+        selectedListId &&
+        selectedListId !== "" &&
+        selectedListId !== "none"
+      ) {
         try {
           await addContactsToList(parseInt(selectedListId), [contact.id]);
           queryClient.invalidateQueries({ queryKey: ["contact-lists"] });
@@ -97,14 +108,15 @@ export function CreateContactDialog({ onOpenChange }: CreateContactDialogProps) 
       } else {
         toast.success("Contact created successfully");
       }
-      
+
       setOpen(false);
       form.reset();
       onOpenChange?.(false);
     },
     onError: (error: any) => {
       // Extract error message from backend response
-      const errorMessage = error.response?.data || error.message || "Failed to create contact";
+      const errorMessage =
+        error.response?.data || error.message || "Failed to create contact";
       toast.error(errorMessage);
       console.error(error);
     },
@@ -116,7 +128,12 @@ export function CreateContactDialog({ onOpenChange }: CreateContactDialogProps) 
       last_name: data.last_name || "",
       phone_number: data.phone_number,
       email: data.email || "",
-      tags: data.tags ? data.tags.split(",").map(t => t.trim()).filter(Boolean) : [],
+      tags: data.tags
+        ? data.tags
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean)
+        : [],
     });
   };
 
@@ -138,32 +155,32 @@ export function CreateContactDialog({ onOpenChange }: CreateContactDialogProps) 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="first_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>First Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="John" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="last_name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Last Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Doe" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <FormField
+                control={form.control}
+                name="first_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>First Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="John" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="last_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Last Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Doe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
 
             <FormField
@@ -173,12 +190,12 @@ export function CreateContactDialog({ onOpenChange }: CreateContactDialogProps) 
                 <FormItem>
                   <FormLabel>Phone Number</FormLabel>
                   <FormControl>
-                    <PhoneInput 
-                        value={field.value}
-                        onValueChange={field.onChange}
-                        id="phone"
-                        required
-                        defaultCountry="FR"
+                    <PhoneInput
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      id="phone"
+                      required
+                      defaultCountry="FR"
                     />
                   </FormControl>
                   <FormMessage />
@@ -193,7 +210,11 @@ export function CreateContactDialog({ onOpenChange }: CreateContactDialogProps) 
                 <FormItem>
                   <FormLabel>Email (Optional)</FormLabel>
                   <FormControl>
-                    <Input placeholder="john@example.com" type="email" {...field} />
+                    <Input
+                      placeholder="john@example.com"
+                      type="email"
+                      {...field}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -221,7 +242,10 @@ export function CreateContactDialog({ onOpenChange }: CreateContactDialogProps) 
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Add to List (Optional)</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a list" />
@@ -245,7 +269,11 @@ export function CreateContactDialog({ onOpenChange }: CreateContactDialogProps) 
             />
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOpen(false)}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={mutation.isPending}>
