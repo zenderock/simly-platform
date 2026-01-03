@@ -106,7 +106,7 @@ func (p *PricingEngine) CheckFeatureLimit(ctx context.Context, orgID int, featur
 	}
 
 	if currentCount >= limit {
-		return fmt.Errorf("%s limit exceeded (max: %d, current: %d)", featureType, limit, currentCount)
+		return fmt.Errorf("%w: %s limit exceeded (max: %d, current: %d)", ErrLimitExceeded, featureType, limit, currentCount)
 	}
 
 	return nil

@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -49,6 +50,10 @@ func (h *CampaignHandler) CreateCampaign(w http.ResponseWriter, r *http.Request)
 
 	campaign, err := h.service.CreateCampaign(r.Context(), orgID, req)
 	if err != nil {
+		if errors.Is(err, core.ErrLimitExceeded) {
+			http.Error(w, err.Error(), http.StatusForbidden)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -102,6 +107,10 @@ func (h *CampaignHandler) LaunchCampaign(w http.ResponseWriter, r *http.Request)
 	id, _ := strconv.Atoi(idStr)
 
 	if err := h.service.LaunchCampaign(r.Context(), id, orgID); err != nil {
+		if errors.Is(err, core.ErrLimitExceeded) {
+			http.Error(w, err.Error(), http.StatusForbidden)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusBadRequest) // Bad Request usually for "empty list" etc
 		return
 	}

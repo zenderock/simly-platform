@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -35,6 +36,10 @@ func (h *ApplicationHandler) CreateApplication(w http.ResponseWriter, r *http.Re
 
 	app, err := h.service.CreateApplication(r.Context(), orgID, req)
 	if err != nil {
+		if errors.Is(err, core.ErrLimitExceeded) {
+			http.Error(w, err.Error(), http.StatusForbidden)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

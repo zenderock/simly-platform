@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -53,6 +54,10 @@ func (h *ContactHandler) CreateContact(w http.ResponseWriter, r *http.Request) {
 
 	contact, err := h.service.CreateContact(r.Context(), orgID, req)
 	if err != nil {
+		if errors.Is(err, core.ErrLimitExceeded) {
+			http.Error(w, err.Error(), http.StatusForbidden)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -296,6 +301,10 @@ func (h *ContactHandler) ImportContacts(w http.ResponseWriter, r *http.Request) 
 
 	count, err := h.service.ImportContacts(r.Context(), orgID, listIDPtr, file)
 	if err != nil {
+		if errors.Is(err, core.ErrLimitExceeded) {
+			http.Error(w, err.Error(), http.StatusForbidden)
+			return
+		}
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
