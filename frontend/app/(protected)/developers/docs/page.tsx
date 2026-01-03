@@ -8,10 +8,19 @@ import { useQueries } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { APIKey } from "@/types";
 import { apiKeyKeys } from "@/hooks/use-api-keys";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { APIEndpointDoc, APIEndpoint } from "@/components/developers/api-endpoint-doc";
+import {
+  APIEndpointDoc,
+  APIEndpoint,
+} from "@/components/developers/api-endpoint-doc";
 import {
   IconBook,
   IconArrowLeft,
@@ -81,7 +90,8 @@ const API_ENDPOINTS: APIEndpoint[] = [
       {
         status: 400,
         code: "invalid_request",
-        description: "Request validation failed (e.g., invalid phone number format)",
+        description:
+          "Request validation failed (e.g., invalid phone number format)",
       },
       {
         status: 400,
@@ -158,10 +168,22 @@ const API_ENDPOINTS: APIEndpoint[] = [
 
 // Message statuses
 const MESSAGE_STATUSES = [
-  { status: "pending", description: "Message is queued and waiting to be sent" },
-  { status: "sending", description: "Message is being sent via a connected device" },
-  { status: "sent", description: "Message was sent successfully by the device" },
-  { status: "delivered", description: "Message was delivered to the recipient" },
+  {
+    status: "pending",
+    description: "Message is queued and waiting to be sent",
+  },
+  {
+    status: "sending",
+    description: "Message is being sent via a connected device",
+  },
+  {
+    status: "sent",
+    description: "Message was sent successfully by the device",
+  },
+  {
+    status: "delivered",
+    description: "Message was delivered to the recipient",
+  },
   { status: "failed", description: "Message delivery failed" },
 ];
 
@@ -174,8 +196,14 @@ export default function APIDocsPage() {
     queries: apps.map((app) => ({
       queryKey: apiKeyKeys.byApp(app.id),
       queryFn: async () => {
-        const res = await api.get<APIKey[]>(`/api-keys?application_id=${app.id}`);
-        return { appId: app.id, keys: res.data || [], isSandbox: app.is_sandbox };
+        const res = await api.get<APIKey[]>(
+          `/api-keys?application_id=${app.id}`
+        );
+        return {
+          appId: app.id,
+          keys: res.data || [],
+          isSandbox: app.is_sandbox,
+        };
       },
       staleTime: 60000,
       enabled: apps.length > 0,
@@ -205,10 +233,13 @@ export default function APIDocsPage() {
             <IconBook className="size-3.5" />
             API Documentation
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight">API Reference</h1>
+          <h1 className="text-3xl font-extrabold tracking-tight">
+            API Reference
+          </h1>
           <p className="text-muted-foreground text-sm sm:text-base max-w-xl leading-relaxed">
             Complete reference for the Simly Public API. All endpoints use the{" "}
-            <code className="bg-muted px-1.5 py-0.5 rounded text-xs">/v1/</code> prefix.
+            <code className="bg-muted px-1.5 py-0.5 rounded text-xs">/v1/</code>{" "}
+            prefix.
           </p>
         </div>
       </div>
@@ -218,7 +249,9 @@ export default function APIDocsPage() {
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             <div className="flex-1">
-              <p className="text-sm font-medium">Select an API Key for code examples</p>
+              <p className="text-sm font-medium">
+                Select an API Key for code examples
+              </p>
               <p className="text-xs text-muted-foreground">
                 Your key will be inserted into the code snippets below
               </p>
@@ -275,15 +308,19 @@ export default function APIDocsPage() {
               </div>
               <div>
                 <CardTitle className="text-lg">Authentication</CardTitle>
-                <CardDescription>How to authenticate your API requests</CardDescription>
+                <CardDescription>
+                  How to authenticate your API requests
+                </CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
               All API requests must include your API key in the{" "}
-              <code className="bg-muted px-1.5 py-0.5 rounded text-xs">Authorization</code> header
-              using the Bearer scheme:
+              <code className="bg-muted px-1.5 py-0.5 rounded text-xs">
+                Authorization
+              </code>{" "}
+              header using the Bearer scheme:
             </p>
             <div className="rounded-lg border bg-zinc-950 p-4 overflow-x-auto">
               <pre className="text-sm text-zinc-300 font-mono">
@@ -299,8 +336,8 @@ export default function APIDocsPage() {
                   <span className="text-sm font-medium">Test Keys</span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Use test keys for development and testing. Messages are simulated and no real SMS
-                  is sent.
+                  Use test keys for development and testing. Messages are
+                  simulated and no real SMS is sent.
                 </p>
               </div>
               <div className="p-4 rounded-lg border bg-muted/30">
@@ -311,8 +348,8 @@ export default function APIDocsPage() {
                   <span className="text-sm font-medium">Live Keys</span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Use live keys for production. Messages are sent via your connected Android
-                  devices.
+                  Use live keys for production. Messages are sent via your
+                  connected Android devices.
                 </p>
               </div>
             </div>
@@ -332,7 +369,9 @@ export default function APIDocsPage() {
           </CardHeader>
           <CardContent>
             <div className="rounded-lg border bg-zinc-950 p-4 overflow-x-auto">
-              <pre className="text-sm text-zinc-300 font-mono">https://api.simly.io/v1</pre>
+              <pre className="text-sm text-zinc-300 font-mono">
+                https://server-simly.servelink.space/v1
+              </pre>
             </div>
             <p className="text-xs text-muted-foreground mt-2">
               All API endpoints are relative to this base URL.
@@ -349,7 +388,9 @@ export default function APIDocsPage() {
           </div>
           <div>
             <h2 className="text-xl font-bold">Messages</h2>
-            <p className="text-sm text-muted-foreground">Send and retrieve SMS messages</p>
+            <p className="text-sm text-muted-foreground">
+              Send and retrieve SMS messages
+            </p>
           </div>
         </div>
 
@@ -385,7 +426,9 @@ export default function APIDocsPage() {
               </div>
               <div>
                 <CardTitle className="text-lg">Message Statuses</CardTitle>
-                <CardDescription>Possible values for the message status field</CardDescription>
+                <CardDescription>
+                  Possible values for the message status field
+                </CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -395,7 +438,9 @@ export default function APIDocsPage() {
                 <thead className="bg-muted/50">
                   <tr>
                     <th className="text-left px-4 py-2 font-medium">Status</th>
-                    <th className="text-left px-4 py-2 font-medium">Description</th>
+                    <th className="text-left px-4 py-2 font-medium">
+                      Description
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -406,7 +451,9 @@ export default function APIDocsPage() {
                           {item.status}
                         </code>
                       </td>
-                      <td className="px-4 py-2 text-muted-foreground">{item.description}</td>
+                      <td className="px-4 py-2 text-muted-foreground">
+                        {item.description}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -430,19 +477,23 @@ export default function APIDocsPage() {
               </div>
               <div>
                 <CardTitle className="text-lg">Error Handling</CardTitle>
-                <CardDescription>Understanding API error responses</CardDescription>
+                <CardDescription>
+                  Understanding API error responses
+                </CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
               All errors follow a consistent JSON format with an{" "}
-              <code className="bg-muted px-1.5 py-0.5 rounded text-xs">error</code> object
-              containing the error details:
+              <code className="bg-muted px-1.5 py-0.5 rounded text-xs">
+                error
+              </code>{" "}
+              object containing the error details:
             </p>
             <div className="rounded-lg border bg-zinc-950 p-4 overflow-x-auto">
               <pre className="text-sm text-zinc-300 font-mono">
-{`{
+                {`{
   "error": {
     "code": "invalid_request",
     "message": "The 'to' field must be a valid E.164 phone number",
@@ -458,15 +509,24 @@ export default function APIDocsPage() {
                 <table className="w-full text-sm">
                   <thead className="bg-muted/50">
                     <tr>
-                      <th className="text-left px-4 py-2 font-medium">HTTP Status</th>
-                      <th className="text-left px-4 py-2 font-medium">Error Code</th>
-                      <th className="text-left px-4 py-2 font-medium">Description</th>
+                      <th className="text-left px-4 py-2 font-medium">
+                        HTTP Status
+                      </th>
+                      <th className="text-left px-4 py-2 font-medium">
+                        Error Code
+                      </th>
+                      <th className="text-left px-4 py-2 font-medium">
+                        Description
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
                     <tr>
                       <td className="px-4 py-2">
-                        <Badge variant="outline" className="bg-orange-500/10 text-orange-600 border-orange-500/20">
+                        <Badge
+                          variant="outline"
+                          className="bg-orange-500/10 text-orange-600 border-orange-500/20"
+                        >
                           400
                         </Badge>
                       </td>
@@ -481,7 +541,10 @@ export default function APIDocsPage() {
                     </tr>
                     <tr>
                       <td className="px-4 py-2">
-                        <Badge variant="outline" className="bg-orange-500/10 text-orange-600 border-orange-500/20">
+                        <Badge
+                          variant="outline"
+                          className="bg-orange-500/10 text-orange-600 border-orange-500/20"
+                        >
                           400
                         </Badge>
                       </td>
@@ -496,7 +559,10 @@ export default function APIDocsPage() {
                     </tr>
                     <tr>
                       <td className="px-4 py-2">
-                        <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/20">
+                        <Badge
+                          variant="outline"
+                          className="bg-red-500/10 text-red-600 border-red-500/20"
+                        >
                           401
                         </Badge>
                       </td>
@@ -511,7 +577,10 @@ export default function APIDocsPage() {
                     </tr>
                     <tr>
                       <td className="px-4 py-2">
-                        <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/20">
+                        <Badge
+                          variant="outline"
+                          className="bg-red-500/10 text-red-600 border-red-500/20"
+                        >
                           404
                         </Badge>
                       </td>
@@ -526,7 +595,10 @@ export default function APIDocsPage() {
                     </tr>
                     <tr>
                       <td className="px-4 py-2">
-                        <Badge variant="outline" className="bg-orange-500/10 text-orange-600 border-orange-500/20">
+                        <Badge
+                          variant="outline"
+                          className="bg-orange-500/10 text-orange-600 border-orange-500/20"
+                        >
                           429
                         </Badge>
                       </td>
@@ -541,7 +613,10 @@ export default function APIDocsPage() {
                     </tr>
                     <tr>
                       <td className="px-4 py-2">
-                        <Badge variant="outline" className="bg-red-500/10 text-red-600 border-red-500/20">
+                        <Badge
+                          variant="outline"
+                          className="bg-red-500/10 text-red-600 border-red-500/20"
+                        >
                           500
                         </Badge>
                       </td>
@@ -563,12 +638,14 @@ export default function APIDocsPage() {
               <h4 className="text-sm font-semibold">Rate Limiting</h4>
               <p className="text-sm text-muted-foreground">
                 When rate limited, the response includes a{" "}
-                <code className="bg-muted px-1.5 py-0.5 rounded text-xs">Retry-After</code> header
-                indicating how many seconds to wait before retrying.
+                <code className="bg-muted px-1.5 py-0.5 rounded text-xs">
+                  Retry-After
+                </code>{" "}
+                header indicating how many seconds to wait before retrying.
               </p>
               <div className="rounded-lg border bg-zinc-950 p-4 overflow-x-auto">
                 <pre className="text-sm text-zinc-300 font-mono">
-{`HTTP/1.1 429 Too Many Requests
+                  {`HTTP/1.1 429 Too Many Requests
 Retry-After: 60
 X-RateLimit-Limit: 100
 X-RateLimit-Remaining: 0

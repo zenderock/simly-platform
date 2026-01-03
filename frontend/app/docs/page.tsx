@@ -362,7 +362,7 @@ export default function DocsPage() {
 
                 <div className="rounded-lg border border-white/10 bg-black/50 p-4 overflow-x-auto">
                   <pre className="text-sm text-zinc-300 font-mono">
-                    https://api.simly.io/v1
+                    https://server-simly.servelink.space/v1
                   </pre>
                 </div>
                 <p className="text-sm text-white/60 mt-2">
