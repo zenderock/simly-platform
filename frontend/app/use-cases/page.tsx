@@ -16,7 +16,7 @@ import { motion } from "framer-motion";
 
 export default function UseCasesPage() {
   return (
-    <div className="bg-[#05080A] min-h-screen flex flex-col text-white selection:bg-[#6e3ff3]/30 selection:text-[#6e3ff3] ">
+    <div className="bg-[#05080A] font-sans min-h-screen flex flex-col text-white selection:bg-[#6e3ff3]/30 selection:text-[#6e3ff3] ">
       <Header />
 
       <main className="grow">
