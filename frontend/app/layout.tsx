@@ -11,7 +11,6 @@ const poppinsSans = Poppins({
   weight: ["400", "500", "600", "700", "800", "900"],
 });
 
-
 export const metadata: Metadata = {
   title: "Simly - Android SMS Gateway",
   description: "Transform your Android phone into a professional SMS gateway.",
@@ -24,9 +23,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${poppinsSans.variable} antialiased`}
-      >
+      <body className={`${poppinsSans.variable} antialiased`}>
         <Providers>
           <ThemeProvider
             attribute="class"

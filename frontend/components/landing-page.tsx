@@ -4,12 +4,9 @@ import {
   Menu,
   ArrowRight,
   LayoutGrid,
-  PieChart,
-  TrendingUp,
   FileText,
   MoreHorizontal,
   Gem,
-  Scale,
   ShieldCheck,
   Globe,
   Landmark,
@@ -18,7 +15,6 @@ import {
   Bitcoin,
   Layers,
   Home,
-  Briefcase,
   Sprout,
   Cpu,
   Newspaper,
@@ -36,19 +32,19 @@ const Navigation: React.FC = () => {
             href="#"
             className="flex items-center justify-center hover:text-white transition-colors text-xs font-medium tracking-wide h-full border-white/10 border-r pr-8 pl-8"
           >
-            SERVICES
+            FEATURES
           </a>
           <a
             href="#"
             className="h-full px-8 flex items-center justify-center text-xs font-medium tracking-wide hover:text-white transition-colors border-r border-white/10"
           >
-            INSIGHTS
+            PRICING
           </a>
           <a
             href="#"
             className="h-full px-8 flex items-center justify-center text-xs font-medium tracking-wide hover:text-white transition-colors border-r border-white/10"
           >
-            ABOUT
+            USE CASES
           </a>
         </div>
 
@@ -60,11 +56,11 @@ const Navigation: React.FC = () => {
         {/* Logo Center */}
         <div className="col-span-8 md:col-span-4 flex relative items-center justify-center">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-[#c6f91f] rounded-sm flex items-center justify-center text-black font-bold text-xs">
-              A
+            <div className="w-6 h-6 bg-[#6e3ff3] rounded-sm flex items-center justify-center text-black font-bold text-xs">
+              S
             </div>
             <span className="font-semibold text-white tracking-tight">
-              ARIQ CAPITAL
+              SIMLY
             </span>
           </div>
         </div>
@@ -79,7 +75,7 @@ const Navigation: React.FC = () => {
           </a>
           <a
             href="#"
-            className="h-full w-full md:w-auto px-8 flex items-center justify-center text-xs font-medium tracking-wide text-white hover:text-[#c6f91f] transition-colors gap-2"
+            className="h-full w-full md:w-auto px-8 flex items-center justify-center text-xs font-medium tracking-wide text-white hover:text-[#6e3ff3] transition-colors gap-2"
           >
             CONTACT
             <ArrowRight className="w-4 h-4" />
@@ -109,37 +105,37 @@ const HeroSection: React.FC = () => {
 
         <div className="relative z-10 max-w-2xl">
           <div className="flex items-center gap-2 mb-6">
-            <span className="flex h-2 w-2 rounded-full bg-[#c6f91f]"></span>
-            <p className="text-[#c6f91f] text-xs tracking-widest uppercase text-white/70">
-              Wealth Management v2.0
+            <span className="flex h-2 w-2 rounded-full bg-[#6e3ff3]"></span>
+            <p className="text-[#6e3ff3] text-xs tracking-widest uppercase text-white/70">
+              Simly Android SMS Gateway v1.0
             </p>
           </div>
 
           <h1 className="text-5xl sm:text-6xl lg:text-7xl text-white leading-[1.1] mb-8 font-light tracking-tighter">
-            Smart financial
+            Transform your
             <br />
-            solutions for
+            phone into an
             <br />
-            <span className="font-light tracking-tighter text-white/70">
-              long-term growth.
+            <span className="font-light tracking-tighter text-white bg-[#6e3ff3] px-2">
+              SMS gateway.
             </span>
           </h1>
 
           <p className="text-lg sm:text-xl leading-relaxed max-w-lg mb-12 font-light text-white/80">
-            Helping businesses and individuals manage and grow their finances
-            with precision, foresight, and institutional-grade strategies.
+            Send SMS via your own SIM card and mobile plan. A simple,
+            affordable, and reliable API for your projects.
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 border border-white/10 max-w-lg rounded-sm overflow-hidden">
-            <button className="group flex items-center justify-center gap-3 px-8 py-5 hover:bg-[#c6f91f]/5 transition-all duration-300 border-b sm:border-b-0 sm:border-r border-white/10">
-              <span className="text-[#c6f91f] font-medium tracking-wide text-xs uppercase">
-                Get Consultation
+          <div className="grid grid-cols-1 sm:grid-cols-2 border border-white/10 max-w-lg rounded-sm overflow-hidden gap-4">
+            <button className="group flex items-center bg-[#474747] justify-center gap-3 px-8 py-5 hover:bg-[#575656] transition-all duration-300 border-b sm:border-b-0 sm:border-r border-white/10">
+              <span className="text-white font-medium tracking-wide text-xs uppercase">
+                Start for Free
               </span>
             </button>
 
             <button className="group flex items-center justify-center gap-3 px-8 py-5 hover:bg-white/5 transition-all duration-300">
               <span className="text-white font-medium tracking-wide text-xs uppercase">
-                View Services
+                Documentation
               </span>
               <svg
                 className="w-4 h-4 text-white group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform"
@@ -165,49 +161,45 @@ const HeroSection: React.FC = () => {
 const DashboardMockup: React.FC = () => {
   return (
     <div
-      className="overflow-hidden bg-gradient-to-r from-[#c6f91f] to-[#000000] z-10 relative"
+      className="overflow-hidden bg-gradient-to-r from-[#6e3ff3] to-[#000000] z-10 relative"
       style={{
         maskImage:
           "linear-gradient(210deg, transparent, black 0%, black 100%, transparent)",
       }}
     >
-      <div className="absolute inset-0 bg-gradient-to-br from-[#c6f91f]/10 via-[#05080A] to-[#05080A] opacity-40"></div>
-      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#c6f91f]/5 blur-[120px] rounded-full pointer-events-none"></div>
+      <div className="absolute inset-0 bg-gradient-to-br from-[#6e3ff3]/10 via-[#05080A] to-[#05080A] opacity-40"></div>
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-[#6e3ff3]/5 blur-[120px] rounded-full pointer-events-none"></div>
 
       <div className="z-10 flex lg:p-16 h-full pt-8 pr-8 pb-8 pl-8 relative items-center justify-center">
         <div className="overflow-hidden flex flex-col md:flex-row md:h-[500px] bg-[#0B0F13] w-full h-[600px] max-w-2xl border-white/10 border rounded-xl shadow-2xl backdrop-blur-xl">
           {/* Sidebar */}
           <div className="md:w-64 flex flex-col bg-[#080B0E]/60 w-full border-white/5 border-r pt-4 pr-4 pb-4 pl-4">
             <div className="flex items-center gap-3 mb-8 px-2">
-              <div className="w-8 h-8 rounded bg-[#c6f91f] flex items-center justify-center text-black font-semibold">
-                A
+              <div className="w-8 h-8 rounded bg-[#6e3ff3] flex items-center justify-center text-black font-semibold">
+                S
               </div>
               <div className="flex flex-col">
-                <span className="text-xs font-semibold text-white">
-                  Ariq Capital
-                </span>
-                <span className="text-[10px] text-slate-500">
-                  Private Client
-                </span>
+                <span className="text-xs font-semibold text-white">Simly</span>
+                <span className="text-[10px] text-slate-500">Dashboard</span>
               </div>
             </div>
 
             <div className="space-y-1 overflow-y-auto no-scrollbar flex-1">
-              <div className="flex items-center gap-3 px-3 py-2 bg-[#c6f91f]/10 text-[#c6f91f] border border-[#c6f91f]/20 rounded-lg cursor-pointer text-xs font-medium">
+              <div className="flex items-center gap-3 px-3 py-2 bg-[#6e3ff3]/10 text-[#6e3ff3] border border-[#6e3ff3]/20 rounded-lg cursor-pointer text-xs font-medium">
                 <LayoutGrid className="w-4 h-4" />
-                Portfolio Overview
-              </div>
-              <div className="flex items-center gap-3 px-3 py-2 text-slate-500 hover:text-slate-300 cursor-pointer text-xs">
-                <PieChart className="w-4 h-4" />
-                Allocation
-              </div>
-              <div className="flex items-center gap-3 px-3 py-2 text-slate-500 hover:text-slate-300 cursor-pointer text-xs">
-                <TrendingUp className="w-4 h-4" />
-                Performance
+                Overview
               </div>
               <div className="flex items-center gap-3 px-3 py-2 text-slate-500 hover:text-slate-300 cursor-pointer text-xs">
                 <FileText className="w-4 h-4" />
-                Tax Documents
+                SMS Campaigns
+              </div>
+              <div className="flex items-center gap-3 px-3 py-2 text-slate-500 hover:text-slate-300 cursor-pointer text-xs">
+                <Cpu className="w-4 h-4" />
+                Devices
+              </div>
+              <div className="flex items-center gap-3 px-3 py-2 text-slate-500 hover:text-slate-300 cursor-pointer text-xs">
+                <RefreshCw className="w-4 h-4" />
+                Developers
               </div>
             </div>
           </div>
@@ -215,21 +207,21 @@ const DashboardMockup: React.FC = () => {
           {/* Main Dashboard Content */}
           <div className="flex-1 p-6 flex flex-col bg-transparent relative">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-white font-medium text-sm">Total Assets</h3>
+              <h3 className="text-white font-medium text-sm">Sent SMS</h3>
               <span className="text-[10px] bg-white/5 px-2 py-1 rounded text-slate-400 border border-white/5">
-                Real-time
+                This month
               </span>
             </div>
 
             <div className="mb-8">
               <div className="text-4xl text-white mb-1 font-light tracking-tighter">
-                $2,892,104.50
+                14,203
               </div>
               <div className="text-xs text-slate-500 flex items-center gap-2">
-                <span className="text-[#c6f91f] bg-[#c6f91f]/10 px-1 rounded">
-                  +8.4%
+                <span className="text-[#6e3ff3] bg-[#6e3ff3]/10 px-1 rounded">
+                  99.8%
                 </span>
-                YTD Return
+                Delivery Rate
               </div>
             </div>
 
@@ -237,13 +229,9 @@ const DashboardMockup: React.FC = () => {
               <div className="bg-[#0E1216]/60 border border-white/5 rounded-lg p-5">
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <div className="text-xs text-slate-400 mb-1">
-                      Equities & Bonds
-                    </div>
+                    <div className="text-xs text-slate-400 mb-1">Pending</div>
                     <div className="flex items-baseline gap-2">
-                      <span className="text-lg font-medium text-white">
-                        $1,450,200
-                      </span>
+                      <span className="text-lg font-medium text-white">0</span>
                     </div>
                   </div>
                   <MoreHorizontal className="w-4 h-4 text-slate-600" />
@@ -270,12 +258,12 @@ const DashboardMockup: React.FC = () => {
                       >
                         <stop
                           offset="0%"
-                          stopColor="#c6f91f"
+                          stopColor="#6e3ff3"
                           stopOpacity="0.2"
                         />
                         <stop
                           offset="100%"
-                          stopColor="#c6f91f"
+                          stopColor="#6e3ff3"
                           stopOpacity="0"
                         />
                       </linearGradient>
@@ -287,14 +275,14 @@ const DashboardMockup: React.FC = () => {
                     <path
                       d="M0,80 C40,75 80,90 120,60 C160,30 200,45 240,20 C280,5 300,15 310,5"
                       fill="none"
-                      stroke="#c6f91f"
+                      stroke="#6e3ff3"
                       strokeWidth="2"
                     />
                     <circle
                       cx="98%"
                       cy="5%"
                       r="3"
-                      fill="#c6f91f"
+                      fill="#6e3ff3"
                       stroke="#05080A"
                       strokeWidth="2"
                     />
@@ -311,13 +299,7 @@ const DashboardMockup: React.FC = () => {
 
 // Logo Marquee Component
 const LogoMarquee: React.FC = () => {
-  const logos = [
-    "VANGUARD",
-    "BLACKROCK",
-    "CITI PRIVATE",
-    "MORGAN STANLEY",
-    "GOLDMAN SACHS",
-  ];
+  const logos = ["NODE.JS", "PYTHON", "PHP", "GOLANG", "JAVA", "CURL"];
 
   return (
     <div className="border bg-[#05080A] border-white/10 border-b group/footer">
@@ -325,7 +307,7 @@ const LogoMarquee: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-12">
           <div className="col-span-12 md:col-span-2 py-8 px-6 md:px-10 border-b md:border-b-0 md:border-r border-white/10 flex items-center bg-[#05080A] relative z-20">
             <span className="text-xs font-medium tracking-widest text-slate-500 uppercase">
-              TRUSTED PARTNERS
+              COMPATIBILITY
             </span>
           </div>
 
@@ -397,7 +379,7 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-8 z-10 relative">
         <div className="max-w-2xl">
           <div className="flex items-center gap-3 mb-4">
-            <span className="uppercase text-xs font-semibold text-[#c6f91f] tracking-widest">
+            <span className="uppercase text-xs font-semibold text-[#6e3ff3] tracking-widest">
               {number}. {label}
             </span>
           </div>
@@ -434,64 +416,64 @@ const ServicesSection: React.FC = () => {
       <div className="max-w-6xl mr-auto ml-auto pr-6 pl-6">
         <SectionHeader
           number="01"
-          label="Services"
-          title="Comprehensive"
-          subtitle="wealth management."
-          description="From personal retirement planning to corporate mergers, we provide the expertise to secure your future."
-          buttonText="Schedule Call"
+          label="Features"
+          title="Unmatched"
+          subtitle="power."
+          description="A complete suite of tools to manage your marketing SMS, transactional messages, and system notifications."
+          buttonText="View documentation"
         />
 
         <section className="border z-10 bg-[#05080A] border-white/10 border-b relative">
           <div className="grid grid-cols-1 md:grid-cols-12 border border-white/10 border-b">
             <div className="col-span-12 md:col-span-4 md:p-12 md:border-b-0 md:border-r flex flex-col border-white/10 border-b pt-8 pr-8 pb-8 pl-8 justify-center">
               <div className="flex items-center gap-2 mb-4">
-                <Gem className="w-4 h-4 text-[#c6f91f]" />
-                <span className="text-[#c6f91f] text-xs tracking-widest uppercase">
-                  Core Philosophy
+                <Cpu className="w-4 h-4 text-[#6e3ff3]" />
+                <span className="text-[#6e3ff3] text-xs tracking-widest uppercase">
+                  Infrastructure
                 </span>
               </div>
               <h2 className="text-3xl md:text-4xl text-white font-light tracking-tighter mb-4">
-                Expertise that compounds.
+                Maximum reliability.
               </h2>
               <p className="text-sm leading-relaxed text-white/70">
-                We believe in time in the market, not timing the market. Our
-                strategies are built on decades of historical data.
+                Our local queuing and synchronization technology ensures your
+                messages go out, even during temporary network outages.
               </p>
             </div>
 
             <div className="col-span-12 md:col-span-8 grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-white/10">
               <ServiceCard
-                title="Financial Planning"
-                description="Holistic roadmaps for your life's milestones. We help you map out retirement, education, and legacy goals."
+                title="REST API & Webhooks"
+                description="Integrate SMS sending in a few lines of code. Receive real-time responses on your server."
               />
               <ServiceCard
-                title="Business Consulting"
-                description="Strategic advice for mergers, acquisitions, and capital structure to maximize corporate value."
-                icon={<Briefcase className="w-4 h-4 text-white" />}
+                title="Background Mode"
+                description="The Android app runs silently in the background. Your phone remains usable."
+                icon={<Layers className="w-4 h-4 text-white" />}
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-white/10 border border-white/10 border-b">
             <MiniFeature
-              icon={<Scale className="w-5 h-5" />}
-              title="Estate Planning"
-              subtitle="Preserve wealth for generations."
+              icon={<RefreshCw className="w-5 h-5" />}
+              title="Dual SIM"
+              subtitle="Native multi-SIM support."
             />
             <MiniFeature
               icon={<ShieldCheck className="w-5 h-5" />}
-              title="Risk Management"
-              subtitle="Secure your assets."
+              title="Security"
+              subtitle="End-to-end encryption."
             />
             <MiniFeature
               icon={<Globe className="w-5 h-5" />}
-              title="Global Markets"
-              subtitle="Access to international exchanges."
+              title="Universal"
+              subtitle="Works everywhere."
             />
             <MiniFeature
-              icon={<Landmark className="w-5 h-5" />}
-              title="Tax Strategy"
-              subtitle="Optimized liability planning."
+              icon={<DollarSign className="w-5 h-5" />}
+              title="Cost-effective"
+              subtitle="Fixed monthly cost."
             />
           </div>
         </section>
@@ -522,7 +504,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
             <div className="w-8 h-8 rounded bg-[#0E1216] border border-white/10 flex items-center justify-center relative z-10 shadow-[0_0_15px_rgba(198,249,31,0.1)]">
               {icon}
             </div>
-            <div className="absolute top-4 right-10 w-2 h-2 bg-[#c6f91f] rounded-full animate-pulse"></div>
+            <div className="absolute top-4 right-10 w-2 h-2 bg-[#6e3ff3] rounded-full animate-pulse"></div>
           </div>
         ) : (
           <svg
@@ -543,13 +525,13 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
             />
             <defs>
               <linearGradient id="grad1" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#c6f91f" stopOpacity="1" />
+                <stop offset="0%" stopColor="#6e3ff3" stopOpacity="1" />
                 <stop offset="100%" stopColor="#000000" stopOpacity="0" />
               </linearGradient>
             </defs>
           </svg>
         )}
-        <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-[#c6f91f]/10 blur-[40px] rounded-full group-hover:bg-[#c6f91f]/20 transition-colors"></div>
+        <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-[#6e3ff3]/10 blur-[40px] rounded-full group-hover:bg-[#6e3ff3]/20 transition-colors"></div>
       </div>
       <h3 className="text-white font-medium mb-2 flex items-center gap-2">
         {title}
@@ -569,7 +551,7 @@ interface MiniFeatureProps {
 const MiniFeature: React.FC<MiniFeatureProps> = ({ icon, title, subtitle }) => {
   return (
     <div className="flex flex-col gap-3 group hover:bg-white/[0.02] transition-colors pt-6 pr-6 pb-6 pl-6">
-      <div className="text-slate-400 group-hover:text-[#c6f91f] transition-colors">
+      <div className="text-slate-400 group-hover:text-[#6e3ff3] transition-colors">
         {icon}
       </div>
       <div>
@@ -587,10 +569,10 @@ const WhyUsSection: React.FC = () => {
       <div className="max-w-6xl mr-auto ml-auto pr-6 pl-6">
         <SectionHeader
           number="02"
-          label="Why Us"
-          title="Precision in"
-          subtitle="every decision."
-          description="Trusted by generations. We combine human expertise with advanced market analytics."
+          label="Use Cases"
+          title="A solution for"
+          subtitle="every need."
+          description="Whether you are an indie developer, a startup, or a fleet manager, Simly adapts."
         />
 
         <section className="border z-10 bg-[#05080A] border-white/10 border-b relative">
@@ -604,19 +586,19 @@ const WhyUsSection: React.FC = () => {
                 <div className="absolute w-[120px] h-[120px] rounded-full border border-white/5"></div>
                 <div className="absolute w-[280px] h-[280px] rounded-full bg-[conic-gradient(from_0deg,transparent_0deg_240deg,rgba(198,249,31,0.2)_360deg)] animate-[spin_4s_linear_infinite]"></div>
                 <div className="absolute top-10 left-10 flex items-center gap-2 z-10">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#c6f91f] shadow-[0_0_10px_#c6f91f]"></div>
-                  <span className="text-[10px] text-[#c6f91f] uppercase tracking-widest font-medium">
-                    Market Scan Active
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#6e3ff3] shadow-[0_0_10px_#6e3ff3]"></div>
+                  <span className="text-[10px] text-[#6e3ff3] uppercase tracking-widest font-medium">
+                    Active Monitoring
                   </span>
                 </div>
               </div>
               <div className="absolute bottom-0 left-0 w-full p-8 z-10 bg-gradient-to-t from-[#05080A] via-[#05080A]/80 to-transparent pt-20">
                 <h3 className="text-white font-medium text-lg mb-2">
-                  RISK MONITORING
+                  NOTIFICATIONS
                 </h3>
                 <p className="text-xs leading-relaxed pr-4 text-white/70">
-                  Continuous surveillance of global market conditions to protect
-                  your downside.
+                  Send OTPs, appointment reminders, or system alerts in
+                  real-time.
                 </p>
               </div>
             </div>
@@ -635,31 +617,31 @@ const WhyUsSection: React.FC = () => {
                 <div className="w-24 h-[20%] bg-white/[0.02] border-t border-l border-r border-white/10"></div>
                 <div className="w-24 h-[40%] bg-white/[0.02] border-t border-l border-r border-white/10"></div>
                 <div className="w-24 h-[60%] bg-white/[0.02] border-t border-l border-r border-white/10"></div>
-                <div className="w-24 h-[80%] bg-[#c6f91f]/5 border-t border-l border-r border-[#c6f91f]/30 relative">
-                  <Layers className="absolute -top-8 left-1/2 -translate-x-1/2 text-[#c6f91f]" />
+                <div className="w-24 h-[80%] bg-[#6e3ff3]/5 border-t border-l border-r border-[#6e3ff3]/30 relative">
+                  <Layers className="absolute -top-8 left-1/2 -translate-x-1/2 text-[#6e3ff3]" />
                 </div>
               </div>
               <div className="relative z-10 mt-12">
-                <div className="text-[64px] leading-none font-light text-[#c6f91f] tracking-tighter mb-2">
-                  $5B+
+                <div className="text-[64px] leading-none font-light text-[#6e3ff3] tracking-tighter mb-2">
+                  10x
                 </div>
                 <h3 className="text-white font-medium text-lg mb-2 uppercase tracking-wide">
-                  Assets Under Management
+                  Cheaper
                 </h3>
                 <p className="text-sm leading-relaxed max-w-md text-white/70">
-                  Empowering clients worldwide. We manage diverse portfolios
-                  designed for resilience in any economic climate.
+                  Save massively compared to traditional APIs like Twilio or
+                  Vonage. Pay for the plan, not per message.
                 </p>
               </div>
             </div>
             <div className="col-span-12 md:col-span-4 p-8 flex flex-col justify-end pt-16 h-full min-h-[300px]">
               <div className="mt-auto">
                 <h3 className="text-white font-medium text-lg mb-2 uppercase tracking-wide">
-                  Global Reach
+                  Global Scale
                 </h3>
                 <p className="text-sm leading-relaxed text-white/70">
-                  Our advisors operate in major financial hubs, ensuring local
-                  expertise with global perspective.
+                  Compatible with all global carriers. If your SIM can send an
+                  SMS, Simly can automate it.
                 </p>
               </div>
             </div>
@@ -675,34 +657,34 @@ const AlertsPanel: React.FC = () => {
   const alerts = [
     {
       icon: "↑",
-      label: "S&P 500 +1.2%",
+      label: "Delivery Rate 99%",
       time: "NOW",
-      color: "#c6f91f",
-      width: "w-2/3",
+      color: "#6e3ff3",
+      width: "w-full",
     },
     {
       icon: <Newspaper className="w-3.5 h-3.5" />,
-      label: "Fed Rate Decision",
+      label: "Staging Server",
       time: "2H AGO",
       color: "slate",
       width: "w-1/2",
     },
     {
       icon: <RefreshCw className="w-3.5 h-3.5" />,
-      label: "Portfolio Rebalanced",
+      label: "Synchronization",
       time: "1D AGO",
       color: "slate",
-      width: "w-1/4",
+      width: "w-3/4",
     },
   ];
 
   return (
     <div className="col-span-12 md:col-span-4 border-b md:border-b-0 md:border-r border-white/10 p-8 flex flex-col h-[360px]">
       <div className="mb-6">
-        <h3 className="text-white font-medium text-lg mb-2">MARKET SIGNALS</h3>
+        <h3 className="text-white font-medium text-lg mb-2">SMS MARKETING</h3>
         <p className="text-xs leading-relaxed text-white/70">
-          Stay updated with real-time alerts on portfolio movement and economic
-          indicators.
+          Create engaging campaigns with higher open rates using real mobile
+          numbers.
         </p>
       </div>
 
@@ -713,8 +695,8 @@ const AlertsPanel: React.FC = () => {
               <div className="flex items-center gap-3">
                 <div
                   className={`w-7 h-7 rounded ${
-                    alert.color === "#c6f91f"
-                      ? "bg-[#c6f91f]/10 border-[#c6f91f]/20 text-[#c6f91f]"
+                    alert.color === "#6e3ff3"
+                      ? "bg-[#6e3ff3]/10 border-[#6e3ff3]/20 text-[#6e3ff3]"
                       : "bg-white/5 border-white/10 text-slate-500 group-hover:text-white group-hover:border-white/20"
                   } border flex items-center justify-center transition-colors`}
                 >
@@ -722,8 +704,8 @@ const AlertsPanel: React.FC = () => {
                 </div>
                 <span
                   className={`text-[10px] font-semibold uppercase tracking-wide ${
-                    alert.color === "#c6f91f"
-                      ? "text-[#c6f91f]"
+                    alert.color === "#6e3ff3"
+                      ? "text-[#6e3ff3]"
                       : "text-slate-500 group-hover:text-white"
                   } transition-colors`}
                 >
@@ -735,8 +717,8 @@ const AlertsPanel: React.FC = () => {
             <div className="h-[2px] w-full bg-white/5 rounded-full overflow-hidden">
               <div
                 className={`h-full ${alert.width} ${
-                  alert.color === "#c6f91f"
-                    ? "bg-[#c6f91f] shadow-[0_0_10px_#c6f91f]"
+                  alert.color === "#6e3ff3"
+                    ? "bg-[#6e3ff3] shadow-[0_0_10px_#6e3ff3]"
                     : "bg-slate-700 group-hover:bg-slate-500"
                 } transition-colors`}
               ></div>
@@ -776,9 +758,9 @@ const AssetGrid: React.FC = () => {
                 key={i}
                 className="flex items-center justify-center relative"
               >
-                <div className="absolute inset-0 bg-[#c6f91f]/20 blur-[30px]"></div>
-                <div className="relative z-10 text-[#c6f91f]">
-                  <Layers className="w-12 h-12" strokeWidth={1.5} />
+                <div className="absolute inset-0 bg-[#6e3ff3]/20 blur-[30px]"></div>
+                <div className="relative z-10 text-[#6e3ff3]">
+                  <Cpu className="w-12 h-12" strokeWidth={1.5} />
                 </div>
               </div>
             );
@@ -791,7 +773,7 @@ const AssetGrid: React.FC = () => {
                 className="flex items-center justify-center bg-white/[0.01]"
               >
                 <div className="w-10 h-10 rounded bg-[#15191E] flex items-center justify-center text-[8px] font-bold text-slate-600 tracking-wider">
-                  ASSETS
+                  IOT
                 </div>
               </div>
             );
@@ -821,34 +803,34 @@ const AssetGrid: React.FC = () => {
 const InsightsSection: React.FC = () => {
   const reports = [
     {
-      icon: <FileText className="w-4.5 h-4.5" />,
-      category: "Quarterly Outlook",
-      title: "Global Markets Q4",
-      description:
-        "Navigating interest rate shifts and geopolitical volatility. Our analysts break down the key sectors to watch in the coming months.",
-      author: "Julian Singh",
-      role: "Chief Strategist",
-      initials: "JS",
-    },
-    {
       icon: <Sprout className="w-4.5 h-4.5" />,
-      category: "Impact Investing",
-      title: "Green Energy Bonds",
+      category: "Free",
+      title: "Discovery",
       description:
-        "How sustainable fixed income is outperforming traditional benchmarks. A deep dive into the renewables infrastructure market.",
-      author: "Elena Lin",
-      role: "ESG Analyst",
-      initials: "EL",
+        "Ideal for testing. 1 Android Device. 100 SMS/month via API.",
+      author: "0€",
+      role: "/month",
+      initials: "D",
     },
     {
-      icon: <Cpu className="w-4.5 h-4.5" />,
-      category: "Tech Sector",
-      title: "The AI Economy",
+      icon: <Gem className="w-4.5 h-4.5" />,
+      category: "Recommended",
+      title: "Pro",
       description:
-        "Assessing the long-term value creation of generative AI companies and semiconductor supply chains.",
-      author: "David Ross",
-      role: "Tech Equity Lead",
-      initials: "DR",
+        "For startups and SMEs. Unlimited devices. Unlimited sends. Priority support.",
+      author: "19€",
+      role: "/month",
+      initials: "P",
+    },
+    {
+      icon: <Building2 className="w-4.5 h-4.5" />,
+      category: "Enterprise",
+      title: "Agency",
+      description:
+        "White label solution for resellers and large fleet managers.",
+      author: "Quote",
+      role: "Custom",
+      initials: "A",
     },
   ];
 
@@ -857,10 +839,10 @@ const InsightsSection: React.FC = () => {
       <div className="max-w-6xl mr-auto ml-auto pr-6 pl-6">
         <SectionHeader
           number="03"
-          label="Insights"
-          title="Market"
-          subtitle="intelligence."
-          description="In-depth analysis and reports to support better investment decisions."
+          label="Pricing"
+          title="Simple and"
+          subtitle="transparent."
+          description="A clear freemium model. Start for free, pay as you grow."
         />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-white/10 border border-white/10">
@@ -899,7 +881,7 @@ const ReportCard: React.FC<ReportCardProps> = ({
         <div className="absolute inset-0 bg-gradient-to-b from-white/[0.06] via-transparent to-transparent"></div>
       </div>
       <div className="relative flex-1 flex flex-col p-10">
-        <div className="flex items-center gap-2 text-[#c6f91f] mb-6">
+        <div className="flex items-center gap-2 text-[#6e3ff3] mb-6">
           {icon}
           <span className="text-xs font-semibold tracking-wide uppercase">
             {category}
@@ -916,7 +898,7 @@ const ReportCard: React.FC<ReportCardProps> = ({
             href="#"
             className="inline-flex items-center gap-2 text-sm text-white/80 hover:text-white transition-colors border-b border-white/20 hover:border-white/50 pb-0.5"
           >
-            Read Report
+            Choose this plan
             <svg
               width="14"
               height="14"
@@ -947,20 +929,20 @@ const ReportCard: React.FC<ReportCardProps> = ({
 const ContactSection: React.FC = () => {
   const plans = [
     {
-      label: "Individual",
-      title: "Private Wealth",
+      label: "Android",
+      title: "Download App",
       description:
-        "Personalized investment strategies for individuals and families.",
-      buttonText: "Talk to an Advisor",
-      features: ["Retirement Planning", "Trust & Estate Services"],
+        "Start by installing our gateway on your Android phone. 2-minute setup via QR Code.",
+      buttonText: "Download .APK",
+      features: ["Android 8.0+", "Background Service"],
     },
     {
-      label: "Institutional",
-      title: "Corporate Finance",
+      label: "Web",
+      title: "Client Area",
       description:
-        "Capital management and advisory for businesses and endowments.",
-      buttonText: "Contact Team",
-      features: ["Mergers & Acquisitions", "Treasury Management"],
+        "Connect your devices, manage API keys, and track your sends from the dashboard.",
+      buttonText: "Create Account",
+      features: ["Dashboard", "API Management"],
     },
   ];
 
@@ -969,10 +951,10 @@ const ContactSection: React.FC = () => {
       <div className="max-w-6xl mx-auto px-6">
         <SectionHeader
           number="04"
-          label="Contact"
-          title="Ready to grow"
-          subtitle="your assets?"
-          description="Start a conversation with our advisors today."
+          label="Get Started"
+          title="Ready to send"
+          subtitle="your first SMS?"
+          description="Join hundreds of developers who use Simly daily."
         />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
@@ -1003,13 +985,13 @@ const ContactCard: React.FC<ContactCardProps> = ({
 }) => {
   return (
     <div className="flex flex-col group hover:bg-white/[0.04] transition-colors duration-300 h-full border-white/10 border rounded-none p-10 relative">
-      <div className="absolute -top-px -left-px w-4 h-4 border-t-2 border-l-2 border-[#c6f91f] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-      <div className="absolute -top-px -right-px w-4 h-4 border-t-2 border-r-2 border-[#c6f91f] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-      <div className="absolute -bottom-px -left-px w-4 h-4 border-b-2 border-l-2 border-[#c6f91f] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-      <div className="absolute -bottom-px -right-px w-4 h-4 border-b-2 border-r-2 border-[#c6f91f] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      <div className="absolute -top-px -left-px w-4 h-4 border-t-2 border-l-2 border-[#6e3ff3] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      <div className="absolute -top-px -right-px w-4 h-4 border-t-2 border-r-2 border-[#6e3ff3] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      <div className="absolute -bottom-px -left-px w-4 h-4 border-b-2 border-l-2 border-[#6e3ff3] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      <div className="absolute -bottom-px -right-px w-4 h-4 border-b-2 border-r-2 border-[#6e3ff3] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
       <div className="mb-8">
-        <span className="inline-block px-3 py-1 text-xs font-medium text-slate-300 border border-white/10 rounded bg-white/5 group-hover:text-[#c6f91f] group-hover:border-[#c6f91f] group-hover:bg-[#c6f91f]/10 transition-colors duration-300">
+        <span className="inline-block px-3 py-1 text-xs font-medium text-slate-300 border border-white/10 rounded bg-white/5 group-hover:text-[#6e3ff3] group-hover:border-[#6e3ff3] group-hover:bg-[#6e3ff3]/10 transition-colors duration-300">
           {label}
         </span>
       </div>
@@ -1019,7 +1001,7 @@ const ContactCard: React.FC<ContactCardProps> = ({
         </span>
       </div>
       <p className="text-white/70 text-sm mb-8 font-light">{description}</p>
-      <button className="w-full py-4 mb-10 rounded-lg border border-white/10 bg-transparent text-white group-hover:bg-[#c6f91f] group-hover:text-black group-hover:border-[#c6f91f] transition-all duration-300 text-sm font-medium">
+      <button className="w-full py-4 mb-10 rounded-lg border border-white/10 bg-transparent text-white group-hover:bg-[#6e3ff3] group-hover:text-white group-hover:border-[#6e3ff3] transition-all duration-300 text-sm font-medium">
         {buttonText}
       </button>
       <div className="mt-auto">
@@ -1054,7 +1036,7 @@ const Footer: React.FC = () => {
     <footer className="border bg-[#05080A] border-white/10 border-t pt-20 pb-10">
       <div className="max-w-6xl mx-auto w-full flex flex-col">
         {/* Green Section */}
-        <div className="relative bg-[#c6f91f] text-black w-full overflow-hidden border-x border-t border-white/10">
+        <div className="relative bg-[#6e3ff3] text-black w-full overflow-hidden border-x border-t border-white/10">
           <div className="absolute inset-0 grid grid-cols-4 w-full h-full pointer-events-none">
             <div className="border-r border-black/10 h-full"></div>
             <div className="border-r border-black/10 h-full"></div>
@@ -1064,11 +1046,11 @@ const Footer: React.FC = () => {
 
           <div className="relative z-10 px-6 py-16 md:px-12 md:py-20 flex flex-col justify-between min-h-[400px]">
             <a
-              href="mailto:hello@ariq.capital"
+              href="mailto:hello@simly.io"
               className="group flex items-start justify-between w-full mb-24 md:mb-32"
             >
               <span className="text-4xl sm:text-6xl md:text-7xl lg:text-[7rem] leading-none font-semibold tracking-tighter break-all">
-                HELLO@ARIQ.CAPITAL
+                HELLO@SIMLY.IO
               </span>
               <div className="pt-2 md:pt-6">
                 <svg
@@ -1087,25 +1069,23 @@ const Footer: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-12 md:gap-8 md:text-base leading-relaxed z-20 text-sm font-medium relative">
               <div className="flex flex-col gap-4">
-                <p className="font-semibold">+1 (212) 555-0123</p>
-                <p className="max-w-[200px] text-black/80">
-                  100 Financial District Blvd, Suite 400 New York, NY 10005
-                </p>
+                <p className="font-semibold">Simly Inc.</p>
+                <p className="max-w-[200px] text-black/80">Paris, France</p>
               </div>
 
               <div className="flex flex-col gap-4">
                 <span className="block text-black/50 font-semibold tracking-tight">
-                  Services
+                  Product
                 </span>
                 <div className="flex flex-col gap-2">
                   <a href="#" className="hover:text-black/60 transition-colors">
-                    Private Wealth
+                    Download
                   </a>
                   <a href="#" className="hover:text-black/60 transition-colors">
-                    Corporate Finance
+                    Pricing
                   </a>
                   <a href="#" className="hover:text-black/60 transition-colors">
-                    Market Insights
+                    API Documentation
                   </a>
                 </div>
               </div>
@@ -1116,21 +1096,21 @@ const Footer: React.FC = () => {
                 </span>
                 <div className="flex flex-col gap-2">
                   <a href="#" className="hover:text-black/60 transition-colors">
-                    Disclosures
+                    Terms & Conditions
                   </a>
                   <a href="#" className="hover:text-black/60 transition-colors">
-                    Privacy Policy
+                    Privacy
                   </a>
                 </div>
               </div>
 
               <div className="flex flex-col gap-4">
                 <span className="block text-black/50 font-semibold tracking-tight">
-                  Connect
+                  Follow Us
                 </span>
                 <div className="flex flex-col gap-2">
                   <a href="#" className="hover:text-black/60 transition-colors">
-                    LinkedIn
+                    GitHub
                   </a>
                   <a href="#" className="hover:text-black/60 transition-colors">
                     Twitter
@@ -1151,8 +1131,8 @@ const Footer: React.FC = () => {
           </div>
 
           <div className="relative z-10 w-full flex justify-center items-end leading-none select-none pt-12">
-            <h1 className="text-[24vw] md:text-[20rem] font-semibold tracking-tighter text-center leading-[0.75] mb-[-0.08em] mix-blend-screen text-white">
-              ARIQ
+            <h1 className="text-[24vw] md:text-[20rem] font-semibold tracking-tighter text-center leading-[0.75] mb-[-0.08em] mix-blend-screen text-outline">
+              SIMLY
             </h1>
           </div>
         </div>
@@ -1197,22 +1177,16 @@ const useScrollAnimation = () => {
 };
 
 // Main App Component
-export default function AriqCapital() {
+export default function SimlyLandingPage() {
   useScrollAnimation();
 
   return (
-    <div className="bg-[#05080A] min-h-screen flex flex-col overflow-x-hidden selection:bg-[#c6f91f]/30 selection:text-[#c6f91f] text-white/70">
+    <div className="bg-[#05080A] min-h-screen flex flex-col overflow-x-hidden selection:bg-[#6e3ff3]/30 selection:text-[#6e3ff3] text-white/70">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
-        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&display=swap');
         
         body {
-          font-family: 'Inter', sans-serif;
+          font-family: 'Poppins', sans-serif;
           background-color: #05080A;
-        }
-        
-        .font-geist {
-          font-family: 'Geist', sans-serif !important;
         }
         
         .no-scrollbar::-webkit-scrollbar {
@@ -1244,10 +1218,15 @@ export default function AriqCapital() {
         .reveal-on-scroll.is-visible {
           animation-play-state: running;
         }
+
+        .text-outline {
+          -webkit-text-stroke: 1px white;
+          color: transparent;
+        }
       `}</style>
 
       <Navigation />
-      <main className="flex-grow flex flex-col font-geist">
+      <main className="grow flex flex-col">
         <HeroSection />
         <LogoMarquee />
         <ServicesSection />
