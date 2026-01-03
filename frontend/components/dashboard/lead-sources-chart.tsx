@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -24,6 +24,8 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Sector } from "recharts";
 import api from "@/lib/api";
 import { DashboardStats } from "@/types";
 import { useDashboardStore } from "@/store/dashboard-store";
+import { toPng } from "html-to-image";
+import { toast } from "sonner";
 
 export function LeadSourcesChart() {
   const refreshKey = useDashboardStore((state) => state.refreshKey);
@@ -31,6 +33,7 @@ export function LeadSourcesChart() {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [showLabels, setShowLabels] = useState(true);
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -66,6 +69,57 @@ export function LeadSourcesChart() {
     setActiveIndex(null);
   };
 
+  const handleExport = async () => {
+    if (chartRef.current === null) return;
+
+    try {
+      const dataUrl = await toPng(chartRef.current, {
+        backgroundColor: "white",
+        cacheBust: true,
+      });
+      const link = document.createElement("a");
+      link.download = "message-status-chart.png";
+      link.href = dataUrl;
+      link.click();
+      toast.success("Chart exported as PNG");
+    } catch (err) {
+      console.error("oops, something went wrong!", err);
+      toast.error("Failed to export chart");
+    }
+  };
+
+  const handleShare = async () => {
+    const shareData = {
+      title: "Simly Message Status",
+      text: `Check out our message statistics: ${totalLeads} total messages.`,
+      url: window.location.href,
+    };
+
+    try {
+      if (navigator.share && navigator.canShare(shareData)) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        toast.success("Link copied to clipboard");
+      }
+    } catch (err) {
+      console.error("Error sharing", err);
+      toast.error("Could not share link");
+    }
+  };
+
+  const handleFullscreen = () => {
+    if (chartRef.current === null) return;
+
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      chartRef.current.requestFullscreen().catch((err) => {
+        toast.error(`Error attempting to enable fullscreen: ${err.message}`);
+      });
+    }
+  };
+
   const renderActiveShape = (props: unknown) => {
     const typedProps = props as {
       cx: number;
@@ -94,13 +148,18 @@ export function LeadSourcesChart() {
   };
 
   return (
-    <div className="flex flex-col gap-4 p-4 sm:p-6 rounded-xl border bg-card w-full h-full">
+    <div
+      ref={chartRef}
+      className="flex flex-col gap-4 p-4 sm:p-6 rounded-xl border bg-card w-full h-full transition-all duration-300 [&:fullscreen]:p-8 sm:[&:fullscreen]:p-12 [&:fullscreen]:bg-background [&:fullscreen]:overflow-y-auto"
+    >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 sm:gap-2.5">
           <Button variant="outline" size="icon" className="size-7 sm:size-8">
             <ChartLine className="size-4 sm:size-[18px] text-muted-foreground" />
           </Button>
-          <span className="text-sm sm:text-base font-medium">Message Status</span>
+          <span className="text-sm sm:text-base font-medium">
+            Message Status
+          </span>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -117,15 +176,15 @@ export function LeadSourcesChart() {
               Show labels
             </DropdownMenuCheckboxItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleExport}>
               <Download className="size-4 mr-2" />
               Export as PNG
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleShare}>
               <Share2 className="size-4 mr-2" />
               Share
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleFullscreen}>
               <Maximize2 className="size-4 mr-2" />
               Full Screen
             </DropdownMenuItem>
