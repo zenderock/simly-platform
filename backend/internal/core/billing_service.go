@@ -2,8 +2,10 @@ package core
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	"github.com/stripe/stripe-go/v79"
@@ -11,6 +13,7 @@ import (
 	sub "github.com/stripe/stripe-go/v79/subscription"
 	"github.com/stripe/stripe-go/v79/usagerecord"
 	"github.com/stripe/stripe-go/v79/webhook"
+	"github.com/zenderock/simly-backend/internal/model"
 	"github.com/zenderock/simly-backend/internal/store"
 )
 
@@ -47,8 +50,8 @@ func (s *BillingService) CreateCheckoutSession(ctx context.Context, orgID int, p
 				Quantity: stripe.Int64(1),
 			},
 		},
-		SuccessURL: stripe.String(s.frontendURL + "/dashboard/settings/billing?success=true"),
-		CancelURL:  stripe.String(s.frontendURL + "/dashboard/settings/billing?canceled=true"),
+		SuccessURL: stripe.String(s.frontendURL + "/checkout/success"),
+		CancelURL:  stripe.String(s.frontendURL + "/checkout/cancel"),
 		Metadata: map[string]string{
 			"organization_id": fmt.Sprintf("%d", orgID),
 		},
@@ -81,8 +84,70 @@ func (s *BillingService) HandleWebhook(payload []byte, signature string) error {
 
 	switch event.Type {
 	case "checkout.session.completed":
-		// Handle successful subscription setup
-		log.Println("Checkout session completed")
+		var session stripe.CheckoutSession
+		err := json.Unmarshal(event.Data.Raw, &session)
+		if err != nil {
+			log.Printf("Error parsing webhook JSON: %v", err)
+			return err
+		}
+
+		// 1. Get Organization ID from Metadata
+		orgIDStr := session.Metadata["organization_id"]
+		if orgIDStr == "" {
+			log.Printf("No organization_id in session metadata")
+			return nil
+		}
+		orgID, _ := strconv.Atoi(orgIDStr)
+
+		// 2. Update Organization Stripe Info
+		customerID := session.Customer.ID
+		subscriptionID := session.Subscription.ID
+		if err := s.store.UpdateOrganizationStripe(context.Background(), orgID, customerID, subscriptionID); err != nil {
+			log.Printf("Failed to update org stripe info: %v", err)
+		}
+
+		// 3. Retrieve Subscription to get Price ID (to determine plan)
+		subscription, err := sub.Get(subscriptionID, nil)
+		if err != nil {
+			log.Printf("Failed to get subscription details: %v", err)
+			return err
+		}
+
+		// Determine Plan ID from Price
+		var planID string
+		if len(subscription.Items.Data) > 0 {
+			priceID := subscription.Items.Data[0].Price.ID
+			if priceID == s.stripePricePro {
+				planID = model.PlanPro
+			} else if priceID == s.stripePriceAgency {
+				planID = model.PlanAgency
+			}
+		}
+
+		// 4. Update Organization Plan & Limits
+		if planID != "" {
+			limits := model.GetPlanLimits(planID)
+			// Keeping SMSMonthlyLimit handled by model logic (e.g. -1 for unlimited)
+			err = s.store.UpdateOrganizationPlan(
+				context.Background(),
+				orgID,
+				planID,
+				limits.SMSMonthly,
+				limits.SMSBurst,
+				limits.MaxDevices,
+				limits.MaxSimsPerDevice,
+				limits.MaxApplications,
+				limits.MaxContacts,
+				limits.MaxCampaigns,
+				limits.MaxRecipientsPerCampaign,
+			)
+			if err != nil {
+				log.Printf("Failed to upgrade organization plan: %v", err)
+				return err
+			}
+			log.Printf("Organization %d upgraded to plan %s", orgID, planID)
+		}
+
 	case "invoice.paid":
 		// Handle successful payment
 		log.Println("Invoice paid")
