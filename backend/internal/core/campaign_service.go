@@ -93,6 +93,10 @@ func (s *CampaignService) ListCampaigns(ctx context.Context, orgID int) ([]model
 	return s.store.ListCampaigns(ctx, orgID)
 }
 
+func (s *CampaignService) ListCampaignsByStatus(ctx context.Context, orgID int, status string) ([]model.Campaign, error) {
+	return s.store.ListCampaignsByStatus(ctx, orgID, status)
+}
+
 func (s *CampaignService) DeleteCampaign(ctx context.Context, id, orgID int) error {
 	return s.store.DeleteCampaign(ctx, id, orgID)
 }

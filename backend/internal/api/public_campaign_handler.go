@@ -82,3 +82,35 @@ func (h *PublicCampaignHandler) GetCampaign(w http.ResponseWriter, r *http.Reque
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(campaign)
 }
+
+// ListCampaigns retrieves all campaigns, optionally filtered by status
+func (h *PublicCampaignHandler) ListCampaigns(w http.ResponseWriter, r *http.Request) {
+	// 1. Get Context Info
+	orgID, ok := r.Context().Value(orgIDKey).(int)
+	if !ok || orgID == 0 {
+		http.Error(w, "Unauthorized: Invalid Organization Context", http.StatusUnauthorized)
+		return
+	}
+
+	// 2. Check for details filter status
+	status := r.URL.Query().Get("status")
+
+	// 3. Get Campaigns via Service
+	var campaigns interface{}
+	var err error
+
+	if status != "" {
+		campaigns, err = h.service.ListCampaignsByStatus(r.Context(), orgID, status)
+	} else {
+		campaigns, err = h.service.ListCampaigns(r.Context(), orgID)
+	}
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// 4. Return List
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(campaigns)
+}

@@ -141,6 +141,50 @@ func (s *Store) ListCampaigns(ctx context.Context, orgID int) ([]model.Campaign,
 	return campaigns, nil
 }
 
+func (s *Store) ListCampaignsByStatus(ctx context.Context, orgID int, status string) ([]model.Campaign, error) {
+	query := `
+		SELECT id, organization_id, name, template_body, list_id, device_id, sim_slot, status, scheduled_at, total_messages, sent_messages, failed_messages, send_window_start, send_window_end, pause_reason, estimated_completion_at, use_all_devices, created_at, updated_at
+		FROM campaigns
+		WHERE organization_id = $1 AND status = $2
+		ORDER BY created_at DESC
+	`
+	rows, err := s.db.Query(ctx, query, orgID, status)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list campaigns by status: %w", err)
+	}
+	defer rows.Close()
+
+	var campaigns []model.Campaign
+	for rows.Next() {
+		var c model.Campaign
+		if err := rows.Scan(
+			&c.ID,
+			&c.OrganizationID,
+			&c.Name,
+			&c.TemplateBody,
+			&c.ListID,
+			&c.DeviceID,
+			&c.SimSlot,
+			&c.Status,
+			&c.ScheduledAt,
+			&c.TotalMessages,
+			&c.SentMessages,
+			&c.FailedMessages,
+			&c.SendWindowStart,
+			&c.SendWindowEnd,
+			&c.PauseReason,
+			&c.EstimatedCompletionAt,
+			&c.UseAllDevices,
+			&c.CreatedAt,
+			&c.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan campaign: %w", err)
+		}
+		campaigns = append(campaigns, c)
+	}
+	return campaigns, nil
+}
+
 func (s *Store) DeleteCampaign(ctx context.Context, id, orgID int) error {
 	result, err := s.db.Exec(ctx, "DELETE FROM campaigns WHERE id = $1 AND organization_id = $2", id, orgID)
 	if err != nil {

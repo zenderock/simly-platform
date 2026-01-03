@@ -39,7 +39,35 @@ import {
 } from "@tabler/icons-react";
 
 // API Endpoints available in the playground
-const ENDPOINTS = [
+interface PlaygroundEndpoint {
+  id: string;
+  method: "GET" | "POST";
+  path: string;
+  name: string;
+  description: string;
+  hasBody: boolean;
+  pathParams?: {
+    name: string;
+    label: string;
+    placeholder: string;
+    required: boolean;
+  }[];
+  queryParams?: {
+    name: string;
+    label: string;
+    placeholder: string;
+    required: boolean;
+  }[];
+  bodyFields?: {
+    name: string;
+    label: string;
+    placeholder: string;
+    required: boolean;
+    multiline?: boolean;
+  }[];
+}
+
+const ENDPOINTS: PlaygroundEndpoint[] = [
   {
     id: "send-message",
     method: "POST" as const,
@@ -90,6 +118,22 @@ const ENDPOINTS = [
       { name: "id", label: "Campaign ID", placeholder: "123", required: true },
     ],
     bodyFields: [],
+  },
+  {
+    id: "list-campaigns",
+    method: "GET" as const,
+    path: "/v1/campaigns",
+    name: "List Campaigns",
+    description: "List all campaigns (filter by status optional)",
+    hasBody: false,
+    queryParams: [
+      {
+        name: "status",
+        label: "Status (optional)",
+        placeholder: "draft",
+        required: false,
+      },
+    ],
   },
   {
     id: "get-campaign",
@@ -185,6 +229,21 @@ export default function PlaygroundPage() {
         );
       });
     }
+
+    // Append query params
+    if (selectedEndpoint.queryParams) {
+      const params = new URLSearchParams();
+      selectedEndpoint.queryParams.forEach((param) => {
+        if (formData[param.name]) {
+          params.append(param.name, formData[param.name]);
+        }
+      });
+      const queryString = params.toString();
+      if (queryString) {
+        path += `?${queryString}`;
+      }
+    }
+
     const baseUrl =
       process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") ||
       "http://localhost:8085";
@@ -478,6 +537,26 @@ export default function PlaygroundPage() {
                 </div>
               ))}
 
+              {/* Query Parameters */}
+              {selectedEndpoint.queryParams?.map((param) => (
+                <div key={param.name} className="space-y-2">
+                  <Label htmlFor={param.name}>
+                    {param.label}
+                    {param.required && (
+                      <span className="text-red-500 ml-1">*</span>
+                    )}
+                  </Label>
+                  <Input
+                    id={param.name}
+                    placeholder={param.placeholder}
+                    value={formData[param.name] || ""}
+                    onChange={(e) =>
+                      handleInputChange(param.name, e.target.value)
+                    }
+                  />
+                </div>
+              ))}
+
               {/* Body Fields */}
               {selectedEndpoint.bodyFields?.map((field) => (
                 <div key={field.name} className="space-y-2">
@@ -510,11 +589,13 @@ export default function PlaygroundPage() {
                 </div>
               ))}
 
-              {!selectedEndpoint.pathParams && !selectedEndpoint.bodyFields && (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No parameters required for this endpoint
-                </p>
-              )}
+              {!selectedEndpoint.pathParams &&
+                !selectedEndpoint.bodyFields &&
+                !selectedEndpoint.queryParams && (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    No parameters required for this endpoint
+                  </p>
+                )}
             </CardContent>
           </Card>
 
