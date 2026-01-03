@@ -44,8 +44,8 @@ export const Footer: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-12 md:gap-8 md:text-base leading-relaxed z-20 text-sm font-medium relative">
               <div className="flex flex-col gap-4">
-                <p className="font-semibold">Simly Inc.</p>
-                <p className="max-w-[200px] text-black/80">Paris, France</p>
+                <p className="font-semibold">Simly Gateway.</p>
+                <p className="max-w-[200px] text-black/80">Servelink</p>
               </div>
 
               <div className="flex flex-col gap-4">
@@ -100,7 +100,7 @@ export const Footer: React.FC = () => {
                 </span>
                 <div className="flex flex-col gap-2">
                   <a
-                    href="https://github.com/simly-io"
+                    href="https://github.com/zenderock"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="hover:text-black/60 transition-colors"
@@ -108,7 +108,7 @@ export const Footer: React.FC = () => {
                     GitHub
                   </a>
                   <a
-                    href="https://twitter.com/simly_io"
+                    href="https://x.com/iamzenderock"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="hover:text-black/60 transition-colors"

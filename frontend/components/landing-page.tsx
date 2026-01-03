@@ -21,6 +21,22 @@ import {
   Newspaper,
   RefreshCw,
 } from "lucide-react";
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Label,
+  PolarRadiusAxis,
+  RadialBar,
+  RadialBarChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import Image from "next/image";
 import Link from "next/link";
 import { Footer } from "./landing/footer";
@@ -639,6 +655,199 @@ const AssetGrid: React.FC = () => {
   );
 };
 
+// Chart Components
+
+const DeliveryRadialChart = () => {
+  const data = [{ name: "Delivery Rate", value: 99.8, fill: "#6e3ff3" }];
+
+  return (
+    <div className="flex flex-col items-center justify-center h-full p-6 relative">
+      {/* Chart Title */}
+      <div className="absolute top-6 left-6 z-10">
+        <h4 className="text-white text-sm font-medium tracking-tight">
+          Delivery Success
+        </h4>
+        <p className="text-slate-500 text-[10px] uppercase tracking-widest font-medium mt-1">
+          Last 30 days
+        </p>
+      </div>
+
+      <div className="relative w-full h-[240px] mt-4">
+        <ResponsiveContainer width="100%" height="100%">
+          <RadialBarChart
+            cx="50%"
+            cy="50%"
+            innerRadius="75%"
+            outerRadius="100%"
+            barSize={12}
+            data={data}
+            startAngle={90}
+            endAngle={-200}
+          >
+            <defs>
+              <linearGradient id="radialGradient" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#6e3ff3" />
+                <stop offset="100%" stopColor="#9C7DFF" />
+              </linearGradient>
+            </defs>
+            <PolarRadiusAxis
+              type="number"
+              domain={[0, 100]}
+              tick={false}
+              axisLine={false}
+            />
+            <RadialBar
+              background={{ fill: "#ffffff", fillOpacity: 0.05 }}
+              dataKey="value"
+              cornerRadius={20}
+              fill="url(#radialGradient)"
+            />
+            <text
+              x="50%"
+              y="48%"
+              textAnchor="middle"
+              dominantBaseline="middle"
+              className="fill-white text-4xl font-light tracking-tighter"
+              style={{ fontFamily: "var(--font-geist-sans)" }}
+            >
+              99.8%
+            </text>
+            <text
+              x="50%"
+              y="62%"
+              textAnchor="middle"
+              dominantBaseline="middle"
+              className="fill-emerald-400 text-xs font-medium tracking-wide"
+            >
+              +2.4% vs last mo
+            </text>
+          </RadialBarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+};
+
+const VolumeAreaChart = () => {
+  const data = [
+    { name: "Mon", value: 4000 },
+    { name: "Tue", value: 3000 },
+    { name: "Wed", value: 2000 },
+    { name: "Thu", value: 2780 },
+    { name: "Fri", value: 1890 },
+    { name: "Sat", value: 2390 },
+    { name: "Sun", value: 3490 },
+  ];
+
+  return (
+    <div className="h-full w-full p-6 flex flex-col justify-between relative">
+      <div className="z-10">
+        <h4 className="text-white text-sm font-medium tracking-tight">
+          Weekly Volume
+        </h4>
+        <p className="text-slate-500 text-[10px] uppercase tracking-widest font-medium mt-1">
+          Last 7 days
+        </p>
+      </div>
+
+      <div className="h-[200px] w-full -mx-4">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={data}>
+            <defs>
+              <linearGradient id="volumeGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#6e3ff3" stopOpacity={0.4} />
+                <stop offset="95%" stopColor="#6e3ff3" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <Tooltip
+              contentStyle={{
+                backgroundColor: "rgba(5, 8, 10, 0.9)",
+                borderColor: "rgba(255,255,255,0.1)",
+                borderRadius: "8px",
+                backdropFilter: "blur(4px)",
+                padding: "8px 12px",
+                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+              }}
+              itemStyle={{ color: "#fff", fontSize: "12px", fontWeight: 500 }}
+              labelStyle={{ display: "none" }}
+              cursor={{
+                stroke: "rgba(255,255,255,0.2)",
+                strokeWidth: 1,
+                strokeDasharray: "4 4",
+              }}
+            />
+            <Area
+              type="monotone"
+              dataKey="value"
+              stroke="#6e3ff3"
+              strokeWidth={3}
+              fillOpacity={1}
+              fill="url(#volumeGradient)"
+              activeDot={{ r: 6, strokeWidth: 0, fill: "#fff" }}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+};
+
+const LatencyBarChart = () => {
+  const data = [
+    { name: "P50", value: 120 },
+    { name: "P75", value: 200 },
+    { name: "P90", value: 350 },
+    { name: "P99", value: 580 },
+  ];
+
+  return (
+    <div className="h-full w-full p-6 flex flex-col justify-between relative">
+      <div className="z-10">
+        <h4 className="text-white text-sm font-medium tracking-tight">
+          Low Latency
+        </h4>
+        <p className="text-slate-500 text-[10px] uppercase tracking-widest font-medium mt-1">
+          Response time (ms)
+        </p>
+      </div>
+
+      <div className="h-[200px] w-full -mx-4">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} barSize={40}>
+            <defs>
+              <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#6e3ff3" />
+                <stop offset="100%" stopColor="#6e3ff3" stopOpacity={0.6} />
+              </linearGradient>
+            </defs>
+            <Tooltip
+              cursor={{ fill: "rgba(255,255,255,0.03)" }}
+              contentStyle={{
+                backgroundColor: "rgba(5, 8, 10, 0.9)",
+                borderColor: "rgba(255,255,255,0.1)",
+                borderRadius: "8px",
+                backdropFilter: "blur(4px)",
+                padding: "8px 12px",
+                boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+              }}
+              itemStyle={{ color: "#fff", fontSize: "12px", fontWeight: 500 }}
+              labelStyle={{ display: "none" }}
+            />
+            <Bar dataKey="value" fill="url(#barGradient)" radius={[6, 6, 0, 0]}>
+              {data.map((entry, index) => (
+                <Cell
+                  key={`cell-${index}`}
+                  fillOpacity={index === 3 ? 1 : 0.7}
+                />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+};
+
 // Insights Section
 const InsightsSection: React.FC = () => {
   return (
@@ -651,9 +860,25 @@ const InsightsSection: React.FC = () => {
           subtitle="growth."
           description="Detailed analytics and reporting to optimize your campaigns."
         />
-        {/* Simplified Insights content placeholder or additional components if they were here */}
-        <div className="bg-white/5 border border-white/10 p-12 text-center text-white/50">
-          More insights and reporting features available in the dashboard.
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Chart 1: Delivery Rate */}
+          <div className="bg-[#0A0D11] border border-white/5 rounded-xl overflow-hidden min-h-[300px] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] hover:border-white/10 transition-colors group">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <DeliveryRadialChart />
+          </div>
+
+          {/* Chart 2: Volume */}
+          <div className="bg-[#0A0D11] border border-white/5 rounded-xl overflow-hidden min-h-[300px] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] hover:border-white/10 transition-colors group">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <VolumeAreaChart />
+          </div>
+
+          {/* Chart 3: Latency */}
+          <div className="bg-[#0A0D11] border border-white/5 rounded-xl overflow-hidden min-h-[300px] shadow-[inset_0_1px_0_0_rgba(255,255,255,0.05)] hover:border-white/10 transition-colors group">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <LatencyBarChart />
+          </div>
         </div>
       </div>
     </section>
