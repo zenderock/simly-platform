@@ -357,54 +357,59 @@ export default function CampaignDetailsPage() {
                 </div>
               </div>
 
-              <div className="pt-4 border-t">
-                <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
-                  <span className="bg-primary/10 text-primary p-1 rounded">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="24"
-                      height="24"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="size-4"
+              {/* API Integration - Only show for Draft or Scheduled campaigns */}
+              {(campaign.status === "draft" ||
+                campaign.status === "scheduled") && (
+                <div className="pt-4 border-t">
+                  <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                    <span className="bg-primary/10 text-primary p-1 rounded">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="size-4"
+                      >
+                        <path d="M4 17l6-6-6-6" />
+                        <path d="M12 19h8" />
+                      </svg>
+                    </span>
+                    API Integration
+                  </h4>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    You can launch this campaign programmatically using your API
+                    Key.
+                  </p>
+                  <div className="relative group">
+                    <div className="bg-zinc-950 text-zinc-50 rounded-md p-4 font-mono text-xs overflow-x-auto border border-zinc-800">
+                      <code>
+                        curl -X POST https://api.simly.io/v1/campaigns/{id}
+                        /launch \
+                        <br />
+                        &nbsp;&nbsp;-H "Authorization: Bearer sk_live_..."
+                      </code>
+                    </div>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="absolute top-2 right-2 h-7 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => {
+                        navigator.clipboard.writeText(
+                          `curl -X POST https://api.simly.io/v1/campaigns/${id}/launch -H "Authorization: Bearer sk_live_..."`
+                        );
+                        toast.success("Command copied to clipboard");
+                      }}
                     >
-                      <path d="M4 17l6-6-6-6" />
-                      <path d="M12 19h8" />
-                    </svg>
-                  </span>
-                  API Integration
-                </h4>
-                <p className="text-sm text-muted-foreground mb-3">
-                  You can launch this campaign programmatically using your API
-                  Key.
-                </p>
-                <div className="relative group">
-                  <div className="bg-zinc-950 text-zinc-50 rounded-md p-4 font-mono text-xs overflow-x-auto border border-zinc-800">
-                    <code>
-                      curl -X POST https://api.simly.io/v1/campaigns/{id}/launch
-                      \<br />
-                      &nbsp;&nbsp;-H "Authorization: Bearer sk_live_..."
-                    </code>
+                      Copy
+                    </Button>
                   </div>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="absolute top-2 right-2 h-7 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => {
-                      navigator.clipboard.writeText(
-                        `curl -X POST https://api.simly.io/v1/campaigns/${id}/launch -H "Authorization: Bearer sk_live_..."`
-                      );
-                      toast.success("Command copied to clipboard");
-                    }}
-                  >
-                    Copy
-                  </Button>
                 </div>
-              </div>
+              )}
             </div>
           </CardContent>
         </Card>
