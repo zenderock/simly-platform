@@ -11,12 +11,14 @@ import (
 type AuthHandler struct {
 	service        *core.UserService
 	captchaService *core.CaptchaService
+	emailValidator *core.EmailValidator
 }
 
-func NewAuthHandler(service *core.UserService, captchaService *core.CaptchaService) *AuthHandler {
+func NewAuthHandler(service *core.UserService, captchaService *core.CaptchaService, emailValidator *core.EmailValidator) *AuthHandler {
 	return &AuthHandler{
 		service:        service,
 		captchaService: captchaService,
+		emailValidator: emailValidator,
 	}
 }
 
@@ -36,10 +38,10 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	user, err := h.service.Register(r.Context(), req)
 	if err != nil {
 		if err.Error() == "email already registered" {
-			http.Error(w, "Email already registered", http.StatusConflict)
+			RespondWithError(w, http.StatusConflict, "Email already registered")
 			return
 		}
-		http.Error(w, "Registration failed", http.StatusInternalServerError)
+		RespondWithError(w, http.StatusInternalServerError, "Registration failed")
 		return
 	}
 
@@ -63,7 +65,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := h.service.Login(r.Context(), req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		RespondWithError(w, http.StatusUnauthorized, err.Error())
 		return
 	}
 

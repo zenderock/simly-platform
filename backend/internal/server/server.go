@@ -107,6 +107,7 @@ func (s *Server) setupRoutes() {
 	rateLimitService := core.NewRateLimitService(s.DB)
 	auditService := core.NewAuditService(s.DB)
 	captchaService := core.NewCaptchaService(s.Config.TurnstileSecret)
+	emailValidator := core.NewEmailValidator()
 
 	// Initialize DevicePoolManager early so it can be used by MessageService
 	devicePoolManager := core.NewDevicePoolManager(s.DB)
@@ -144,8 +145,8 @@ func (s *Server) setupRoutes() {
 	}()
 
 	// Handlers
-	authHandler := api.NewAuthHandler(authUserService, captchaService)
-	userHandler := api.NewUserHandler(userProfileService, auditService)
+	authHandler := api.NewAuthHandler(authUserService, captchaService, emailValidator)
+	userHandler := api.NewUserHandler(userProfileService, auditService, emailValidator)
 	appHandler := api.NewApplicationHandler(appService, orgService, auditService)
 	apiKeyHandler := api.NewAPIKeyHandler(apiKeyService, appService, orgService, auditService)
 	deviceHandler := api.NewDeviceHandler(deviceService, orgService, auditService)

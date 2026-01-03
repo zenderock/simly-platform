@@ -9,12 +9,13 @@ import (
 )
 
 type UserHandler struct {
-	service      *core.UserProfileService
-	auditService *core.AuditService
+	service        *core.UserProfileService
+	auditService   *core.AuditService
+	emailValidator *core.EmailValidator
 }
 
-func NewUserHandler(service *core.UserProfileService, auditService *core.AuditService) *UserHandler {
-	return &UserHandler{service: service, auditService: auditService}
+func NewUserHandler(service *core.UserProfileService, auditService *core.AuditService, emailValidator *core.EmailValidator) *UserHandler {
+	return &UserHandler{service: service, auditService: auditService, emailValidator: emailValidator}
 }
 
 func (h *UserHandler) GetProfile(w http.ResponseWriter, r *http.Request) {
@@ -42,6 +43,12 @@ func (h *UserHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 	// Basic validation
 	if req.Name == "" || req.Email == "" {
 		http.Error(w, "Name and email are required", http.StatusBadRequest)
+		return
+	}
+
+	// Validate Email if changed (or always, for safety)
+	if err := h.emailValidator.Validate(r.Context(), req.Email); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
