@@ -2,6 +2,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Organization } from '@/types';
+import { queryClient } from '@/lib/react-query';
 import api from './api';
 
 interface User {
@@ -16,7 +17,7 @@ interface AuthState {
   user: User | null;
   organizationId: number | null;
   organizations: Organization[];
-  setAuth: (token: string, user: User) => void;
+  setAuth: (token: string, user: User, organizations?: Organization[]) => void;
   setOrganizations: (orgs: Organization[]) => void;
   setOrganizationId: (id: number) => void;
   refreshOrganizations: () => Promise<void>;
@@ -30,7 +31,16 @@ export const useAuth = create<AuthState>()(
       user: null,
       organizationId: null,
       organizations: [],
-      setAuth: (token, user) => set({ token, user }),
+      setAuth: (token, user, organizations) => {
+        const newState: Partial<AuthState> = { token, user };
+        if (organizations) {
+            newState.organizations = organizations;
+            if (organizations.length > 0) {
+                newState.organizationId = organizations[0].id;
+            }
+        }
+        set(newState);
+      },
       setOrganizations: (organizations) => {
         set({ organizations });
         // Set default org if not selected and list not empty
@@ -48,7 +58,10 @@ export const useAuth = create<AuthState>()(
           console.error('Failed to refresh organizations:', error);
         }
       },
-      logout: () => set({ token: null, user: null, organizationId: null, organizations: [] }),
+      logout: () => {
+        set({ token: null, user: null, organizationId: null, organizations: [] });
+        queryClient.removeQueries();
+      },
     }),
     {
       name: 'simly-auth-storage',

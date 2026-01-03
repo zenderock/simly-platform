@@ -28,8 +28,9 @@ type LoginRequest struct {
 }
 
 type AuthResponse struct {
-	Token string `json:"token"`
-	User  User   `json:"user"`
+	Token         string         `json:"token"`
+	User          User           `json:"user"`
+	Organizations []Organization `json:"organizations"`
 }
 type UpdateProfileRequest struct {
 	Name      string `json:"name"`

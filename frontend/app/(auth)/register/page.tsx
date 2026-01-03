@@ -43,9 +43,9 @@ export default function RegisterPage() {
         password,
         turnstile_token: turnstileToken,
       });
-      const { token, user } = response.data;
+      const { token, user, organizations } = response.data;
 
-      setAuth(token, user);
+      setAuth(token, user, organizations);
       router.push("/dashboard");
     } catch (err: any) {
       setError(

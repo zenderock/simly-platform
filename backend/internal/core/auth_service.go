@@ -54,6 +54,8 @@ func (s *UserService) Register(ctx context.Context, req model.CreateUserRequest)
 		Name:         req.Name,
 	}
 
+	var createdOrg *model.Organization
+
 	// Use Transaction for atomic creation of User -> Org -> App
 	err = s.store.ExecTx(ctx, func(txStore *store.Store) error {
 		// 1. Create User
@@ -75,6 +77,7 @@ func (s *UserService) Register(ctx context.Context, req model.CreateUserRequest)
 		if err != nil {
 			return fmt.Errorf("failed to create default organization: %w", err)
 		}
+		createdOrg = org
 
 		// 3. Create Default Application
 		_, err = txAppService.CreateApplication(ctx, org.ID, model.CreateApplicationRequest{
@@ -99,8 +102,9 @@ func (s *UserService) Register(ctx context.Context, req model.CreateUserRequest)
 	}
 
 	return &model.AuthResponse{
-		Token: token,
-		User:  *user,
+		Token:         token,
+		User:          *user,
+		Organizations: []model.Organization{*createdOrg},
 	}, nil
 }
 
@@ -122,9 +126,16 @@ func (s *UserService) Login(ctx context.Context, req model.LoginRequest) (*model
 		return nil, fmt.Errorf("failed to generate token: %w", err)
 	}
 
+	// Fetch user organizations
+	orgs, err := s.orgService.GetUserOrganizations(ctx, user.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch user organizations: %w", err)
+	}
+
 	return &model.AuthResponse{
-		Token: token,
-		User:  *user,
+		Token:         token,
+		User:          *user,
+		Organizations: orgs,
 	}, nil
 }
 
