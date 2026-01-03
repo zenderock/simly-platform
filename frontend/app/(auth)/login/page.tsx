@@ -9,14 +9,25 @@ import api from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import LoaderQuater from "@/components/loader";
 
+import { Turnstile } from "@marsidev/react-turnstile";
+
 export default function LoginPage() {
   const router = useRouter();
   const setAuth = useAuth((state) => state.setAuth);
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState("");
+  const [turnstileToken, setTurnstileToken] = React.useState<string | null>(
+    null
+  );
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (!turnstileToken) {
+      setError("Please complete the security check.");
+      return;
+    }
+
     setIsLoading(true);
     setError("");
 
@@ -25,13 +36,19 @@ export default function LoginPage() {
     const password = formData.get("password") as string;
 
     try {
-      const response = await api.post("/auth/login", { email, password });
+      const response = await api.post("/auth/login", {
+        email,
+        password,
+        turnstile_token: turnstileToken,
+      });
       const { token, user } = response.data;
-      
+
       setAuth(token, user);
       router.push("/dashboard");
     } catch (err: any) {
-      setError(err.response?.data?.error || "Failed to login. Please try again.");
+      setError(
+        err.response?.data?.error || "Failed to login. Please try again."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -52,7 +69,10 @@ export default function LoginPage() {
           </div>
         )}
         <div className="grid gap-2">
-          <label htmlFor="email" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+          <label
+            htmlFor="email"
+            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+          >
             Email address
           </label>
           <Input
@@ -67,7 +87,10 @@ export default function LoginPage() {
         </div>
         <div className="grid gap-2">
           <div className="flex items-center justify-between">
-            <label htmlFor="password" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+            <label
+              htmlFor="password"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
               Password
             </label>
             <Link
@@ -87,6 +110,22 @@ export default function LoginPage() {
             className="h-11"
           />
         </div>
+
+        <div className="flex justify-center py-2">
+          <Turnstile
+            siteKey={
+              process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY ||
+              "1x00000000000000000000AA"
+            }
+            onSuccess={(token) => setTurnstileToken(token)}
+            onExpire={() => setTurnstileToken(null)}
+            onError={() => setError("Security check failed. Please refresh.")}
+            options={{
+              theme: "auto",
+            }}
+          />
+        </div>
+
         <Button type="submit" className="w-full h-11 mt-2" disabled={isLoading}>
           {isLoading && <LoaderQuater className="mr-2 h-4 w-4" />}
           Sign In

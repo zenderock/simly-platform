@@ -15,14 +15,16 @@ type User struct {
 }
 
 type CreateUserRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	Name     string `json:"name"`
+	Email          string `json:"email"`
+	Password       string `json:"password"`
+	Name           string `json:"name"`
+	TurnstileToken string `json:"turnstile_token"`
 }
 
 type LoginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email          string `json:"email"`
+	Password       string `json:"password"`
+	TurnstileToken string `json:"turnstile_token"`
 }
 
 type AuthResponse struct {

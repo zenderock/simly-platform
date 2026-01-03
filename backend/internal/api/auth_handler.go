@@ -9,17 +9,27 @@ import (
 )
 
 type AuthHandler struct {
-	service *core.UserService
+	service        *core.UserService
+	captchaService *core.CaptchaService
 }
 
-func NewAuthHandler(service *core.UserService) *AuthHandler {
-	return &AuthHandler{service: service}
+func NewAuthHandler(service *core.UserService, captchaService *core.CaptchaService) *AuthHandler {
+	return &AuthHandler{
+		service:        service,
+		captchaService: captchaService,
+	}
 }
 
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req model.CreateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Verify Turnstile Token
+	if err := h.captchaService.VerifyToken(r.Context(), req.TurnstileToken); err != nil {
+		http.Error(w, "Security check failed", http.StatusForbidden)
 		return
 	}
 
@@ -42,6 +52,12 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req model.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	// Verify Turnstile Token
+	if err := h.captchaService.VerifyToken(r.Context(), req.TurnstileToken); err != nil {
+		http.Error(w, "Security check failed", http.StatusForbidden)
 		return
 	}
 

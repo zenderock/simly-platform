@@ -98,6 +98,7 @@ func (s *Server) setupRoutes() {
 	deviceService := core.NewDeviceService(s.DB, alertService, s.Config.JWTSecret)
 	rateLimitService := core.NewRateLimitService(s.DB)
 	auditService := core.NewAuditService(s.DB)
+	captchaService := core.NewCaptchaService(s.Config.TurnstileSecret)
 
 	// Initialize DevicePoolManager early so it can be used by MessageService
 	devicePoolManager := core.NewDevicePoolManager(s.DB)
@@ -129,7 +130,7 @@ func (s *Server) setupRoutes() {
 	go dispatcher.Start(context.Background())
 
 	// Handlers
-	authHandler := api.NewAuthHandler(authUserService)
+	authHandler := api.NewAuthHandler(authUserService, captchaService)
 	userHandler := api.NewUserHandler(userProfileService, auditService)
 	appHandler := api.NewApplicationHandler(appService, orgService, auditService)
 	apiKeyHandler := api.NewAPIKeyHandler(apiKeyService, appService, orgService, auditService)

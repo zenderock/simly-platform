@@ -22,6 +22,7 @@ type Config struct {
 	StripePriceAgency      string
 	FirebaseServiceAccount string
 	FrontendURL            string
+	TurnstileSecret        string
 }
 
 func Load() *Config {
@@ -45,6 +46,7 @@ func Load() *Config {
 		StripePriceAgency:      getEnv("STRIPE_PRICE_AGENCY", "price_agency_default"),
 		FirebaseServiceAccount: getEnv("FIREBASE_SERVICE_ACCOUNT", ""),
 		FrontendURL:            getEnv("FRONTEND_URL", "http://localhost:3000"),
+		TurnstileSecret:        getEnv("TURNSTILE_SECRET_KEY", "1x0000000000000000000000000000000AA"),
 	}
 }
 
