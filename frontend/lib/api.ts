@@ -27,10 +27,15 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      // Don't redirect on login failures (wrong credentials)
+      if (error.config?.url?.includes('/auth/login')) {
+         return Promise.reject(error);
+      }
+
       // Token expired or invalid
       useAuth.getState().logout();
       // Optional: Redirect to login if window object exists
-      if (typeof window !== 'undefined') {
+      if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
         window.location.href = '/login';
       }
     }

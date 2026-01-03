@@ -19,6 +19,7 @@ export default function LoginPage() {
   const [turnstileToken, setTurnstileToken] = React.useState<string | null>(
     null
   );
+  const turnstileRef = React.useRef<any>(null);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -49,6 +50,10 @@ export default function LoginPage() {
       setError(
         err.response?.data?.error || "Failed to login. Please try again."
       );
+      setTurnstileToken(null);
+      if (turnstileRef.current) {
+        turnstileRef.current.reset();
+      }
     } finally {
       setIsLoading(false);
     }
@@ -113,6 +118,7 @@ export default function LoginPage() {
 
         <div className="flex justify-center py-2">
           <Turnstile
+            ref={turnstileRef}
             siteKey={
               process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY ||
               "1x00000000000000000000AA"

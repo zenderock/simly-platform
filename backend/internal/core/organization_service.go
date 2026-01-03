@@ -34,7 +34,7 @@ func (s *OrganizationService) CreateOrganization(ctx context.Context, userID int
 	org := &model.Organization{
 		Name: name,
 		Slug: slug,
-		Plan: "starter",
+		Plan: model.PlanFree,
 	}
 	if err := s.store.CreateOrganization(ctx, org); err != nil {
 		return nil, err
