@@ -5,19 +5,20 @@ import (
 )
 
 type Device struct {
-	ID             int        `json:"id"`
-	OrganizationID int        `json:"organization_id"`
-	Name           string     `json:"name"`
-	Model          string     `json:"model"`
-	FCMToken       string     `json:"fcm_token"`
-	Status         string     `json:"status"` // online, offline
-	BatteryLevel   int        `json:"battery_level"`
-	SignalStrength int        `json:"signal_strength"`
-	Tags           []string   `json:"tags"` // e.g. ["marketing", "otp", "uk-sim"]
-	SimCards       []SimCard  `json:"sim_cards"`
-	LastSeenAt     *time.Time `json:"last_seen_at"`
-	CreatedAt      time.Time  `json:"created_at"`
-	UpdatedAt      time.Time  `json:"updated_at"`
+	ID                 int        `json:"id"`
+	OrganizationID     int        `json:"organization_id"`
+	Name               string     `json:"name"`
+	Model              string     `json:"model"`
+	FCMToken           string     `json:"fcm_token"`
+	Status             string     `json:"status"` // online, offline
+	BatteryLevel       int        `json:"battery_level"`
+	SignalStrength     int        `json:"signal_strength"`
+	Tags               []string   `json:"tags"` // e.g. ["marketing", "otp", "uk-sim"]
+	SimCards           []SimCard  `json:"sim_cards"`
+	LastSeenAt         *time.Time `json:"last_seen_at"`
+	LastBatteryAlertAt *time.Time `json:"last_battery_alert_at"`
+	CreatedAt          time.Time  `json:"created_at"`
+	UpdatedAt          time.Time  `json:"updated_at"`
 }
 
 type SimCard struct {

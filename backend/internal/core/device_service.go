@@ -99,11 +99,28 @@ func (s *DeviceService) ListDevices(ctx context.Context, orgID int) ([]model.Dev
 func (s *DeviceService) Heartbeat(ctx context.Context, deviceID int, battery, signal int, simCards []model.UpdateSimCardRequest) ([]model.Message, error) {
 	if battery > 0 && battery < 15 {
 		// Fetch device to get OrgID and Name
+		// Fetch device to get OrgID, Name, and Alert History
 		device, err := s.store.GetDeviceByID(ctx, deviceID)
 		if err == nil {
-			title := fmt.Sprintf("Low Battery: %s", device.Name)
-			message := fmt.Sprintf("Device '%s' is at %d%% battery. Please plug it in to ensure service continuity.", device.Name, battery)
-			s.alertService.NotifyOrganization(ctx, device.OrganizationID, "low_battery", title, message, "warning")
+			// Check cooldown: Only alert if never alerted OR last alert was > 1 hour ago
+			shouldAlert := false
+			if device.LastBatteryAlertAt == nil {
+				shouldAlert = true
+			} else if time.Since(*device.LastBatteryAlertAt) > 1*time.Hour {
+				shouldAlert = true
+			} else {
+				// Cooldown active, verify if battery dropped significantly? (optional, for now just strict rate limit)
+				// Optional: We could alert if it drops from 14% to 5% instantly, but user wants LESS spam.
+			}
+
+			if shouldAlert {
+				title := fmt.Sprintf("Low Battery: %s", device.Name)
+				message := fmt.Sprintf("Device '%s' is at %d%% battery. Please plug it in to ensure service continuity.", device.Name, battery)
+				if err := s.alertService.NotifyOrganization(ctx, device.OrganizationID, "low_battery", title, message, "warning"); err == nil {
+					// Update LastBatteryAlertAt only if notification sent (or enqueued)
+					_ = s.store.UpdateDeviceLastBatteryAlert(ctx, deviceID)
+				}
+			}
 		}
 	}
 	if err := s.store.UpdateDeviceHealth(ctx, deviceID, battery, signal, "online"); err != nil {
