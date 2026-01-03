@@ -43,6 +43,7 @@ import {
 import { PhoneInput } from "@/components/ui/phone-input";
 import LoaderQuater from "@/components/loader";
 import { IconPlus } from "@tabler/icons-react";
+import { getErrorMessage } from "@/lib/utils";
 
 const schema = z.object({
   first_name: z.string().min(1, "First name is required"),
@@ -114,23 +115,7 @@ export function CreateContactDialog({
       onOpenChange?.(false);
     },
     onError: (error: any) => {
-      // Extract error message from backend response
-      let errorMessage =
-        error.response?.data || error.message || "Failed to create contact";
-
-      // Handle object response (though backend usually sends text for 500s)
-      if (typeof errorMessage === "object") {
-        errorMessage = errorMessage.message || JSON.stringify(errorMessage);
-      }
-
-      // User friendly message for duplicates
-      if (
-        typeof errorMessage === "string" &&
-        errorMessage.includes("duplicate key")
-      ) {
-        errorMessage = "A contact with this phone number already exists.";
-      }
-
+      const errorMessage = getErrorMessage(error);
       toast.error(errorMessage);
       console.error(error);
     },

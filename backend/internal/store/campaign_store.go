@@ -246,6 +246,41 @@ func (s *Store) GetPendingMessagesForCampaign(ctx context.Context, campaignID in
 	}
 	return messages, nil
 }
+
+// GetQueuedMessagesForCampaign retrieves all queued messages for a campaign.
+func (s *Store) GetQueuedMessagesForCampaign(ctx context.Context, campaignID int) ([]model.Message, error) {
+	query := `
+		SELECT id, organization_id, device_id, to_number, body, status, direction, created_at, updated_at, sim_slot
+		FROM messages
+		WHERE campaign_id = $1 AND status = 'queued'
+	`
+	rows, err := s.db.Query(ctx, query, campaignID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get queued campaign messages: %w", err)
+	}
+	defer rows.Close()
+
+	var messages []model.Message
+	for rows.Next() {
+		var m model.Message
+		if err := rows.Scan(
+			&m.ID,
+			&m.OrganizationID,
+			&m.DeviceID,
+			&m.ToNumber,
+			&m.Body,
+			&m.Status,
+			&m.Direction,
+			&m.CreatedAt,
+			&m.UpdatedAt,
+			&m.SimSlot,
+		); err != nil {
+			return nil, err
+		}
+		messages = append(messages, m)
+	}
+	return messages, nil
+}
 func (s *Store) BulkCreateMessagesForCampaign(ctx context.Context, campaignID, orgID, deviceID int, messages []model.Message) error {
 	if len(messages) == 0 {
 		return nil

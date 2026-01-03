@@ -51,6 +51,7 @@ import { createCampaign, launchCampaign } from "@/lib/api/campaigns";
 import LoaderQuater from "@/components/loader";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/lib/auth";
+import { getErrorMessage } from "@/lib/utils";
 
 const steps = [
   { id: 1, title: "Details" },
@@ -122,6 +123,8 @@ export default function CreateCampaignPage() {
     ? [allContactsOption, ...lists]
     : [allContactsOption];
 
+  // ...
+
   const createMutation = useMutation({
     mutationFn: createCampaign,
     onSuccess: (data) => {
@@ -138,7 +141,10 @@ export default function CreateCampaignPage() {
         router.push("/campaigns");
       }
     },
-    onError: () => toast.error("Failed to create campaign"),
+    onError: (error: any) => {
+      const msg = getErrorMessage(error);
+      toast.error(msg);
+    },
   });
 
   const launchMutation = useMutation({
@@ -147,8 +153,9 @@ export default function CreateCampaignPage() {
       toast.success("Campaign launched successfully!");
       router.push("/campaigns");
     },
-    onError: () => {
-      toast.error("Campaign created but failed to launch");
+    onError: (error: any) => {
+      const msg = getErrorMessage(error);
+      toast.error(`Campaign created but launch failed: ${msg}`);
       router.push("/campaigns");
     },
   });

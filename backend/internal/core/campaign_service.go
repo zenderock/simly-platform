@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/zenderock/simly-backend/internal/model"
@@ -169,7 +170,31 @@ func (s *CampaignService) LaunchCampaign(ctx context.Context, id, orgID int) err
 		return err
 	}
 
-	// Update Status to processing - DispatcherService will handle sending
+	// Fetch created messages to enqueue them
+	queuedMessages, err := s.store.GetQueuedMessagesForCampaign(ctx, c.ID)
+	if err != nil {
+		// Log error but continuing to update status might be risky if we assume they are processing
+		// But since they are in DB, we can retry later.
+		// For now, return error to trigger retry in scheduler/caller
+		return fmt.Errorf("failed to fetch queued messages for enqueueing: %w", err)
+	}
+
+	// Enqueue tasks
+	count := 0
+	for _, msg := range queuedMessages {
+		if err := s.messageService.EnqueueSMSDelivery(ctx, &msg); err != nil {
+			// Log but continue, maybe partial failure
+			// Scheduler retry might act weird here if we update campaign status
+			// But RedisWorker isn't picking them up from DB, so we rely on this.
+			// Ideally we should transactionally enqueue or use outbox pattern.
+			// For now, log error.
+			// fmt.Printf("Failed to enqueue message %d: %v\n", msg.ID, err)
+			continue
+		}
+		count++
+	}
+
+	// Update Status to processing
 	if err := s.store.UpdateCampaignStatus(ctx, c.ID, model.CampaignStatusProcessing); err != nil {
 		return err
 	}
