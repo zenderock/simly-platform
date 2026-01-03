@@ -115,8 +115,22 @@ export function CreateContactDialog({
     },
     onError: (error: any) => {
       // Extract error message from backend response
-      const errorMessage =
+      let errorMessage =
         error.response?.data || error.message || "Failed to create contact";
+
+      // Handle object response (though backend usually sends text for 500s)
+      if (typeof errorMessage === "object") {
+        errorMessage = errorMessage.message || JSON.stringify(errorMessage);
+      }
+
+      // User friendly message for duplicates
+      if (
+        typeof errorMessage === "string" &&
+        errorMessage.includes("duplicate key")
+      ) {
+        errorMessage = "A contact with this phone number already exists.";
+      }
+
       toast.error(errorMessage);
       console.error(error);
     },
