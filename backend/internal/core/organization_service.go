@@ -31,10 +31,25 @@ func (s *OrganizationService) WithStore(store *store.Store) *OrganizationService
 }
 
 func (s *OrganizationService) CreateOrganization(ctx context.Context, userID int, name, slug string, role string) (*model.Organization, error) {
+	limits := model.GetPlanLimits(model.PlanFree)
 	org := &model.Organization{
 		Name: name,
 		Slug: slug,
 		Plan: model.PlanFree,
+		// Limits
+		SMSMonthlyLimit:          0, // Initial limit for backward compatibility
+		SMSBurstLimit:            limits.SMSBurst,
+		MaxDevices:               limits.MaxDevices,
+		MaxSimsPerDevice:         limits.MaxSimsPerDevice,
+		MaxApplications:          limits.MaxApplications,
+		MaxContacts:              limits.MaxContacts,
+		MaxCampaigns:             limits.MaxCampaigns,
+		MaxRecipientsPerCampaign: limits.MaxRecipientsPerCampaign,
+		// Default Dispatch Settings
+		SMSThrottleRateSeconds: 1,
+		SendWindowStart:        9,
+		SendWindowEnd:          21,
+		SendWindowTimezone:     "UTC",
 	}
 	if err := s.store.CreateOrganization(ctx, org); err != nil {
 		return nil, err

@@ -10,11 +10,29 @@ import (
 
 func (s *Store) CreateOrganization(ctx context.Context, org *model.Organization) error {
 	query := `
-		INSERT INTO organizations (name, slug, plan, created_at, updated_at)
-		VALUES ($1, $2, $3, NOW(), NOW())
+		INSERT INTO organizations (
+			name, slug, plan, 
+			sms_monthly_limit, sms_burst_limit, max_devices, max_sims_per_device,
+			max_applications, max_contacts, max_campaigns, max_recipients_per_campaign,
+			sms_throttle_rate_seconds, send_window_start, send_window_end, send_window_timezone,
+			created_at, updated_at
+		)
+		VALUES (
+			$1, $2, $3, 
+			$4, $5, $6, $7, 
+			$8, $9, $10, $11, 
+			$12, $13, $14, $15,
+			NOW(), NOW()
+		)
 		RETURNING id, created_at, updated_at
 	`
-	err := s.db.QueryRow(ctx, query, org.Name, org.Slug, org.Plan).Scan(&org.ID, &org.CreatedAt, &org.UpdatedAt)
+	err := s.db.QueryRow(ctx, query,
+		org.Name, org.Slug, org.Plan,
+		org.SMSMonthlyLimit, org.SMSBurstLimit, org.MaxDevices, org.MaxSimsPerDevice,
+		org.MaxApplications, org.MaxContacts, org.MaxCampaigns, org.MaxRecipientsPerCampaign,
+		org.SMSThrottleRateSeconds, org.SendWindowStart, org.SendWindowEnd, org.SendWindowTimezone,
+	).Scan(&org.ID, &org.CreatedAt, &org.UpdatedAt)
+
 	if err != nil {
 		return fmt.Errorf("failed to create organization: %w", err)
 	}
