@@ -9,8 +9,11 @@ const api = axios.create({
   },
 });
 
+import { useApplicationStore } from '@/store/application-store';
+
 api.interceptors.request.use((config) => {
   const { token, organizationId } = useAuth.getState();
+  const { activeAppId } = useApplicationStore.getState();
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -18,6 +21,10 @@ api.interceptors.request.use((config) => {
 
   if (organizationId) {
     config.headers['X-Organization-ID'] = organizationId.toString();
+  }
+
+  if (activeAppId) {
+    config.headers['X-Application-ID'] = activeAppId.toString();
   }
 
   return config;
