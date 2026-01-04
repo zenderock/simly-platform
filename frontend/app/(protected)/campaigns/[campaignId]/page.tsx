@@ -1,11 +1,12 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import {
   getCampaign,
   getCampaignAnalytics,
   getCampaignMessages,
+  launchCampaign,
 } from "@/lib/api/campaigns";
 import { listDevices } from "@/lib/api/devices";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,7 @@ import {
   IconBolt,
   IconAlertCircle,
   IconSend,
+  IconRocket,
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -56,11 +58,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import Link from "next/link";
+import { getErrorMessage } from "@/lib/utils";
 
 export default function CampaignDetailsPage() {
   const params = useParams();
   const campaignId = params.campaignId as string;
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   // Extract numeric ID from formatted campaign ID (sy-c-00-1 -> 1)
   const extractIdFromFormatted = (formattedId: string): number => {
@@ -95,6 +99,19 @@ export default function CampaignDetailsPage() {
     queryKey: ["devices"],
     queryFn: listDevices,
     enabled: !!campaign?.device_id,
+  });
+
+  const launchMutation = useMutation({
+    mutationFn: () => launchCampaign(id),
+    onSuccess: () => {
+      toast.success("Campaign launched successfully!");
+      queryClient.invalidateQueries({ queryKey: ["campaign", id] });
+      queryClient.invalidateQueries({ queryKey: ["campaign-analytics", id] });
+    },
+    onError: (error: any) => {
+      const msg = getErrorMessage(error);
+      toast.error(`Failed to launch campaign: ${msg}`);
+    },
   });
 
   const deviceName = campaign?.device_id
@@ -211,6 +228,22 @@ export default function CampaignDetailsPage() {
               />
               {campaign.status.toUpperCase()}
             </div>
+
+            {campaign.status === "draft" && (
+              <Button
+                onClick={() => launchMutation.mutate()}
+                disabled={launchMutation.isPending}
+                className="bg-[#8c52ff] hover:bg-[#8c52ff]/80 text-white shadow-[0_0_20px_rgba(140,82,255,0.3)]"
+              >
+                {launchMutation.isPending ? (
+                  <LoaderQuater className="mr-2" />
+                ) : (
+                  <IconRocket className="mr-2 size-4" />
+                )}
+                Launch Now
+              </Button>
+            )}
+
             <Button
               variant="outline"
               size="sm"
