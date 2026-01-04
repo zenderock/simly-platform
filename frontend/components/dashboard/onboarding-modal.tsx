@@ -134,7 +134,7 @@ export function OnboardingModal() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.1 }}
-                      className="text-4xl sm:text-6xl font-black tracking-tighter bg-gradient-to-br from-foreground to-foreground/50 bg-clip-text text-transparent pb-2"
+                      className="text-3xl sm:text-4xl md:text-6xl font-black tracking-tighter bg-linear-to-br from-foreground to-foreground/50 bg-clip-text text-transparent pb-2"
                     >
                       Welcome to Simly.
                     </motion.h1>
@@ -142,14 +142,14 @@ export function OnboardingModal() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.2 }}
-                      className="text-xl sm:text-2xl text-muted-foreground font-light max-w-lg mx-auto"
+                      className="text-lg sm:text-xl md:text-2xl text-muted-foreground font-light max-w-lg mx-auto"
                     >
                       Turn your Android phone into a powerful SMS Gateway in
                       just a few minutes.
                     </motion.p>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-left max-w-3xl mx-auto py-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 text-left max-w-3xl mx-auto py-4 sm:py-8">
                     {[
                       {
                         icon: ArrowRight,
@@ -173,13 +173,15 @@ export function OnboardingModal() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.3 + index * 0.1 }}
                         whileHover={{ scale: 1.05, y: -5 }}
-                        className="p-6 bg-card border rounded-2xl shadow-sm cursor-default transition-shadow hover:shadow-md"
+                        className="p-4 sm:p-6 bg-card border rounded-2xl shadow-sm cursor-default transition-shadow hover:shadow-md"
                       >
-                        <div className="size-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary mb-4">
-                          <item.icon className="size-5" />
+                        <div className="size-8 sm:size-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary mb-3 sm:mb-4">
+                          <item.icon className="size-4 sm:size-5" />
                         </div>
-                        <h3 className="font-bold mb-2">{item.title}</h3>
-                        <p className="text-sm text-muted-foreground">
+                        <h3 className="font-bold mb-1 sm:mb-2 text-sm sm:text-base">
+                          {item.title}
+                        </h3>
+                        <p className="text-xs sm:text-sm text-muted-foreground">
                           {item.desc}
                         </p>
                       </motion.div>
@@ -193,10 +195,11 @@ export function OnboardingModal() {
                   >
                     <Button
                       size="lg"
-                      className="h-14 px-10 text-lg font-bold rounded-full shadow-lg shadow-primary/20 hover:scale-105 transition-transform"
+                      className="h-12 sm:h-14 px-8 sm:px-10 text-base sm:text-lg font-bold rounded-full shadow-lg shadow-primary/20 hover:scale-105 transition-transform"
                       onClick={() => setStep("connect")}
                     >
-                      Get Started <ArrowRight className="ml-2 size-5" />
+                      Get Started{" "}
+                      <ArrowRight className="ml-2 size-4 sm:size-5" />
                     </Button>
                   </motion.div>
                 </motion.div>
@@ -211,11 +214,11 @@ export function OnboardingModal() {
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
                   className="w-full max-w-md"
                 >
-                  <div className="text-center mb-8">
-                    <h2 className="text-3xl font-bold tracking-tight mb-2">
+                  <div className="text-center mb-6 sm:mb-8">
+                    <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">
                       Connect your Device
                     </h2>
-                    <p className="text-muted-foreground">
+                    <p className="text-muted-foreground text-sm sm:text-base">
                       Follow the steps to link your phone.
                     </p>
                   </div>
@@ -238,16 +241,16 @@ export function OnboardingModal() {
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
                   className="w-full max-w-lg"
                 >
-                  <div className="text-center mb-8">
-                    <h2 className="text-3xl font-bold tracking-tight mb-2">
+                  <div className="text-center mb-6 sm:mb-8">
+                    <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">
                       Send your first SMS
                     </h2>
-                    <p className="text-muted-foreground">
+                    <p className="text-muted-foreground text-sm sm:text-base">
                       Test the connection by sending a real message.
                     </p>
                   </div>
 
-                  <div className="bg-card border rounded-2xl shadow-sm overflow-hidden h-[500px] flex flex-col transform transition-all hover:shadow-md">
+                  <div className="bg-card border rounded-2xl shadow-sm overflow-hidden min-h-[400px] md:h-[500px] flex flex-col transform transition-all hover:shadow-md">
                     <NewMessageForm
                       onSuccess={handleMessageSuccess}
                       hideTitle
