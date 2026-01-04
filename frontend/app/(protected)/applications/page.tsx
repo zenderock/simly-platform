@@ -56,6 +56,7 @@ export default function ApplicationsPage() {
   const [renamingName, setRenamingName] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -95,6 +96,41 @@ export default function ApplicationsPage() {
     }
   };
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Image must be less than 1MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("folder", "app-logos");
+
+    try {
+      const res = await api.post("/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setEditingApp({ ...editingApp, logo_url: res.data.url });
+      toast({ title: "Logo uploaded", variant: "success" });
+    } catch (error) {
+      toast({
+        title: "Upload failed",
+        description: "Could not upload image",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const handleRenameSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingApp) return;
@@ -118,6 +154,7 @@ export default function ApplicationsPage() {
     try {
       await api.put(`/applications/${editingApp.id}`, {
         name: renamingName,
+        logo_url: editingApp.logo_url,
         is_sandbox: editingApp.is_sandbox,
         slack_webhook_url: editingApp.slack_webhook_url,
         ntfy_topic: editingApp.ntfy_topic,
@@ -201,8 +238,16 @@ export default function ApplicationsPage() {
                   <TableRow key={app.id}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
-                        <div className="size-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-500">
-                          <IconFolder className="size-4" />
+                        <div className="size-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-500 overflow-hidden relative">
+                          {app.logo_url ? (
+                            <img
+                              src={app.logo_url}
+                              alt={app.name}
+                              className="size-full object-cover"
+                            />
+                          ) : (
+                            <IconFolder className="size-4" />
+                          )}
                         </div>
                         <span className="font-semibold">{app.name}</span>
                       </div>
@@ -278,6 +323,39 @@ export default function ApplicationsPage() {
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-6 py-6">
+              {/* Avatar Upload */}
+              <div className="flex justify-center">
+                <div className="relative group">
+                  <div className="size-20 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center overflow-hidden border border-border text-muted-foreground">
+                    {isUploading ? (
+                      <LoaderQuater className="size-6 animate-spin text-primary" />
+                    ) : editingApp?.logo_url ? (
+                      <img
+                        src={editingApp.logo_url}
+                        alt="App Logo"
+                        className="size-full object-cover"
+                      />
+                    ) : (
+                      <IconFolder className="size-8 opacity-50" />
+                    )}
+                  </div>
+                  <label
+                    htmlFor="logo-upload"
+                    className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-xl"
+                  >
+                    <IconPencil className="size-6 text-white" />
+                  </label>
+                  <input
+                    id="logo-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileChange}
+                    disabled={isUploading}
+                  />
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label
                   htmlFor="rename-input"

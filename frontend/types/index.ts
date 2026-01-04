@@ -35,6 +35,7 @@ export interface Application {
   organization_id: number;
   name: string;
   description?: string;
+  logo_url?: string;
   is_sandbox: boolean;
   slack_webhook_url?: string;
   ntfy_topic?: string;
