@@ -9,7 +9,15 @@ import { useAuth } from "@/lib/auth";
 import api from "@/lib/api";
 import { Plan } from "@/types/plan";
 import { useToast } from "@/components/ui/use-toast";
-import { IconRocket, IconBolt, IconBuilding, IconMessage, IconDeviceMobile, IconUsers, IconCategory2 } from "@tabler/icons-react";
+import {
+  IconRocket,
+  IconBolt,
+  IconBuilding,
+  IconMessage,
+  IconDeviceMobile,
+  IconUsers,
+  IconCategory2,
+} from "@tabler/icons-react";
 import LoaderQuater from "@/components/loader";
 
 export default function PlansPage() {
@@ -50,7 +58,9 @@ export default function PlansPage() {
     }
     setUpgrading(priceId);
     try {
-      const response = await api.post("/billing/checkout", { price_id: priceId });
+      const response = await api.post("/billing/checkout", {
+        price_id: priceId,
+      });
       window.location.href = response.data.url;
     } catch (error) {
       console.error("Failed to start checkout", error);
@@ -66,7 +76,10 @@ export default function PlansPage() {
       window.location.href = response.data.url;
     } catch (error) {
       console.error("Portal failed", error);
-      toast({ title: "Failed to open billing settings", variant: "destructive" });
+      toast({
+        title: "Failed to open billing settings",
+        variant: "destructive",
+      });
       setUpgrading(null);
     }
   };
@@ -76,17 +89,23 @@ export default function PlansPage() {
 
   const getPlanIcon = (planId: string) => {
     switch (planId) {
-      case "agency": return <IconRocket className="size-5" />;
-      case "pro": return <IconBolt className="size-5" />;
-      default: return <IconBuilding className="size-5" />;
+      case "agency":
+        return <IconRocket className="size-5" />;
+      case "pro":
+        return <IconBolt className="size-5" />;
+      default:
+        return <IconBuilding className="size-5" />;
     }
   };
 
   const getPlanColor = (planId: string) => {
     switch (planId) {
-      case "agency": return "text-amber-500 bg-amber-500/10";
-      case "pro": return "text-violet-500 bg-violet-500/10";
-      default: return "text-emerald-500 bg-emerald-500/10";
+      case "agency":
+        return "text-amber-500 bg-amber-500/10";
+      case "pro":
+        return "text-violet-500 bg-violet-500/10";
+      default:
+        return "text-emerald-500 bg-emerald-500/10";
     }
   };
 
@@ -104,12 +123,13 @@ export default function PlansPage() {
       <div className="text-center space-y-3">
         <h1 className="text-3xl font-bold tracking-tight">Choose your plan</h1>
         <p className="text-muted-foreground max-w-lg mx-auto">
-          Scale your SMS operations with the right plan. All plans include core features.
+          Scale your SMS operations with the right plan. All plans include core
+          features.
         </p>
-        
+
         {currentOrg && currentPlanId !== "free" && (
-          <button 
-            onClick={handlePortal} 
+          <button
+            onClick={handlePortal}
             disabled={upgrading !== null}
             className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1 mt-2"
           >
@@ -130,8 +150,8 @@ export default function PlansPage() {
             <div
               key={plan.id}
               className={`relative rounded-xl border p-6 flex flex-col transition-colors ${
-                isPopular 
-                  ? "border-primary bg-primary/2 dark:bg-primary/3" 
+                isPopular
+                  ? "border-primary bg-primary/2 dark:bg-primary/3"
                   : "border-border hover:border-muted-foreground/30"
               } ${isCurrent ? "ring-2 ring-primary/20" : ""}`}
             >
@@ -153,14 +173,20 @@ export default function PlansPage() {
                   <div>
                     <h3 className="font-semibold">{plan.name}</h3>
                     {isCurrent && (
-                      <span className="text-xs text-muted-foreground">Current plan</span>
+                      <span className="text-xs text-muted-foreground">
+                        Current plan
+                      </span>
                     )}
                   </div>
                 </div>
 
                 <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-bold">{formatPrice(plan.price)}</span>
-                  <span className="text-muted-foreground text-sm">/{plan.period}</span>
+                  <span className="text-4xl font-bold">
+                    {formatPrice(plan.price)}
+                  </span>
+                  <span className="text-muted-foreground text-sm">
+                    /{plan.period}
+                  </span>
                 </div>
 
                 <p className="text-sm text-muted-foreground leading-relaxed">
@@ -173,30 +199,46 @@ export default function PlansPage() {
                 <div className="rounded-lg bg-muted/50 p-2 text-center">
                   <IconMessage className="size-4 mx-auto mb-1 text-muted-foreground" />
                   <div className="font-semibold text-sm">
-                    {plan.limits.sms_monthly === -1 ? "∞" : plan.limits.sms_monthly}
+                    {plan.limits.sms_monthly === -1
+                      ? "∞"
+                      : plan.limits.sms_monthly}
                   </div>
-                  <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Monthly SMS</div>
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                    Monthly SMS
+                  </div>
                 </div>
                 <div className="rounded-lg bg-muted/50 p-2 text-center">
                   <IconCategory2 className="size-4 mx-auto mb-1 text-muted-foreground" />
                   <div className="font-semibold text-sm">
-                    {plan.limits.max_applications === -1 ? "∞" : plan.limits.max_applications}
+                    {plan.limits.max_applications === -1
+                      ? "∞"
+                      : plan.limits.max_applications}
                   </div>
-                  <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Apps</div>
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                    Apps
+                  </div>
                 </div>
                 <div className="rounded-lg bg-muted/50 p-2 text-center">
                   <IconUsers className="size-4 mx-auto mb-1 text-muted-foreground" />
                   <div className="font-semibold text-sm">
-                    {plan.limits.max_contacts === -1 ? "∞" : plan.limits.max_contacts}
+                    {plan.limits.max_contacts === -1
+                      ? "∞"
+                      : plan.limits.max_contacts}
                   </div>
-                  <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Contacts</div>
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                    Contacts
+                  </div>
                 </div>
                 <div className="rounded-lg bg-muted/50 p-2 text-center">
                   <IconDeviceMobile className="size-4 mx-auto mb-1 text-muted-foreground" />
                   <div className="font-semibold text-sm">
-                    {plan.limits.max_devices === -1 ? "∞" : plan.limits.max_devices}
+                    {plan.limits.max_devices === -1
+                      ? "∞"
+                      : plan.limits.max_devices}
                   </div>
-                  <div className="text-[10px] text-muted-foreground uppercase tracking-wide">Devices</div>
+                  <div className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                    Devices
+                  </div>
                 </div>
               </div>
 
@@ -204,7 +246,10 @@ export default function PlansPage() {
               <div className="space-y-2.5 mb-6 flex-1">
                 {plan.features.map((feature, index) => (
                   <div key={index} className="flex items-start gap-2.5 text-sm">
-                    <Check className="size-4 text-primary shrink-0 mt-0.5" strokeWidth={2.5} />
+                    <Check
+                      className="size-4 text-primary shrink-0 mt-0.5"
+                      strokeWidth={2.5}
+                    />
                     <span className="text-muted-foreground">{feature}</span>
                   </div>
                 ))}
@@ -213,9 +258,19 @@ export default function PlansPage() {
               {/* CTA */}
               <Button
                 className="w-full"
-                variant={isCurrent ? "secondary" : isPopular ? "default" : "outline"}
-                onClick={() => !isCurrent && plan.stripe_price_id && handleCheckout(plan.stripe_price_id)}
-                disabled={isCurrent || upgrading !== null || (!plan.stripe_price_id && !isFree)}
+                variant={
+                  isCurrent ? "secondary" : isPopular ? "default" : "outline"
+                }
+                onClick={() =>
+                  !isCurrent &&
+                  plan.stripe_price_id &&
+                  handleCheckout(plan.stripe_price_id)
+                }
+                disabled={
+                  isCurrent ||
+                  upgrading !== null ||
+                  (!plan.stripe_price_id && !isFree)
+                }
               >
                 {upgrading === plan.stripe_price_id ? (
                   <>
@@ -233,16 +288,6 @@ export default function PlansPage() {
             </div>
           );
         })}
-      </div>
-
-      {/* Enterprise CTA */}
-      <div className="text-center py-8 border-t">
-        <p className="text-sm text-muted-foreground mb-3">
-          Need higher limits or custom features?
-        </p>
-        <Button variant="ghost" size="sm">
-          Contact our sales team →
-        </Button>
       </div>
     </div>
   );
