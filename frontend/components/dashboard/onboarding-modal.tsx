@@ -53,6 +53,12 @@ export function OnboardingModal() {
     fetchStats();
   }, [refreshKey]);
 
+  useEffect(() => {
+    if (open && (window as any).posthog) {
+      (window as any).posthog.capture("onboarding_started");
+    }
+  }, [open]);
+
   // If user closes modal but hasn't finished, what happens?
   // We force it open if devices == 0 ?
   // Let's allow closing for now but it will reappear on refresh if condition meets.
@@ -92,6 +98,9 @@ export function OnboardingModal() {
   };
 
   const handleComplete = () => {
+    if ((window as any).posthog) {
+      (window as any).posthog.capture("onboarding_completed");
+    }
     setOpen(false);
   };
 
@@ -145,7 +154,12 @@ export function OnboardingModal() {
             <Button
               variant="ghost"
               className="pointer-events-auto opacity-50 hover:opacity-100"
-              onClick={() => setOpen(false)}
+              onClick={() => {
+                if ((window as any).posthog) {
+                  (window as any).posthog.capture("onboarding_skipped");
+                }
+                setOpen(false);
+              }}
             >
               Skip
             </Button>

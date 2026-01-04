@@ -46,6 +46,18 @@ export default function RegisterPage() {
       const { token, user, organizations } = response.data;
 
       setAuth(token, user, organizations);
+
+      // Track registration event
+      if (typeof window !== "undefined" && (window as any).posthog) {
+        (window as any).posthog.identify(user.id, {
+          email: user.email,
+          name: user.name,
+        });
+        (window as any).posthog.capture("user_registered", {
+          method: "email",
+        });
+      }
+
       router.push("/dashboard");
     } catch (err: any) {
       setError(

@@ -5,6 +5,8 @@ import { ThemeProvider } from "@/components/theme-provider";
 import Providers from "@/components/providers";
 import { Toaster } from "@/components/ui/toaster";
 import { Analytics } from "@vercel/analytics/next";
+import { PostHogProvider } from "@/components/providers/posthog-provider";
+import SuspendedPostHogPageView from "@/components/providers/posthog-pageview";
 
 const poppinsSans = Poppins({
   variable: "--font-sans",
@@ -29,16 +31,19 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning translate="no">
       <body className={`${poppinsSans.variable} antialiased`}>
         <Providers>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="light"
-            enableSystem
-            disableTransitionOnChange
-          >
-            {children}
-            <Toaster />
-          </ThemeProvider>
-          <Analytics />
+          <PostHogProvider>
+            <SuspendedPostHogPageView />
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="light"
+              enableSystem
+              disableTransitionOnChange
+            >
+              {children}
+              <Toaster />
+            </ThemeProvider>
+            <Analytics />
+          </PostHogProvider>
         </Providers>
       </body>
     </html>

@@ -57,6 +57,11 @@ export default function PlansPage() {
       return;
     }
     setUpgrading(priceId);
+    if (typeof window !== "undefined" && (window as any).posthog) {
+      (window as any).posthog.capture("initiate_checkout", {
+        price_id: priceId,
+      });
+    }
     try {
       const response = await api.post("/billing/checkout", {
         price_id: priceId,
