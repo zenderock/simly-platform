@@ -34,17 +34,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  ArrowLeft,
-  ArrowRight,
-  Check,
-  Calendar,
-  Clock,
-  Info,
-  Smartphone,
-  Users,
-  Rocket,
-} from "lucide-react";
+
 import { listLists } from "@/lib/api/contacts";
 import { listDevices } from "@/lib/api/devices";
 import { createCampaign, launchCampaign } from "@/lib/api/campaigns";
@@ -52,6 +42,17 @@ import LoaderQuater from "@/components/loader";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/lib/auth";
 import { getErrorMessage } from "@/lib/utils";
+import {
+  IconArrowLeft,
+  IconCheck,
+  IconInfoSquareFilled,
+  IconClock2,
+  IconUsers,
+  IconDeviceMobile,
+  IconCalendarTime,
+  IconRocket,
+  IconArrowRight,
+} from "@tabler/icons-react";
 
 const steps = [
   { id: 1, title: "Details" },
@@ -210,7 +211,7 @@ export default function CreateCampaignPage() {
       <div className="border-b bg-background px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => router.back()}>
-            <ArrowLeft className="size-4" />
+            <IconArrowLeft className="size-4" />
           </Button>
           <div>
             <h1 className="text-lg font-semibold">Create Campaign</h1>
@@ -227,7 +228,7 @@ export default function CreateCampaignPage() {
                     }`}
                   >
                     {currentStep > step.id ? (
-                      <Check className="size-3" />
+                      <IconCheck className="size-3" />
                     ) : (
                       step.id
                     )}
@@ -312,7 +313,7 @@ export default function CreateCampaignPage() {
                             <div>
                               {isFreePlan && (
                                 <div className="flex items-center gap-1.5 text-[#8c52ff] dark:text-blue-400 font-medium">
-                                  <Info className="size-3" />
+                                  <IconInfoSquareFilled className="size-3" />
                                   Branding will be added (+17 chars)
                                 </div>
                               )}
@@ -472,8 +473,8 @@ export default function CreateCampaignPage() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="flex items-center gap-2">
-                            <Clock className="size-3.5" /> Schedule for Later
-                            (Optional)
+                            <IconClock2 className="size-3.5" /> Schedule for
+                            Later (Optional)
                           </FormLabel>
                           <FormControl>
                             <Input
@@ -507,7 +508,7 @@ export default function CreateCampaignPage() {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="p-4 border rounded-md bg-muted/50">
                         <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                          <Users className="size-4" />
+                          <IconUsers className="size-4" />
                           <span className="text-sm font-medium">
                             Target List
                           </span>
@@ -521,7 +522,7 @@ export default function CreateCampaignPage() {
                       </div>
                       <div className="p-4 border rounded-md bg-muted/50">
                         <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                          <Smartphone className="size-4" />
+                          <IconDeviceMobile className="size-4" />
                           <span className="text-sm font-medium">
                             Using Device
                           </span>
@@ -541,7 +542,7 @@ export default function CreateCampaignPage() {
                     {scheduledAt && (
                       <div className="p-4 border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/10 rounded-md">
                         <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 mb-1">
-                          <Calendar className="size-4" />
+                          <IconCalendarTime className="size-4" />
                           <span className="text-sm font-medium">
                             Scheduled for
                           </span>
@@ -570,7 +571,7 @@ export default function CreateCampaignPage() {
                     <Separator />
 
                     <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-md border border-blue-100 dark:border-blue-900 flex gap-3">
-                      <Rocket className="size-5 text-[#8c52ff] shrink-0" />
+                      <IconRocket className="size-5 text-[#8c52ff] shrink-0" />
                       <p className="text-sm text-blue-900 dark:text-blue-100">
                         You are about to{" "}
                         {isScheduled ? (
@@ -593,7 +594,7 @@ export default function CreateCampaignPage() {
               <div className="flex items-center justify-between">
                 {currentStep > 1 ? (
                   <Button type="button" variant="outline" onClick={prevStep}>
-                    <ArrowLeft className="mr-2 size-4" /> Back
+                    <IconArrowLeft className="mr-2 size-4" /> Back
                   </Button>
                 ) : (
                   <Button
@@ -607,7 +608,7 @@ export default function CreateCampaignPage() {
 
                 {currentStep < 3 ? (
                   <Button type="button" onClick={nextStep}>
-                    Next <ArrowRight className="ml-2 size-4" />
+                    Next <IconArrowRight className="ml-2 size-4" />
                   </Button>
                 ) : (
                   <div className="flex gap-2">

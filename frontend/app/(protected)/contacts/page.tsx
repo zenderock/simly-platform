@@ -15,15 +15,7 @@ import {
 import { getErrorMessage } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Plus,
-  Search,
-  Trash2,
-  Users,
-  MoreHorizontal,
-  Square,
-  Edit,
-} from "lucide-react";
+
 import { useState } from "react";
 import {
   Table,
@@ -65,6 +57,15 @@ import { format } from "date-fns";
 import { CreateContactDialog } from "./create-contact-dialog";
 import { ImportContactsDialog } from "./import-contacts-dialog";
 import LoaderQuater from "@/components/loader";
+import {
+  IconPlus,
+  IconUsers,
+  IconDots,
+  IconSearch,
+  IconSquare,
+  IconEdit,
+  IconTrashX,
+} from "@tabler/icons-react";
 
 export default function ContactsPage() {
   const queryClient = useQueryClient();
@@ -239,7 +240,7 @@ export default function ContactsPage() {
             <Dialog open={createListOpen} onOpenChange={setCreateListOpen}>
               <DialogTrigger asChild>
                 <Button variant="ghost" size="icon" className="size-6">
-                  <Plus className="size-3" />
+                  <IconPlus className="size-3" />
                 </Button>
               </DialogTrigger>
               <DialogContent>
@@ -298,7 +299,7 @@ export default function ContactsPage() {
               className="justify-start font-normal"
               onClick={() => setSelectedList(null)}
             >
-              <Users className="mr-2 size-4" />
+              <IconUsers className="mr-2 size-4" />
               All Contacts
             </Button>
 
@@ -323,7 +324,7 @@ export default function ContactsPage() {
                       size="icon"
                       className="size-7 opacity-0 group-hover:opacity-100 transition-opacity"
                     >
-                      <MoreHorizontal className="size-3" />
+                      <IconDots className="size-3" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
@@ -344,7 +345,7 @@ export default function ContactsPage() {
         <div className="flex-1 flex flex-col p-6 overflow-hidden">
           <div className="flex items-center gap-4 mb-4">
             <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+              <IconSearch className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
               <Input
                 placeholder="Search contacts..."
                 className="pl-9"
@@ -360,7 +361,7 @@ export default function ContactsPage() {
                 <TableHeader className="sticky top-0 bg-background z-10">
                   <TableRow>
                     <TableHead className="w-[50px]">
-                      <Square className="size-4" />
+                      <IconSquare className="size-4" />
                     </TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Phone</TableHead>
@@ -390,7 +391,7 @@ export default function ContactsPage() {
                     filteredContacts.map((contact: any) => (
                       <TableRow key={contact.id}>
                         <TableCell>
-                          <Square className="size-4 text-muted-foreground" />
+                          <IconSquare className="size-4 text-muted-foreground" />
                         </TableCell>
                         <TableCell className="font-medium">
                           {contact.first_name} {contact.last_name}
@@ -423,21 +424,21 @@ export default function ContactsPage() {
                                 size="icon"
                                 className="size-8"
                               >
-                                <MoreHorizontal className="size-4" />
+                                <IconDots className="size-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem
                                 onClick={() => handleEditContact(contact)}
                               >
-                                <Edit className="mr-2 size-4" />
+                                <IconEdit className="mr-2 size-4" />
                                 Edit
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 className="text-destructive"
                                 onClick={() => setContactToDelete(contact)}
                               >
-                                <Trash2 className="mr-2 size-4" />
+                                <IconTrashX className="mr-2 size-4" />
                                 Delete
                               </DropdownMenuItem>
                             </DropdownMenuContent>

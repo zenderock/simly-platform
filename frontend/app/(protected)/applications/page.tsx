@@ -28,20 +28,21 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useApplicationStore } from "@/store/application-store";
-import {
-  Search,
-  MoreHorizontal,
-  Pencil,
-  Trash2,
-  Folder,
-  ShieldCheck,
-  ShieldAlert,
-} from "lucide-react";
+
 import { CreateApplicationDialog } from "@/components/applications/create-application-dialog";
 import api from "@/lib/api";
 import { useToast } from "@/components/ui/use-toast";
 import LoaderQuater from "@/components/loader";
 import { Label } from "@/components/ui/label";
+import {
+  IconDots,
+  IconFolder,
+  IconPencil,
+  IconSearch,
+  IconShieldCheck,
+  IconShieldExclamation,
+  IconTrashX,
+} from "@tabler/icons-react";
 
 export default function ApplicationsPage() {
   const {
@@ -160,7 +161,7 @@ export default function ApplicationsPage() {
       <div className="space-y-4">
         {/* Search */}
         <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+          <IconSearch className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
             placeholder="Search applications..."
             className="pl-10 h-10 shadow-none border-zinc-200 dark:border-zinc-800 focus-visible:ring-[#8c52ff]"
@@ -190,7 +191,7 @@ export default function ApplicationsPage() {
                 <TableRow>
                   <TableCell colSpan={4} className="h-32 text-center">
                     <div className="flex flex-col items-center justify-center text-muted-foreground">
-                      <Folder className="size-8 mb-2 opacity-50" />
+                      <IconFolder className="size-8 mb-2 opacity-50" />
                       <p className="text-sm">No applications found</p>
                     </div>
                   </TableCell>
@@ -201,7 +202,7 @@ export default function ApplicationsPage() {
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
                         <div className="size-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-zinc-500">
-                          <Folder className="size-4" />
+                          <IconFolder className="size-4" />
                         </div>
                         <span className="font-semibold">{app.name}</span>
                       </div>
@@ -216,9 +217,9 @@ export default function ApplicationsPage() {
                         }`}
                       >
                         {app.is_sandbox ? (
-                          <ShieldAlert className="size-3" />
+                          <IconShieldExclamation className="size-3" />
                         ) : (
-                          <ShieldCheck className="size-3" />
+                          <IconShieldCheck className="size-3" />
                         )}
                         {app.is_sandbox ? "Sandbox" : "Live"}
                       </Badge>
@@ -234,14 +235,14 @@ export default function ApplicationsPage() {
                             size="icon"
                             className="size-8 text-muted-foreground"
                           >
-                            <MoreHorizontal className="size-4" />
+                            <IconDots className="size-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
                             onClick={() => openRenameDialog(app)}
                           >
-                            <Pencil className="size-4 mr-2" />
+                            <IconPencil className="size-4 mr-2" />
                             Edit
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
@@ -249,7 +250,7 @@ export default function ApplicationsPage() {
                             onClick={() => handleDelete(app.id)}
                             className="text-destructive font-bold"
                           >
-                            <Trash2 className="size-4 mr-2" />
+                            <IconTrashX className="size-4 mr-2" />
                             Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
