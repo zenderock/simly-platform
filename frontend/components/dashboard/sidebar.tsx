@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Sidebar,
   SidebarContent,
@@ -239,7 +240,7 @@ export function DashboardSidebar({
             <DropdownMenuTrigger asChild>
               <div className="flex items-center gap-2 sm:gap-3 rounded-lg border bg-card p-2 sm:p-3 mb-3 sm:mb-4 mt-4 cursor-pointer hover:bg-accent/50 transition-colors group">
                 <div
-                  className={`flex size-8 sm:size-[34px] items-center justify-center rounded-lg shrink-0 overflow-hidden ${
+                  className={`flex size-8 sm:size-[34px] items-center justify-center rounded-lg shrink-0 overflow-hidden relative ${
                     activeApp
                       ? activeApp.is_sandbox
                         ? "bg-orange-500 text-white"
@@ -247,26 +248,57 @@ export function DashboardSidebar({
                       : "bg-muted text-muted-foreground"
                   }`}
                 >
-                  {activeApp ? (
-                    activeApp.logo_url ? (
-                      <img
-                        src={activeApp.logo_url}
-                        alt={activeApp.name}
-                        className="size-full object-cover"
-                      />
-                    ) : activeApp.is_sandbox ? (
-                      <IconShieldHalfFilled className="size-4 sm:size-5" />
+                  <AnimatePresence mode="wait">
+                    {activeApp ? (
+                      <motion.div
+                        key={activeApp.id}
+                        initial={{ opacity: 0, scale: 0.5, y: 10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.5, y: -10 }}
+                        transition={{
+                          type: "spring",
+                          stiffness: 300,
+                          damping: 20,
+                        }}
+                        className="size-full flex items-center justify-center"
+                      >
+                        {activeApp.logo_url ? (
+                          <img
+                            src={activeApp.logo_url}
+                            alt={activeApp.name}
+                            className="size-full object-cover"
+                          />
+                        ) : activeApp.is_sandbox ? (
+                          <IconShieldHalfFilled className="size-4 sm:size-5" />
+                        ) : (
+                          <IconCategory2 className="size-4 sm:size-5" />
+                        )}
+                      </motion.div>
                     ) : (
-                      <IconCategory2 className="size-4 sm:size-5" />
-                    )
-                  ) : (
-                    <IconFolder className="size-4 sm:size-5" />
-                  )}
+                      <motion.div
+                        key="empty"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                      >
+                        <IconFolder className="size-4 sm:size-5" />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-xs sm:text-sm truncate">
-                    {activeApp?.name || "No App Selected"}
-                  </p>
+                  <AnimatePresence mode="wait">
+                    <motion.p
+                      key={activeApp?.id || "no-app"}
+                      initial={{ opacity: 0, x: -5 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 5 }}
+                      transition={{ duration: 0.2 }}
+                      className="font-semibold text-xs sm:text-sm truncate"
+                    >
+                      {activeApp?.name || "No App Selected"}
+                    </motion.p>
+                  </AnimatePresence>
                   {activeApp && (
                     <div className="flex items-center gap-1 text-muted-foreground font-bold tracking-tighter">
                       {activeApp.is_sandbox ? (
@@ -305,7 +337,14 @@ export function DashboardSidebar({
                   <ContextMenu key={app.id}>
                     <ContextMenuTrigger>
                       <DropdownMenuItem
-                        onClick={() => setActiveAppId(app.id)}
+                        onClick={() => {
+                          setActiveAppId(app.id);
+                          toast({
+                            title: `Switched to ${app.name}`,
+                            description: "Dashboard updated.",
+                            duration: 2000,
+                          });
+                        }}
                         className={`gap-3 h-11 px-3 ${
                           activeAppId === app.id ? "bg-accent" : ""
                         }`}
