@@ -161,7 +161,7 @@ func (p *DevicePoolManager) GetCooldownRemaining(deviceID int) time.Duration {
 		return 0
 	}
 
-	remaining := state.CooldownUntil.Sub(time.Now())
+	remaining := time.Until(*state.CooldownUntil)
 	if remaining < 0 {
 		return 0
 	}
@@ -179,7 +179,7 @@ func (p *DevicePoolManager) GetSendCount10Min(deviceID int) int {
 	}
 
 	// Check if window has expired
-	if time.Now().Sub(state.WindowStart) >= CooldownWindowDuration {
+	if time.Since(state.WindowStart) >= CooldownWindowDuration {
 		return 0
 	}
 
@@ -245,7 +245,7 @@ func (p *DevicePoolManager) GetSuspensionRemaining(deviceID int) time.Duration {
 		return 0
 	}
 
-	remaining := state.SuspendedUntil.Sub(time.Now())
+	remaining := time.Until(*state.SuspendedUntil)
 	if remaining < 0 {
 		return 0
 	}
@@ -336,6 +336,24 @@ func (p *DevicePoolManager) GetNextAvailableDevice(ctx context.Context, orgID in
 		device := candidates[idx]
 
 		if p.IsDeviceAvailable(device.ID, throttleRate) {
+			// Check daily limit
+			// We check if the limit for today is reached.
+			// If LastResetDate is previous day, we consider SentToday as 0 (it will be reset on next send via DB trigger/query)
+			if device.DailyLimit > 0 {
+				today := time.Now().UTC().Truncate(24 * time.Hour)
+				lastReset := time.Time{}
+				if device.LastResetDate != nil {
+					lastReset = device.LastResetDate.UTC().Truncate(24 * time.Hour)
+				}
+
+				if lastReset.Equal(today) {
+					if device.SentToday >= device.DailyLimit {
+						continue // Daily limit reached
+					}
+				}
+				// If lastReset < today, effectively SentToday is 0, so we allow
+			}
+
 			// Update last used index
 			p.mu.Lock()
 			p.lastDeviceIndex[orgID] = idx

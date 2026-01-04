@@ -160,6 +160,12 @@ func (w *RedisWorker) HandleSMSDeliveryTask(ctx context.Context, t *asynq.Task) 
 	w.devicePool.RecordSend(device.ID)
 	w.devicePool.RecordSuccess(device.ID)
 
+	// Increment daily count in DB
+	if err := w.store.IncrementDeviceDailyCount(ctx, device.ID); err != nil {
+		log.Printf("[Worker] Failed to increment daily count for device %d: %v", device.ID, err)
+		// Non-critical error, proceed
+	}
+
 	log.Printf("[Worker] Successfully dispatched Message %d to Device %d", msgID, device.ID)
 	return nil
 }

@@ -68,6 +68,8 @@ export interface Device {
   sim_cards: SimCard[];
   requires_setup: boolean;
   last_seen_at?: string;
+  daily_limit?: number;
+  sent_today?: number;
   created_at: string;
   updated_at: string;
 }

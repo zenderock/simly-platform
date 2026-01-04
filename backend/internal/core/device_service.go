@@ -160,6 +160,10 @@ func (s *DeviceService) UpdateDevice(ctx context.Context, deviceID, orgID int, r
 	device.Name = req.Name
 	device.Tags = req.Tags
 
+	if req.DailyLimit != nil {
+		device.DailyLimit = *req.DailyLimit
+	}
+
 	if err := s.store.UpdateDevice(ctx, device); err != nil {
 		return err
 	}
