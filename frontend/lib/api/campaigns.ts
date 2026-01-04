@@ -24,6 +24,7 @@ export interface CreateCampaignRequest {
   device_id: number;
   sim_slot?: number | null;
   scheduled_at?: string;
+  auto_launch?: boolean;
 }
 
 export interface CampaignAnalytics {

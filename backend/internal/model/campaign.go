@@ -44,6 +44,7 @@ type CreateCampaignRequest struct {
 	SendWindowStart *int       `json:"send_window_start,omitempty"`
 	SendWindowEnd   *int       `json:"send_window_end,omitempty"`
 	UseAllDevices   bool       `json:"use_all_devices"`
+	AutoLaunch      bool       `json:"auto_launch,omitempty"`
 }
 type CampaignAnalytics struct {
 	CampaignID int            `json:"campaign_id"`

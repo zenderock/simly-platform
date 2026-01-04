@@ -81,6 +81,20 @@ func (s *CampaignService) CreateCampaign(ctx context.Context, orgID int, req mod
 	if err := s.store.CreateCampaign(ctx, campaign); err != nil {
 		return nil, err
 	}
+
+	// Auto Launch if requested and not scheduled
+	if req.AutoLaunch && req.ScheduledAt == nil {
+		if err := s.LaunchCampaign(ctx, campaign.ID, orgID); err != nil {
+			// If launch fails, we still return the campaign but maybe log error?
+			// Or we return error? If we return error, client thinks creation failed.
+			// Better to log and return campaign, but client won't know launch failed.
+			// Actually, if launch fails, we should probably return error so client knows.
+			return campaign, fmt.Errorf("campaign created but launch failed: %w", err)
+		}
+		// Refresh campaign status in returned object
+		campaign.Status = model.CampaignStatusProcessing
+	}
+
 	return campaign, nil
 }
 

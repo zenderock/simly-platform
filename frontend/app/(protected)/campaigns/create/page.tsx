@@ -130,34 +130,19 @@ export default function CreateCampaignPage() {
     mutationFn: createCampaign,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["campaigns"] });
-      // If launching immediately AND NOT scheduled
+
       if (isLaunchingRef.current && !isScheduled) {
-        launchMutation.mutate(data.id);
+        toast.success("Campaign created and launched successfully!");
+      } else if (isScheduled) {
+        toast.success("Campaign scheduled successfully");
       } else {
-        toast.success(
-          isScheduled
-            ? "Campaign scheduled successfully"
-            : "Campaign draft created"
-        );
-        router.push("/campaigns");
+        toast.success("Campaign draft created");
       }
+      router.push("/campaigns");
     },
     onError: (error: any) => {
       const msg = getErrorMessage(error);
       toast.error(msg);
-    },
-  });
-
-  const launchMutation = useMutation({
-    mutationFn: launchCampaign,
-    onSuccess: () => {
-      toast.success("Campaign launched successfully!");
-      router.push("/campaigns");
-    },
-    onError: (error: any) => {
-      const msg = getErrorMessage(error);
-      toast.error(`Campaign created but launch failed: ${msg}`);
-      router.push("/campaigns");
     },
   });
 
@@ -195,6 +180,7 @@ export default function CreateCampaignPage() {
       sim_slot:
         data.sim_slot === "auto" ? null : parseInt(data.sim_slot || "0"),
       scheduled_at: formattedScheduledAt,
+      auto_launch: isLaunchingRef.current && !formattedScheduledAt,
     });
   };
 
@@ -615,23 +601,18 @@ export default function CreateCampaignPage() {
                     <Button
                       type="submit"
                       variant="outline"
-                      disabled={
-                        createMutation.isPending || launchMutation.isPending
-                      }
+                      disabled={createMutation.isPending}
                       onClick={() => (isLaunchingRef.current = false)}
                     >
                       Save Draft
                     </Button>
                     <Button
                       type="submit"
-                      disabled={
-                        createMutation.isPending || launchMutation.isPending
-                      }
+                      disabled={createMutation.isPending}
                       onClick={() => (isLaunchingRef.current = true)}
                       className="bg-[#8c52ff] hover:bg-[#8c52ff]/80 text-white"
                     >
-                      {(createMutation.isPending ||
-                        launchMutation.isPending) && (
+                      {createMutation.isPending && (
                         <LoaderQuater className="mr-2" />
                       )}
                       {isScheduled ? "Schedule Campaign" : "Launch Campaign"}
