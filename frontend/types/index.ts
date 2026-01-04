@@ -23,6 +23,8 @@ export interface SimCard {
   operator: string;
   is_active: boolean;
   supported_prefixes?: string;
+  daily_limit: number;
+  sent_today: number;
 }
 
 export interface User {
@@ -53,6 +55,7 @@ export interface APIKey {
   key?: string; // Only on creation
   last_used_at?: string;
   created_at: string;
+  updated_at?: string;
 }
 
 
@@ -68,8 +71,6 @@ export interface Device {
   sim_cards: SimCard[];
   requires_setup: boolean;
   last_seen_at?: string;
-  daily_limit?: number;
-  sent_today?: number;
   created_at: string;
   updated_at: string;
 }

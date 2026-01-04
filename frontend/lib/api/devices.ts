@@ -23,10 +23,10 @@ export const linkDevice = async (token: string): Promise<Device> => {
 export interface UpdateDeviceRequest {
   name?: string;
   tags?: string[];
-  daily_limit?: number;
   sim_configs?: {
     slot_index: number;
     supported_prefixes: string;
+    daily_limit?: number;
   }[];
 }
 

@@ -18,6 +18,7 @@ import { Loader2 } from "lucide-react";
 import LoaderQuater from "../loader";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SimPrefixConfig } from "./sim-prefix-config";
 import { toast } from "sonner";
 
@@ -33,13 +34,12 @@ export function DeviceSettingsDialog({
   onOpenChange,
 }: DeviceSettingsDialogProps) {
   const [name, setName] = useState("");
-  const [dailyLimit, setDailyLimit] = useState(150);
+
   const updateDevice = useUpdateDevice();
 
   useEffect(() => {
     if (device) {
       setName(device.name);
-      setDailyLimit(device.daily_limit ?? 150);
     }
   }, [device]);
 
@@ -50,7 +50,6 @@ export function DeviceSettingsDialog({
         id: device.id,
         data: {
           name,
-          daily_limit: dailyLimit,
           tags: device.tags || [],
         },
       });
@@ -68,7 +67,7 @@ export function DeviceSettingsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Device Settings</DialogTitle>
           <DialogDescription>
@@ -76,79 +75,57 @@ export function DeviceSettingsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="name">Device Name</Label>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs"
-                onClick={handleUpdateName}
-                disabled={updateDevice.isPending || name === device.name}
-              >
-                Update Name
-              </Button>
+        <Tabs defaultValue="general" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-4">
+            <TabsTrigger value="general">General</TabsTrigger>
+            <TabsTrigger value="sims">SIM Configuration</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="general" className="space-y-4 py-2">
+            <div className="space-y-4">
+              <div className="bg-zinc-50 dark:bg-zinc-900/50 p-4 rounded-xl border border-zinc-100 dark:border-zinc-800">
+                <div className="space-y-4">
+                  <div className="flex flex-col space-y-1.5">
+                    <Label htmlFor="name" className="text-sm font-bold">
+                      Device Name
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      A friendly name to identify this device in your dashboard.
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Input
+                      id="name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="e.g. Office Gateway 1"
+                      className="bg-white dark:bg-zinc-950"
+                    />
+                    <Button
+                      onClick={handleUpdateSettings}
+                      disabled={updateDevice.isPending || name === device.name}
+                      className="shrink-0"
+                    >
+                      {updateDevice.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        "Save"
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Office Gateway 1"
+          </TabsContent>
+
+          <TabsContent value="sims" className="space-y-4 py-2">
+            <SimPrefixConfig
+              device={device}
+              onSuccess={() => onOpenChange(false)}
+              onCancel={() => onOpenChange(false)}
             />
-          </div>
-
-          <Separator />
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="dailyLimit">Daily SMS Limit</Label>
-              <span className="text-xs text-muted-foreground">
-                Sent Today: {device.sent_today || 0}
-              </span>
-            </div>
-            <p className="text-[0.8rem] text-muted-foreground">
-              Maximum number of SMS this device can send per day to avoid SIM
-              blocking.
-            </p>
-            <div className="flex gap-2">
-              <Input
-                id="dailyLimit"
-                type="number"
-                value={dailyLimit}
-                onChange={(e) => setDailyLimit(parseInt(e.target.value) || 0)}
-                placeholder="150"
-              />
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleUpdateSettings}
-                disabled={
-                  updateDevice.isPending ||
-                  dailyLimit === (device.daily_limit || 150)
-                }
-              >
-                <Loader2
-                  className={`h-4 w-4 ${
-                    updateDevice.isPending ? "animate-spin" : "opacity-0"
-                  }`}
-                />
-                {!updateDevice.isPending && (
-                  <span className="sr-only">Save</span>
-                )}
-                {!updateDevice.isPending && "💾"}
-              </Button>
-            </div>
-          </div>
-
-          <Separator />
-
-          <SimPrefixConfig
-            device={device}
-            onSuccess={() => onOpenChange(false)}
-            onCancel={() => onOpenChange(false)}
-          />
-        </div>
+          </TabsContent>
+        </Tabs>
       </DialogContent>
     </Dialog>
   );

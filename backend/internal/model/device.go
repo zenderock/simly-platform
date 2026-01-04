@@ -18,21 +18,21 @@ type Device struct {
 	RequiresSetup      bool       `json:"requires_setup"`
 	LastSeenAt         *time.Time `json:"last_seen_at"`
 	LastBatteryAlertAt *time.Time `json:"last_battery_alert_at"`
-	DailyLimit         int        `json:"daily_limit"` // Max SMS per day (default 150)
-	SentToday          int        `json:"sent_today"`
-	LastResetDate      *time.Time `json:"last_reset_date"`
 	CreatedAt          time.Time  `json:"created_at"`
 	UpdatedAt          time.Time  `json:"updated_at"`
 }
 
 type SimCard struct {
-	ID                int    `json:"id"`
-	DeviceID          int    `json:"device_id"`
-	SlotIndex         int    `json:"slot_index"` // 0 or 1
-	PhoneNumber       string `json:"phone_number"`
-	Operator          string `json:"operator"`
-	IsActive          bool   `json:"is_active"`
-	SupportedPrefixes string `json:"supported_prefixes"`
+	ID                int        `json:"id"`
+	DeviceID          int        `json:"device_id"`
+	SlotIndex         int        `json:"slot_index"` // 0 or 1
+	PhoneNumber       string     `json:"phone_number"`
+	Operator          string     `json:"operator"`
+	IsActive          bool       `json:"is_active"`
+	SupportedPrefixes string     `json:"supported_prefixes"`
+	DailyLimit        int        `json:"daily_limit"` // Max SMS per day (default 150)
+	SentToday         int        `json:"sent_today"`
+	LastResetDate     *time.Time `json:"last_reset_date"`
 }
 
 type RegisterDeviceRequest struct {
@@ -45,7 +45,6 @@ type RegisterDeviceRequest struct {
 type UpdateDeviceRequest struct {
 	Name       string                 `json:"name"`
 	Tags       []string               `json:"tags"`
-	DailyLimit *int                   `json:"daily_limit"` // Optional update
 	SimConfigs []UpdateSimCardRequest `json:"sim_configs"`
 }
 
@@ -62,6 +61,7 @@ type UpdateSimCardRequest struct {
 	Operator          string `json:"operator"`
 	IsActive          bool   `json:"is_active"`
 	SupportedPrefixes string `json:"supported_prefixes"`
+	DailyLimit        *int   `json:"daily_limit,omitempty"`
 }
 
 // Token used for QR Code linking flow (optional, but good practice)

@@ -378,17 +378,21 @@ func (s *MessageService) NotifyDeviceWithExclusion(ctx context.Context, msg *mod
 	} else {
 		// Use DevicePoolManager if available, otherwise fallback to old method
 		if s.devicePoolManager != nil {
-			device, err = s.devicePoolManager.GetNextAvailableDevice(ctx, msg.OrganizationID, msg.RequiredTags)
+			var slotIndex int
+			device, slotIndex, err = s.devicePoolManager.GetNextAvailableDevice(ctx, msg.OrganizationID, msg.RequiredTags)
+			if err == nil && slotIndex != -1 {
+				msg.SimSlot = &slotIndex
+			}
 		} else {
 			device, err = s.selectBestDevice(ctx, msg.OrganizationID, msg.RequiredTags, excludeID)
 		}
 
 		if err == nil && device != nil {
-			// Update message with selected device
-			if updateErr := s.store.UpdateMessageDevice(ctx, msg.ID, device.ID); updateErr != nil {
+			// Update message with selected device and slot
+			if updateErr := s.store.UpdateMessageDeviceAndSlot(ctx, msg.ID, device.ID, msg.SimSlot); updateErr != nil {
 				log.Printf("Warning: failed to update message %d with device %d: %v\n", msg.ID, device.ID, updateErr)
 			} else {
-				log.Printf("Message %d assigned to device %d (%s)\n", msg.ID, device.ID, device.Name)
+				log.Printf("Message %d assigned to device %d (%s) slot %v\n", msg.ID, device.ID, device.Name, msg.SimSlot)
 			}
 			msg.DeviceID = &device.ID
 

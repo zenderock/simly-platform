@@ -139,7 +139,7 @@ func (w *RedisWorker) HandleSMSDeliveryTask(ctx context.Context, t *asynq.Task) 
 	}
 
 	// Get available device
-	device, err := w.devicePool.GetNextAvailableDevice(ctx, msg.OrganizationID, msg.RequiredTags)
+	device, slotIndex, err := w.devicePool.GetNextAvailableDevice(ctx, msg.OrganizationID, msg.RequiredTags)
 	if err != nil {
 		return fmt.Errorf("failed to get device: %w", err)
 	}
@@ -150,7 +150,7 @@ func (w *RedisWorker) HandleSMSDeliveryTask(ctx context.Context, t *asynq.Task) 
 	}
 
 	// Dispatch
-	if err := w.dispatchMessage(ctx, msg, device); err != nil {
+	if err := w.dispatchMessage(ctx, msg, device, slotIndex); err != nil {
 		// Record failure
 		w.devicePool.RecordFailure(device.ID)
 		return fmt.Errorf("dispatch failed: %w", err)
@@ -160,24 +160,38 @@ func (w *RedisWorker) HandleSMSDeliveryTask(ctx context.Context, t *asynq.Task) 
 	w.devicePool.RecordSend(device.ID)
 	w.devicePool.RecordSuccess(device.ID)
 
-	// Increment daily count in DB
-	if err := w.store.IncrementDeviceDailyCount(ctx, device.ID); err != nil {
-		log.Printf("[Worker] Failed to increment daily count for device %d: %v", device.ID, err)
-		// Non-critical error, proceed
+	// Increment daily count in DB for specific SIM
+	// We need to find the SIM ID from the slot index
+	var simID int
+	for _, sim := range device.SimCards {
+		if sim.SlotIndex == slotIndex {
+			simID = sim.ID
+			break
+		}
 	}
 
-	log.Printf("[Worker] Successfully dispatched Message %d to Device %d", msgID, device.ID)
+	if simID != 0 {
+		if err := w.store.IncrementSimDailyCount(ctx, simID); err != nil {
+			log.Printf("[Worker] Failed to increment daily count for sim %d (device %d): %v", simID, device.ID, err)
+			// Non-critical error, proceed
+		}
+	} else {
+		log.Printf("[Worker] Could not find SIM ID for slot %d in device %d", slotIndex, device.ID)
+	}
+
+	log.Printf("[Worker] Successfully dispatched Message %d to Device %d (Slot %d)", msgID, device.ID, slotIndex)
 	return nil
 }
 
-func (w *RedisWorker) dispatchMessage(ctx context.Context, msg *model.Message, device *model.Device) error {
-	// Update message with device assignment and change status to pending
-	if err := w.store.UpdateMessageDeviceAndStatus(ctx, msg.ID, device.ID, model.MessageStatusPending); err != nil {
-		return fmt.Errorf("failed to update message device: %w", err)
+func (w *RedisWorker) dispatchMessage(ctx context.Context, msg *model.Message, device *model.Device, slotIndex int) error {
+	// Update message with device assignment, sim slot and change status to pending
+	if err := w.store.UpdateMessageDispatchInfo(ctx, msg.ID, device.ID, slotIndex, model.MessageStatusPending); err != nil {
+		return fmt.Errorf("failed to update message device/slot: %w", err)
 	}
 
 	// Notify via MessageService (uses FCM)
 	msg.DeviceID = &device.ID
+	msg.SimSlot = &slotIndex
 	msg.Status = model.MessageStatusPending
 
 	if err := w.messageService.NotifyDevice(ctx, msg); err != nil {

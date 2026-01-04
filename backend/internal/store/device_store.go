@@ -47,7 +47,7 @@ func (s *Store) CreateSimCard(ctx context.Context, sim *model.SimCard) error {
 
 func (s *Store) GetDevicesByOrganizationID(ctx context.Context, orgID int) ([]model.Device, error) {
 	query := `
-		SELECT id, organization_id, name, model, fcm_token, status, battery_level, signal_strength, tags, requires_setup, last_seen_at, last_battery_alert_at, daily_limit, sent_today, last_reset_date, created_at, updated_at
+		SELECT id, organization_id, name, model, fcm_token, status, battery_level, signal_strength, tags, requires_setup, last_seen_at, last_battery_alert_at, created_at, updated_at
 		FROM devices
 		WHERE organization_id = $1
 		ORDER BY created_at DESC
@@ -62,7 +62,7 @@ func (s *Store) GetDevicesByOrganizationID(ctx context.Context, orgID int) ([]mo
 	for rows.Next() {
 		var d model.Device
 		var tags []string
-		if err := rows.Scan(&d.ID, &d.OrganizationID, &d.Name, &d.Model, &d.FCMToken, &d.Status, &d.BatteryLevel, &d.SignalStrength, &tags, &d.RequiresSetup, &d.LastSeenAt, &d.LastBatteryAlertAt, &d.DailyLimit, &d.SentToday, &d.LastResetDate, &d.CreatedAt, &d.UpdatedAt); err != nil {
+		if err := rows.Scan(&d.ID, &d.OrganizationID, &d.Name, &d.Model, &d.FCMToken, &d.Status, &d.BatteryLevel, &d.SignalStrength, &tags, &d.RequiresSetup, &d.LastSeenAt, &d.LastBatteryAlertAt, &d.CreatedAt, &d.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("failed to scan device: %w", err)
 		}
 		d.Tags = tags
@@ -81,7 +81,7 @@ func (s *Store) GetDevicesByOrganizationID(ctx context.Context, orgID int) ([]mo
 
 func (s *Store) GetSimCardsByDeviceID(ctx context.Context, deviceID int) ([]model.SimCard, error) {
 	query := `
-		SELECT id, device_id, slot_index, phone_number, operator, is_active, COALESCE(supported_prefixes, '')
+		SELECT id, device_id, slot_index, phone_number, operator, is_active, COALESCE(supported_prefixes, ''), daily_limit, sent_today, last_reset_date
 		FROM device_sims
 		WHERE device_id = $1
 		ORDER BY slot_index ASC
@@ -95,7 +95,7 @@ func (s *Store) GetSimCardsByDeviceID(ctx context.Context, deviceID int) ([]mode
 	var sims []model.SimCard
 	for rows.Next() {
 		var sim model.SimCard
-		if err := rows.Scan(&sim.ID, &sim.DeviceID, &sim.SlotIndex, &sim.PhoneNumber, &sim.Operator, &sim.IsActive, &sim.SupportedPrefixes); err != nil {
+		if err := rows.Scan(&sim.ID, &sim.DeviceID, &sim.SlotIndex, &sim.PhoneNumber, &sim.Operator, &sim.IsActive, &sim.SupportedPrefixes, &sim.DailyLimit, &sim.SentToday, &sim.LastResetDate); err != nil {
 			return nil, fmt.Errorf("failed to scan sim card: %w", err)
 		}
 		sims = append(sims, sim)
@@ -105,13 +105,13 @@ func (s *Store) GetSimCardsByDeviceID(ctx context.Context, deviceID int) ([]mode
 
 func (s *Store) GetDeviceByID(ctx context.Context, id int) (*model.Device, error) {
 	query := `
-		SELECT id, organization_id, name, model, fcm_token, status, battery_level, signal_strength, tags, requires_setup, last_seen_at, last_battery_alert_at, daily_limit, sent_today, last_reset_date, created_at, updated_at
+		SELECT id, organization_id, name, model, fcm_token, status, battery_level, signal_strength, tags, requires_setup, last_seen_at, last_battery_alert_at, created_at, updated_at
 		FROM devices
 		WHERE id = $1
 	`
 	var d model.Device
 	var tags []string
-	err := s.db.QueryRow(ctx, query, id).Scan(&d.ID, &d.OrganizationID, &d.Name, &d.Model, &d.FCMToken, &d.Status, &d.BatteryLevel, &d.SignalStrength, &tags, &d.RequiresSetup, &d.LastSeenAt, &d.LastBatteryAlertAt, &d.DailyLimit, &d.SentToday, &d.LastResetDate, &d.CreatedAt, &d.UpdatedAt)
+	err := s.db.QueryRow(ctx, query, id).Scan(&d.ID, &d.OrganizationID, &d.Name, &d.Model, &d.FCMToken, &d.Status, &d.BatteryLevel, &d.SignalStrength, &tags, &d.RequiresSetup, &d.LastSeenAt, &d.LastBatteryAlertAt, &d.CreatedAt, &d.UpdatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get device: %w", err)
 	}
@@ -163,7 +163,7 @@ func (s *Store) UpdateDeviceSimCards(ctx context.Context, deviceID int, simCards
 
 		// Insert new SIM cards
 		for _, sim := range simCards {
-			// Restore prefixes if available and not overwritten by request (assuming request sends empty if from mobile)
+			// Restore prefixes if available and not overwritten by request
 			prefixes := sim.SupportedPrefixes
 			if prefixes == "" {
 				if existing, ok := prefixMap[sim.SlotIndex]; ok {
@@ -171,12 +171,44 @@ func (s *Store) UpdateDeviceSimCards(ctx context.Context, deviceID int, simCards
 				}
 			}
 
-			log.Printf("Inserting SIM: slot=%d, number=%s, operator=%s, prefixes=%s", sim.SlotIndex, sim.PhoneNumber, sim.Operator, prefixes)
+			// Restore daily limit/counts from existing SIM if available
+			// Start with defaults
+			// Default limit: 150
+			limit := 150
+			sentToday := 0
+			lastReset := time.Now() // Will be set to CURRENT_DATE by DB default or explicit value
+
+			// Check if we have an existing SIM for this slot
+			// We need to fetch full SIM objects to do this properly,
+			// relying just on prefixMap (string) is insufficient.
+			// Re-fetch logic: find existing SIM for this slot in existingSims list
+			var existingSim *model.SimCard
+			for i := range existingSims {
+				if existingSims[i].SlotIndex == sim.SlotIndex {
+					existingSim = &existingSims[i]
+					break
+				}
+			}
+
+			if existingSim != nil {
+				limit = existingSim.DailyLimit
+				sentToday = existingSim.SentToday
+				if existingSim.LastResetDate != nil {
+					lastReset = *existingSim.LastResetDate
+				}
+			}
+
+			// If request updates daily_limit, use it
+			if sim.DailyLimit != nil {
+				limit = *sim.DailyLimit
+			}
+
+			log.Printf("Inserting SIM: slot=%d, number=%s, operator=%s, prefixes=%s, limit=%d", sim.SlotIndex, sim.PhoneNumber, sim.Operator, prefixes, limit)
 			query := `
-				INSERT INTO device_sims (device_id, slot_index, phone_number, operator, is_active, supported_prefixes, created_at, updated_at)
-				VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+				INSERT INTO device_sims (device_id, slot_index, phone_number, operator, is_active, supported_prefixes, daily_limit, sent_today, last_reset_date, created_at, updated_at)
+				VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
 			`
-			_, err = tx.db.Exec(ctx, query, deviceID, sim.SlotIndex, sim.PhoneNumber, sim.Operator, sim.IsActive, prefixes)
+			_, err = tx.db.Exec(ctx, query, deviceID, sim.SlotIndex, sim.PhoneNumber, sim.Operator, sim.IsActive, prefixes, limit, sentToday, lastReset)
 			if err != nil {
 				return err
 			}
@@ -320,13 +352,13 @@ func (s *Store) UpdateDeviceStatus(ctx context.Context, id int, status string) e
 }
 func (s *Store) GetDeviceByName(ctx context.Context, orgID int, name string) (*model.Device, error) {
 	query := `
-		SELECT id, organization_id, name, model, fcm_token, status, battery_level, signal_strength, tags, requires_setup, last_seen_at, last_battery_alert_at, daily_limit, sent_today, last_reset_date, created_at, updated_at
+		SELECT id, organization_id, name, model, fcm_token, status, battery_level, signal_strength, tags, requires_setup, last_seen_at, last_battery_alert_at, created_at, updated_at
 		FROM devices
 		WHERE organization_id = $1 AND name = $2
 	`
 	var d model.Device
 	var tags []string
-	err := s.db.QueryRow(ctx, query, orgID, name).Scan(&d.ID, &d.OrganizationID, &d.Name, &d.Model, &d.FCMToken, &d.Status, &d.BatteryLevel, &d.SignalStrength, &tags, &d.RequiresSetup, &d.LastSeenAt, &d.LastBatteryAlertAt, &d.DailyLimit, &d.SentToday, &d.LastResetDate, &d.CreatedAt, &d.UpdatedAt)
+	err := s.db.QueryRow(ctx, query, orgID, name).Scan(&d.ID, &d.OrganizationID, &d.Name, &d.Model, &d.FCMToken, &d.Status, &d.BatteryLevel, &d.SignalStrength, &tags, &d.RequiresSetup, &d.LastSeenAt, &d.LastBatteryAlertAt, &d.CreatedAt, &d.UpdatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get device: %w", err)
 	}
@@ -337,20 +369,20 @@ func (s *Store) GetDeviceByName(ctx context.Context, orgID int, name string) (*m
 func (s *Store) UpdateDevice(ctx context.Context, d *model.Device) error {
 	query := `
 		UPDATE devices 
-		SET organization_id=$1, name=$2, model=$3, fcm_token=$4, status=$5, battery_level=$6, signal_strength=$7, tags=$8, requires_setup=$9, last_seen_at=$10, daily_limit=$11, updated_at=NOW()
-		WHERE id=$12
+		SET organization_id=$1, name=$2, model=$3, fcm_token=$4, status=$5, battery_level=$6, signal_strength=$7, tags=$8, requires_setup=$9, last_seen_at=$10, updated_at=NOW()
+		WHERE id=$11
 	`
 	tags := d.Tags
 	if tags == nil {
 		tags = []string{}
 	}
-	_, err := s.db.Exec(ctx, query, d.OrganizationID, d.Name, d.Model, d.FCMToken, d.Status, d.BatteryLevel, d.SignalStrength, tags, d.RequiresSetup, d.LastSeenAt, d.DailyLimit, d.ID)
+	_, err := s.db.Exec(ctx, query, d.OrganizationID, d.Name, d.Model, d.FCMToken, d.Status, d.BatteryLevel, d.SignalStrength, tags, d.RequiresSetup, d.LastSeenAt, d.ID)
 	return err
 }
 
-func (s *Store) IncrementDeviceDailyCount(ctx context.Context, deviceID int) error {
+func (s *Store) IncrementSimDailyCount(ctx context.Context, simID int) error {
 	query := `
-		UPDATE devices
+		UPDATE device_sims
 		SET 
 			sent_today = CASE 
 				WHEN last_reset_date < CURRENT_DATE THEN 1 
@@ -360,6 +392,6 @@ func (s *Store) IncrementDeviceDailyCount(ctx context.Context, deviceID int) err
 			updated_at = NOW()
 		WHERE id = $1
 	`
-	_, err := s.db.Exec(ctx, query, deviceID)
+	_, err := s.db.Exec(ctx, query, simID)
 	return err
 }

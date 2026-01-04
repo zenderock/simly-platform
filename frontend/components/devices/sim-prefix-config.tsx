@@ -27,6 +27,7 @@ export function SimPrefixConfig({
   isOnboarding = false,
 }: SimPrefixConfigProps) {
   const [simPrefixes, setSimPrefixes] = useState<Record<number, string>>({});
+  const [dailyLimits, setDailyLimits] = useState<Record<number, number>>({});
   const [generatingSlots, setGeneratingSlots] = useState<
     Record<number, boolean>
   >({});
@@ -35,10 +36,13 @@ export function SimPrefixConfig({
   useEffect(() => {
     if (device) {
       const prefixes: Record<number, string> = {};
+      const limits: Record<number, number> = {};
       device.sim_cards?.forEach((sim) => {
         prefixes[sim.slot_index] = sim.supported_prefixes || "";
+        limits[sim.slot_index] = sim.daily_limit ?? 150;
       });
       setSimPrefixes(prefixes);
+      setDailyLimits(limits);
     }
   }, [device]);
 
@@ -74,6 +78,7 @@ export function SimPrefixConfig({
       const simConfigs = Object.entries(simPrefixes).map(([slot, prefix]) => ({
         slot_index: parseInt(slot),
         supported_prefixes: prefix,
+        daily_limit: dailyLimits[parseInt(slot)] || 150,
       }));
 
       await updateDevice.mutateAsync({
@@ -129,6 +134,14 @@ export function SimPrefixConfig({
                     </span>
                   </div>
                 </div>
+                <div className="flex flex-col items-end">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                    Sent Today
+                  </span>
+                  <span className="font-mono text-xs font-bold">
+                    {sim.sent_today || 0} / {sim.daily_limit || 150}
+                  </span>
+                </div>
               </div>
 
               <div className="space-y-2.5">
@@ -157,18 +170,39 @@ export function SimPrefixConfig({
                     Smart Generate
                   </Button>
                 </div>
-                <Input
-                  id={`sim-${sim.slot_index}`}
-                  value={simPrefixes[sim.slot_index] || ""}
-                  onChange={(e) =>
-                    setSimPrefixes({
-                      ...simPrefixes,
-                      [sim.slot_index]: e.target.value,
-                    })
-                  }
-                  placeholder="Enter prefixes (comma separated)..."
-                  className="h-10 text-sm bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-1 focus:ring-primary/20"
-                />
+                <div className="grid grid-cols-12 gap-3">
+                  <div className="col-span-8">
+                    <Input
+                      id={`sim-${sim.slot_index}`}
+                      value={simPrefixes[sim.slot_index] || ""}
+                      onChange={(e) =>
+                        setSimPrefixes({
+                          ...simPrefixes,
+                          [sim.slot_index]: e.target.value,
+                        })
+                      }
+                      placeholder="Enter prefixes (comma separated)..."
+                      className="h-10 text-sm bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-1 focus:ring-primary/20"
+                    />
+                  </div>
+                  <div className="col-span-4 relative">
+                    <Input
+                      type="number"
+                      value={dailyLimits[sim.slot_index] || ""}
+                      onChange={(e) =>
+                        setDailyLimits({
+                          ...dailyLimits,
+                          [sim.slot_index]: parseInt(e.target.value) || 0,
+                        })
+                      }
+                      placeholder="Limit"
+                      className="h-10 text-sm bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 rounded-lg focus:ring-1 focus:ring-primary/20"
+                    />
+                    <div className="absolute right-3 top-2.5 text-[10px] font-bold text-zinc-400 pointer-events-none">
+                      SMS/Day
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           ))}

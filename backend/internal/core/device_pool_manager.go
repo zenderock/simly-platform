@@ -286,22 +286,22 @@ func (p *DevicePoolManager) IsDeviceAvailable(deviceID int, throttleRateSeconds 
 	return true
 }
 
-// GetNextAvailableDevice selects the next available device using round-robin
-func (p *DevicePoolManager) GetNextAvailableDevice(ctx context.Context, orgID int, requiredTags []string) (*model.Device, error) {
+// GetNextAvailableDevice selects the next available device and SIM slot using round-robin
+func (p *DevicePoolManager) GetNextAvailableDevice(ctx context.Context, orgID int, requiredTags []string) (*model.Device, int, error) {
 	// Get all devices for the organization
 	devices, err := p.store.GetDevicesByOrganizationID(ctx, orgID)
 	if err != nil {
-		return nil, err
+		return nil, -1, err
 	}
 
 	if len(devices) == 0 {
-		return nil, nil
+		return nil, -1, nil
 	}
 
 	// Get organization throttle rate
 	org, err := p.store.GetOrganizationByID(ctx, orgID)
 	if err != nil {
-		return nil, err
+		return nil, -1, err
 	}
 	throttleRate := org.SMSThrottleRateSeconds
 	if throttleRate <= 0 {
@@ -321,7 +321,7 @@ func (p *DevicePoolManager) GetNextAvailableDevice(ctx context.Context, orgID in
 	}
 
 	if len(candidates) == 0 {
-		return nil, nil
+		return nil, -1, nil
 	}
 
 	// Get last used index for this org
@@ -336,35 +336,49 @@ func (p *DevicePoolManager) GetNextAvailableDevice(ctx context.Context, orgID in
 		device := candidates[idx]
 
 		if p.IsDeviceAvailable(device.ID, throttleRate) {
-			// Check daily limit
-			// We check if the limit for today is reached.
-			// If LastResetDate is previous day, we consider SentToday as 0 (it will be reset on next send via DB trigger/query)
-			if device.DailyLimit > 0 {
-				today := time.Now().UTC().Truncate(24 * time.Hour)
-				lastReset := time.Time{}
-				if device.LastResetDate != nil {
-					lastReset = device.LastResetDate.UTC().Truncate(24 * time.Hour)
+			// Iterate through SIM cards to find one that has not reached its daily limit
+			validSlot := -1
+			for _, sim := range device.SimCards {
+				if !sim.IsActive {
+					continue
 				}
 
-				if lastReset.Equal(today) {
-					if device.SentToday >= device.DailyLimit {
-						continue // Daily limit reached
+				// Check daily limit for this SIM
+				limitReached := false
+				if sim.DailyLimit > 0 {
+					today := time.Now().UTC().Truncate(24 * time.Hour)
+					lastReset := time.Time{}
+					if sim.LastResetDate != nil {
+						lastReset = sim.LastResetDate.UTC().Truncate(24 * time.Hour)
 					}
+
+					if lastReset.Equal(today) {
+						if sim.SentToday >= sim.DailyLimit {
+							limitReached = true
+						}
+					}
+					// If lastReset < today, effectively SentToday is 0, so allowed
 				}
-				// If lastReset < today, effectively SentToday is 0, so we allow
+
+				if !limitReached {
+					validSlot = sim.SlotIndex
+					break // Found a usable SIM
+				}
 			}
 
-			// Update last used index
-			p.mu.Lock()
-			p.lastDeviceIndex[orgID] = idx
-			p.mu.Unlock()
+			if validSlot != -1 {
+				// Update last used index
+				p.mu.Lock()
+				p.lastDeviceIndex[orgID] = idx
+				p.mu.Unlock()
 
-			return &device, nil
+				return &device, validSlot, nil
+			}
 		}
 	}
 
 	// No available device found
-	return nil, nil
+	return nil, -1, nil
 }
 
 // GetAllDevicesStatus returns availability status for all devices in an organization

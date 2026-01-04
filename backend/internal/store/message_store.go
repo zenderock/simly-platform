@@ -154,9 +154,9 @@ func (s *Store) UpdateMessageRetry(ctx context.Context, msgID int, retryCount in
 	return err
 }
 
-func (s *Store) UpdateMessageDevice(ctx context.Context, msgID int, deviceID int) error {
-	query := `UPDATE messages SET device_id = $1, updated_at = NOW() WHERE id = $2`
-	_, err := s.db.Exec(ctx, query, deviceID, msgID)
+func (s *Store) UpdateMessageDeviceAndSlot(ctx context.Context, msgID int, deviceID int, simSlot *int) error {
+	query := `UPDATE messages SET device_id = $1, sim_slot = $2, updated_at = NOW() WHERE id = $3`
+	_, err := s.db.Exec(ctx, query, deviceID, simSlot, msgID)
 	return err
 }
 
@@ -362,10 +362,10 @@ func (s *Store) GetQueuedMessagesByOrganization(ctx context.Context, orgID int, 
 	return messages, nil
 }
 
-// UpdateMessageDeviceAndStatus updates the device assignment and status for a message
-func (s *Store) UpdateMessageDeviceAndStatus(ctx context.Context, msgID int, deviceID int, status string) error {
-	query := `UPDATE messages SET device_id = $1, status = $2, updated_at = NOW() WHERE id = $3`
-	_, err := s.db.Exec(ctx, query, deviceID, status, msgID)
+// UpdateMessageDispatchInfo updates the device assignment, sim slot, and status for a message
+func (s *Store) UpdateMessageDispatchInfo(ctx context.Context, msgID int, deviceID int, simSlot int, status string) error {
+	query := `UPDATE messages SET device_id = $1, sim_slot = $2, status = $3, updated_at = NOW() WHERE id = $4`
+	_, err := s.db.Exec(ctx, query, deviceID, simSlot, status, msgID)
 	return err
 }
 
