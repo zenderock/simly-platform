@@ -1,4 +1,5 @@
 import { clsx, type ClassValue } from "clsx"
+import { toast } from "sonner";
 import { twMerge } from "tailwind-merge"
 
 
@@ -48,6 +49,6 @@ export function getErrorMessage(error: any): string {
   if (typeof message === "string") {
     message = message.trim();
   }
-
+  toast.error(message);
   return message;
 }
