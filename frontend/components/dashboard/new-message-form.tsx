@@ -1,9 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Loader2, Smartphone, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -20,6 +18,7 @@ import { useDashboardStore } from "@/store/dashboard-store";
 import { PhoneInput } from "@/components/ui/phone-input";
 import { useApplicationStore } from "@/store/application-store";
 import LoaderQuater from "../loader";
+import { IconDeviceMobile, IconSend2 } from "@tabler/icons-react";
 
 interface NewMessageFormProps {
   onSuccess?: () => void;
@@ -167,7 +166,7 @@ export function NewMessageForm({
               <SelectContent>
                 <SelectItem value="auto">
                   <div className="flex items-center gap-2">
-                    <Smartphone className="size-4 text-emerald-500" />
+                    <IconDeviceMobile className="size-4 text-emerald-500" />
                     <span className="font-medium">Auto (Best Signal)</span>
                   </div>
                 </SelectItem>
@@ -303,7 +302,7 @@ export function NewMessageForm({
           className="shadow-md bg-foreground text-background hover:bg-foreground/90 font-bold px-6"
         >
           {loading && <LoaderQuater className="mr-2 size-4 " />}
-          {!loading && <Send className="size-4 mr-2" />}
+          {!loading && <IconSend2 className="size-4 mr-2" />}
           Send Message
         </Button>
       </div>
