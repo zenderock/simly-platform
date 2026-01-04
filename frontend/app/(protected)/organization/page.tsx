@@ -629,34 +629,6 @@ export default function OrganizationPage() {
             </CardContent>
           </Card>
 
-          {/* Organization Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Organization Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button variant="outline" className="w-full justify-start">
-                <Users className="size-4 mr-2" />
-                Invite Team Members
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <Key className="size-4 mr-2" />
-                Generate API Key
-              </Button>
-              <Button variant="outline" className="w-full justify-start">
-                <Download className="size-4 mr-2" />
-                Export Data
-              </Button>
-              <Button
-                variant="outline"
-                className="w-full justify-start text-destructive hover:text-destructive"
-              >
-                <Trash2 className="size-4 mr-2" />
-                Delete Organization
-              </Button>
-            </CardContent>
-          </Card>
-
           {/* Plan Features */}
           <Card>
             <CardHeader>
