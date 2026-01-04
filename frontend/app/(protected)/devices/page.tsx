@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useDevices, useDeleteDevice } from "@/hooks/use-devices";
 import { useCurrentOrganization } from "@/hooks/use-organizations";
+import { IconAward } from "@tabler/icons-react";
 
 export default function DevicesPage() {
   const [editingDevice, setEditingDevice] = useState<Device | null>(null);
@@ -129,7 +130,7 @@ export default function DevicesPage() {
         >
           <div className="flex items-center gap-4">
             <div className="p-2.5 bg-background rounded-lg border shadow-sm">
-              <Terminal className="size-5 text-muted-foreground" />
+              <IconAward className="size-5 text-muted-foreground" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground font-medium uppercase tracking-tight">
