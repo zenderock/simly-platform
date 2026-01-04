@@ -7,7 +7,11 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function getErrorMessage(error: any): string {
-  console.log(error)
+  if (error?.response?.data) {
+    console.log("Error Response Data:", error.response.data);
+  } else {
+    console.log("Error Object:", error);
+  }
   // Direct access to axios response data message
   if (error?.response?.data?.message && typeof error.response.data.message === "string") {
     return error.response.data.message;

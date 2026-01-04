@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import LoaderQuater from "@/components/loader";
+import { getErrorMessage } from "@/lib/utils";
 
 import { Turnstile } from "@marsidev/react-turnstile";
 
@@ -47,9 +48,7 @@ export default function LoginPage() {
       setAuth(token, user, organizations);
       router.push("/dashboard");
     } catch (err: any) {
-      setError(
-        err.response?.data?.error || "Failed to login. Please try again."
-      );
+      setError(getErrorMessage(err));
       setTurnstileToken(null);
       if (turnstileRef.current) {
         turnstileRef.current.reset();

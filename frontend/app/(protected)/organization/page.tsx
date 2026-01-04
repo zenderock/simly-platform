@@ -1,5 +1,7 @@
 "use client";
 
+import { getErrorMessage } from "@/lib/utils";
+
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -133,7 +135,7 @@ export default function OrganizationPage() {
       await fetchOrganizationData();
     } catch (error) {
       console.error("Failed to update organization", error);
-      toast.error("Failed to update organization details");
+      toast.error(getErrorMessage(error));
     } finally {
       setSaving(false);
     }
@@ -152,7 +154,7 @@ export default function OrganizationPage() {
       await fetchOrganizationData();
     } catch (error) {
       console.error("Failed to update dispatch settings", error);
-      toast.error("Failed to update dispatch settings");
+      toast.error(getErrorMessage(error));
     } finally {
       setSavingDispatch(false);
     }
