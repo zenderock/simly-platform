@@ -11,10 +11,12 @@ import {
   createList,
   deleteList,
   getListDetails,
+  addContactsToList,
 } from "@/lib/api/contacts";
 import { getErrorMessage } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 
 import { useState } from "react";
 import {
@@ -70,6 +72,7 @@ import {
 export default function ContactsPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  /* Existing State */
   const [selectedList, setSelectedList] = useState<number | null>(null); // null = All Contacts
   const [createListOpen, setCreateListOpen] = useState(false);
   const [newListName, setNewListName] = useState("");
@@ -83,6 +86,15 @@ export default function ContactsPage() {
   const [editPhoneNumber, setEditPhoneNumber] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editTags, setEditTags] = useState("");
+
+  /* Selection State */
+  const [selectedContacts, setSelectedContacts] = useState<Set<number>>(
+    new Set()
+  );
+
+  // Bulk Action State
+  const [addToListOpen, setAddToListOpen] = useState(false);
+  const [targetListId, setTargetListId] = useState<number | null>(null);
 
   // Queries
   const { data: allContacts, isLoading: allContactsLoading } = useQuery({
@@ -199,6 +211,56 @@ export default function ContactsPage() {
     updateContactMutation.mutate({ id: editingContact.id, data: updateData });
   };
 
+  const addContactsToListMutation = useMutation({
+    mutationFn: ({
+      listId,
+      contactIds,
+    }: {
+      listId: number;
+      contactIds: number[];
+    }) => addContactsToList(listId, contactIds),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["list-details"] });
+      queryClient.invalidateQueries({ queryKey: ["contact-lists"] }); // Update counts
+      toast.success("Contacts added to list successfully");
+      setAddToListOpen(false);
+      setSelectedContacts(new Set()); // Clear selection
+      setTargetListId(null);
+    },
+    onError: (err: any) => toast.error(getErrorMessage(err)),
+  });
+
+  /* Selection Handlers */
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const allIds = filteredContacts.map((c: any) => c.id);
+      setSelectedContacts(new Set(allIds));
+    } else {
+      setSelectedContacts(new Set());
+    }
+  };
+
+  const handleSelectOne = (id: number, checked: boolean) => {
+    const newSelected = new Set(selectedContacts);
+    if (checked) {
+      newSelected.add(id);
+    } else {
+      newSelected.delete(id);
+    }
+    setSelectedContacts(newSelected);
+  };
+
+  const handleAddToList = () => {
+    if (!targetListId) {
+      toast.error("Please select a list");
+      return;
+    }
+    const contactIds = Array.from(selectedContacts);
+    addContactsToListMutation.mutate({ listId: targetListId, contactIds });
+  };
+
+  // existing handleEdit... handleUpdate...
+
   const contacts = selectedList === null ? allContacts : listDetails?.members;
   const contactsLoading =
     selectedList === null ? allContactsLoading : listDetailsLoading;
@@ -215,8 +277,15 @@ export default function ContactsPage() {
       );
     }) || [];
 
+  const allSelected =
+    filteredContacts.length > 0 &&
+    filteredContacts.every((c: any) => selectedContacts.has(c.id));
+  const isIndeterminate =
+    selectedContacts.size > 0 &&
+    selectedContacts.size < filteredContacts.length;
+
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col relative">
       <div className="flex items-center justify-between border-b px-6 py-4">
         <div>
           <h1 className="text-xl font-semibold">Contacts</h1>
@@ -233,6 +302,8 @@ export default function ContactsPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar Lists */}
         <div className="w-64 border-r bg-muted/10 p-4 flex flex-col gap-4">
+          {/* ... existing sidebar list code (lists map etc) ... */}
+          {/* Re-use existing sidebar structure, just ensure we don't break it */}
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
               Lists
@@ -244,6 +315,7 @@ export default function ContactsPage() {
                 </Button>
               </DialogTrigger>
               <DialogContent>
+                {/* ... existing dialog content ... */}
                 <DialogHeader>
                   <DialogTitle>Create New List</DialogTitle>
                   <DialogDescription>
@@ -328,6 +400,7 @@ export default function ContactsPage() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent>
+                    {/* ... delete list logic ... */}
                     <DropdownMenuItem
                       className="text-destructive"
                       onClick={() => deleteListMutation.mutate(list.id)}
@@ -342,7 +415,7 @@ export default function ContactsPage() {
         </div>
 
         {/* Main Table */}
-        <div className="flex-1 flex flex-col p-6 overflow-hidden">
+        <div className="flex-1 flex flex-col p-6 overflow-hidden relative">
           <div className="flex items-center gap-4 mb-4">
             <div className="relative flex-1 max-w-sm">
               <IconSearch className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
@@ -353,6 +426,18 @@ export default function ContactsPage() {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
+            {/* Bulk Action Hint */}
+            {selectedContacts.size > 0 && (
+              <div className="flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2">
+                <span className="text-sm font-medium text-muted-foreground">
+                  {selectedContacts.size} selected
+                </span>
+                <Button size="sm" onClick={() => setAddToListOpen(true)}>
+                  <IconPlus className="size-4 mr-2" />
+                  Add to List
+                </Button>
+              </div>
+            )}
           </div>
 
           <div className="flex-1 border rounded-md overflow-hidden flex flex-col">
@@ -361,7 +446,13 @@ export default function ContactsPage() {
                 <TableHeader className="sticky top-0 bg-background z-10">
                   <TableRow>
                     <TableHead className="w-[50px]">
-                      <IconSquare className="size-4" />
+                      <Checkbox
+                        checked={allSelected}
+                        onCheckedChange={(checked) =>
+                          handleSelectAll(checked as boolean)
+                        }
+                        aria-label="Select all"
+                      />
                     </TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Phone</TableHead>
@@ -389,9 +480,20 @@ export default function ContactsPage() {
                     </TableRow>
                   ) : (
                     filteredContacts.map((contact: any) => (
-                      <TableRow key={contact.id}>
+                      <TableRow
+                        key={contact.id}
+                        data-state={
+                          selectedContacts.has(contact.id) && "selected"
+                        }
+                      >
                         <TableCell>
-                          <IconSquare className="size-4 text-muted-foreground" />
+                          <Checkbox
+                            checked={selectedContacts.has(contact.id)}
+                            onCheckedChange={(checked) =>
+                              handleSelectOne(contact.id, checked as boolean)
+                            }
+                            aria-label={`Select ${contact.first_name}`}
+                          />
                         </TableCell>
                         <TableCell className="font-medium">
                           {contact.first_name} {contact.last_name}
@@ -454,12 +556,63 @@ export default function ContactsPage() {
         </div>
       </div>
 
+      {/* Add To List Dialog */}
+      <Dialog open={addToListOpen} onOpenChange={setAddToListOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add to List</DialogTitle>
+            <DialogDescription>
+              Select the list you want to add {selectedContacts.size} contacts
+              to.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="space-y-2">
+              <Label>Select List</Label>
+              <div className="flex flex-col gap-2 max-h-[200px] overflow-y-auto border rounded-md p-2">
+                {lists?.map((list: any) => (
+                  <div
+                    key={list.id}
+                    className={`flex items-center justify-between p-2 rounded-md cursor-pointer hover:bg-muted ${
+                      targetListId === list.id
+                        ? "bg-primary/10 border-primary border"
+                        : ""
+                    }`}
+                    onClick={() => setTargetListId(list.id)}
+                  >
+                    <span className="text-sm font-medium">{list.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {list.member_count} members
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddToListOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddToList}
+              disabled={!targetListId || addContactsToListMutation.isPending}
+            >
+              {addContactsToListMutation.isPending && (
+                <LoaderQuater className="mr-2" />
+              )}
+              Add {selectedContacts.size} Contacts
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Delete Confirmation Dialog */}
       <AlertDialog
         open={!!contactToDelete}
         onOpenChange={() => setContactToDelete(null)}
       >
         <AlertDialogContent>
+          {/* ... existing alert content ... */}
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Contact</AlertDialogTitle>
             <AlertDialogDescription>
@@ -490,6 +643,7 @@ export default function ContactsPage() {
         onOpenChange={() => setEditingContact(null)}
       >
         <DialogContent className="sm:max-w-[425px]">
+          {/* ... existing Edit dialog content ... */}
           <DialogHeader>
             <DialogTitle>Edit Contact</DialogTitle>
             <DialogDescription>
@@ -498,6 +652,7 @@ export default function ContactsPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
+            {/* ... form fields ... */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-first-name">First Name</Label>
