@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Sidebar,
@@ -121,14 +122,12 @@ export function DashboardSidebar({
   const [developersOpen, setDevelopersOpen] = React.useState(true);
   const pathname = usePathname();
   const { user, logout, organizations, organizationId } = useAuth();
-  const {
-    applications,
-    activeAppId,
-    setActiveAppId,
-    getActiveApp,
-    updateApplication,
-    removeApplication,
-  } = useApplicationStore();
+  const { applications, getActiveApp, updateApplication, removeApplication } =
+    useApplicationStore();
+  const activeAppId = useApplicationStore((state) => state.activeAppId);
+  const setActiveAppId = useApplicationStore((state) => state.setActiveAppId);
+  const queryClient = useQueryClient();
+  const router = useRouter();
   const activeApp = getActiveApp();
   const currentOrg = organizations.find((org) => org.id === organizationId);
   const { toast } = useToast();
@@ -337,8 +336,11 @@ export function DashboardSidebar({
                   <ContextMenu key={app.id}>
                     <ContextMenuTrigger>
                       <DropdownMenuItem
-                        onClick={() => {
+                        onClick={async () => {
                           setActiveAppId(app.id);
+                          await queryClient.invalidateQueries();
+                          router.refresh();
+
                           toast({
                             title: `Switched to ${app.name}`,
                             description: "Dashboard updated.",
