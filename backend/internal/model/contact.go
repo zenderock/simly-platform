@@ -5,6 +5,7 @@ import "time"
 type Contact struct {
 	ID             int       `json:"id"`
 	OrganizationID int       `json:"organization_id"`
+	ApplicationID  *int      `json:"application_id"` // Data Isolation
 	FirstName      string    `json:"first_name"`
 	LastName       string    `json:"last_name"`
 	PhoneNumber    string    `json:"phone_number"` // E.164 format
@@ -24,6 +25,7 @@ type Blacklist struct {
 type ContactList struct {
 	ID             int       `json:"id"`
 	OrganizationID int       `json:"organization_id"`
+	ApplicationID  *int      `json:"application_id"`
 	Name           string    `json:"name"`
 	Description    string    `json:"description"`
 	CreatedAt      time.Time `json:"created_at"`
@@ -31,16 +33,18 @@ type ContactList struct {
 }
 
 type CreateContactRequest struct {
-	FirstName   string   `json:"first_name"`
-	LastName    string   `json:"last_name"`
-	PhoneNumber string   `json:"phone_number"`
-	Email       string   `json:"email"`
-	Tags        []string `json:"tags"`
+	FirstName     string   `json:"first_name"`
+	LastName      string   `json:"last_name"`
+	PhoneNumber   string   `json:"phone_number"`
+	Email         string   `json:"email"`
+	Tags          []string `json:"tags"`
+	ApplicationID int      `json:"application_id"`
 }
 
 type CreateContactListRequest struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
+	Name          string `json:"name"`
+	Description   string `json:"description"`
+	ApplicationID int    `json:"application_id"`
 }
 
 type AddContactToListRequest struct {

@@ -26,8 +26,9 @@ func (h *CampaignHandler) ListCampaigns(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "Organization required", http.StatusForbidden)
 		return
 	}
+	appID := GetActiveAppID(r)
 
-	campaigns, err := h.service.ListCampaigns(r.Context(), orgID)
+	campaigns, err := h.service.ListCampaigns(r.Context(), orgID, appID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -41,11 +42,17 @@ func (h *CampaignHandler) CreateCampaign(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "Organization required", http.StatusForbidden)
 		return
 	}
+	appID := GetActiveAppID(r)
 
 	var req model.CreateCampaignRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
+	}
+
+	// Force AppID from context if present
+	if appID != 0 {
+		req.ApplicationID = appID
 	}
 
 	campaign, err := h.service.CreateCampaign(r.Context(), orgID, req)

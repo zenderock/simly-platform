@@ -9,12 +9,13 @@ import (
 
 func (s *Store) CreateContact(ctx context.Context, c *model.Contact) error {
 	query := `
-		INSERT INTO contacts (organization_id, first_name, last_name, phone_number, email, tags, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+		INSERT INTO contacts (organization_id, application_id, first_name, last_name, phone_number, email, tags, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
 		RETURNING id, created_at, updated_at
 	`
 	err := s.db.QueryRow(ctx, query,
 		c.OrganizationID,
+		c.ApplicationID,
 		c.FirstName,
 		c.LastName,
 		c.PhoneNumber,
@@ -30,7 +31,7 @@ func (s *Store) CreateContact(ctx context.Context, c *model.Contact) error {
 
 func (s *Store) GetContactsByOrganizationID(ctx context.Context, orgID int) ([]model.Contact, error) {
 	query := `
-		SELECT id, organization_id, first_name, last_name, phone_number, email, tags, created_at, updated_at
+		SELECT id, organization_id, application_id, first_name, last_name, phone_number, email, tags, created_at, updated_at
 		FROM contacts
 		WHERE organization_id = $1
 		ORDER BY created_at DESC
@@ -47,6 +48,42 @@ func (s *Store) GetContactsByOrganizationID(ctx context.Context, orgID int) ([]m
 		if err := rows.Scan(
 			&c.ID,
 			&c.OrganizationID,
+			&c.ApplicationID,
+			&c.FirstName,
+			&c.LastName,
+			&c.PhoneNumber,
+			&c.Email,
+			&c.Tags,
+			&c.CreatedAt,
+			&c.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan contact: %w", err)
+		}
+		contacts = append(contacts, c)
+	}
+	return contacts, nil
+}
+
+func (s *Store) GetContactsByApplicationID(ctx context.Context, appID int) ([]model.Contact, error) {
+	query := `
+		SELECT id, organization_id, application_id, first_name, last_name, phone_number, email, tags, created_at, updated_at
+		FROM contacts
+		WHERE application_id = $1
+		ORDER BY created_at DESC
+	`
+	rows, err := s.db.Query(ctx, query, appID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query contacts: %w", err)
+	}
+	defer rows.Close()
+
+	var contacts []model.Contact
+	for rows.Next() {
+		var c model.Contact
+		if err := rows.Scan(
+			&c.ID,
+			&c.OrganizationID,
+			&c.ApplicationID,
 			&c.FirstName,
 			&c.LastName,
 			&c.PhoneNumber,
@@ -64,7 +101,7 @@ func (s *Store) GetContactsByOrganizationID(ctx context.Context, orgID int) ([]m
 
 func (s *Store) GetContactByID(ctx context.Context, id int) (*model.Contact, error) {
 	query := `
-		SELECT id, organization_id, first_name, last_name, phone_number, email, tags, created_at, updated_at
+		SELECT id, organization_id, application_id, first_name, last_name, phone_number, email, tags, created_at, updated_at
 		FROM contacts
 		WHERE id = $1
 	`
@@ -72,6 +109,7 @@ func (s *Store) GetContactByID(ctx context.Context, id int) (*model.Contact, err
 	err := s.db.QueryRow(ctx, query, id).Scan(
 		&c.ID,
 		&c.OrganizationID,
+		&c.ApplicationID,
 		&c.FirstName,
 		&c.LastName,
 		&c.PhoneNumber,
@@ -125,11 +163,11 @@ func (s *Store) DeleteContact(ctx context.Context, id, orgID int) error {
 
 func (s *Store) CreateContactList(ctx context.Context, l *model.ContactList) error {
 	query := `
-		INSERT INTO contact_lists (organization_id, name, description, created_at)
-		VALUES ($1, $2, $3, NOW())
+		INSERT INTO contact_lists (organization_id, application_id, name, description, created_at)
+		VALUES ($1, $2, $3, $4, NOW())
 		RETURNING id, created_at
 	`
-	err := s.db.QueryRow(ctx, query, l.OrganizationID, l.Name, l.Description).Scan(&l.ID, &l.CreatedAt)
+	err := s.db.QueryRow(ctx, query, l.OrganizationID, l.ApplicationID, l.Name, l.Description).Scan(&l.ID, &l.CreatedAt)
 	if err != nil {
 		return fmt.Errorf("failed to create contact list: %w", err)
 	}
@@ -138,7 +176,7 @@ func (s *Store) CreateContactList(ctx context.Context, l *model.ContactList) err
 
 func (s *Store) GetContactLists(ctx context.Context, orgID int) ([]model.ContactList, error) {
 	query := `
-		SELECT l.id, l.organization_id, l.name, l.description, l.created_at, COUNT(m.contact_id)
+		SELECT l.id, l.organization_id, l.application_id, l.name, l.description, l.created_at, COUNT(m.contact_id)
 		FROM contact_lists l
 		LEFT JOIN contact_list_members m ON l.id = m.list_id
 		WHERE l.organization_id = $1
@@ -157,6 +195,41 @@ func (s *Store) GetContactLists(ctx context.Context, orgID int) ([]model.Contact
 		if err := rows.Scan(
 			&l.ID,
 			&l.OrganizationID,
+			&l.ApplicationID,
+			&l.Name,
+			&l.Description,
+			&l.CreatedAt,
+			&l.MemberCount,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan contact list: %w", err)
+		}
+		lists = append(lists, l)
+	}
+	return lists, nil
+}
+
+func (s *Store) GetContactListsByApplication(ctx context.Context, appID int) ([]model.ContactList, error) {
+	query := `
+		SELECT l.id, l.organization_id, l.application_id, l.name, l.description, l.created_at, COUNT(m.contact_id)
+		FROM contact_lists l
+		LEFT JOIN contact_list_members m ON l.id = m.list_id
+		WHERE l.application_id = $1
+		GROUP BY l.id
+		ORDER BY l.created_at DESC
+	`
+	rows, err := s.db.Query(ctx, query, appID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query contact lists: %w", err)
+	}
+	defer rows.Close()
+
+	var lists []model.ContactList
+	for rows.Next() {
+		var l model.ContactList
+		if err := rows.Scan(
+			&l.ID,
+			&l.OrganizationID,
+			&l.ApplicationID,
 			&l.Name,
 			&l.Description,
 			&l.CreatedAt,
@@ -271,7 +344,7 @@ func (s *Store) GetContactsInList(ctx context.Context, listID int) ([]model.Cont
 	}
 	return contacts, nil
 }
-func (s *Store) BulkCreateContacts(ctx context.Context, orgID int, contacts []model.Contact) ([]int, error) {
+func (s *Store) BulkCreateContacts(ctx context.Context, orgID int, appID int, contacts []model.Contact) ([]int, error) {
 	if len(contacts) == 0 {
 		return nil, nil
 	}
@@ -290,13 +363,13 @@ func (s *Store) BulkCreateContacts(ctx context.Context, orgID int, contacts []mo
 
 			batch := contacts[i:end]
 
-			query := "INSERT INTO contacts (organization_id, first_name, last_name, phone_number, email, tags, created_at, updated_at) VALUES "
+			query := "INSERT INTO contacts (organization_id, application_id, first_name, last_name, phone_number, email, tags, created_at, updated_at) VALUES "
 			vals := []interface{}{}
 
 			for j, c := range batch {
-				n := j * 6
-				query += fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, NOW(), NOW())", n+1, n+2, n+3, n+4, n+5, n+6)
-				vals = append(vals, orgID, c.FirstName, c.LastName, c.PhoneNumber, c.Email, c.Tags)
+				n := j * 7
+				query += fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d, NOW(), NOW())", n+1, n+2, n+3, n+4, n+5, n+6, n+7)
+				vals = append(vals, orgID, appID, c.FirstName, c.LastName, c.PhoneNumber, c.Email, c.Tags)
 
 				if j < len(batch)-1 {
 					query += ","

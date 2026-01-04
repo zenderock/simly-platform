@@ -37,8 +37,15 @@ func (s *ContactService) CreateContact(ctx context.Context, orgID int, req model
 		return nil, errors.New("invalid phone number format: must be E.164 (e.g., +1234567890)")
 	}
 
+	// Handle Application Isolation
+	var appIDPtr *int
+	if req.ApplicationID != 0 {
+		appIDPtr = &req.ApplicationID
+	}
+
 	contact := &model.Contact{
 		OrganizationID: orgID,
+		ApplicationID:  appIDPtr,
 		FirstName:      req.FirstName,
 		LastName:       req.LastName,
 		PhoneNumber:    phone,
@@ -70,7 +77,10 @@ func (s *ContactService) isValidE164(phone string) bool {
 	return true
 }
 
-func (s *ContactService) ListContacts(ctx context.Context, orgID int) ([]model.Contact, error) {
+func (s *ContactService) ListContacts(ctx context.Context, orgID int, appID int) ([]model.Contact, error) {
+	if appID != 0 {
+		return s.store.GetContactsByApplicationID(ctx, appID)
+	}
 	return s.store.GetContactsByOrganizationID(ctx, orgID)
 }
 
@@ -103,6 +113,7 @@ func (s *ContactService) UpdateContact(ctx context.Context, id, orgID int, req m
 	contact.PhoneNumber = phone
 	contact.Email = req.Email
 	contact.Tags = req.Tags
+	// Note: We typically don't allow moving contacts between apps/orgs via Update, keeping AppID as is.
 
 	if err := s.store.UpdateContact(ctx, contact); err != nil {
 		if strings.Contains(err.Error(), "unique constraint") || strings.Contains(err.Error(), "duplicate key") {
@@ -120,8 +131,14 @@ func (s *ContactService) DeleteContact(ctx context.Context, id, orgID int) error
 // Lists
 
 func (s *ContactService) CreateContactList(ctx context.Context, orgID int, req model.CreateContactListRequest) (*model.ContactList, error) {
+	var appIDPtr *int
+	if req.ApplicationID != 0 {
+		appIDPtr = &req.ApplicationID
+	}
+
 	list := &model.ContactList{
 		OrganizationID: orgID,
+		ApplicationID:  appIDPtr,
 		Name:           req.Name,
 		Description:    req.Description,
 	}
@@ -131,7 +148,10 @@ func (s *ContactService) CreateContactList(ctx context.Context, orgID int, req m
 	return list, nil
 }
 
-func (s *ContactService) ListContactLists(ctx context.Context, orgID int) ([]model.ContactList, error) {
+func (s *ContactService) ListContactLists(ctx context.Context, orgID int, appID int) ([]model.ContactList, error) {
+	if appID != 0 {
+		return s.store.GetContactListsByApplication(ctx, appID)
+	}
 	return s.store.GetContactLists(ctx, orgID)
 }
 
@@ -178,7 +198,7 @@ func (s *ContactService) GetListDetails(ctx context.Context, listID, orgID int) 
 	}
 	return list, contacts, nil
 }
-func (s *ContactService) ImportContacts(ctx context.Context, orgID int, listID *int, reader io.Reader) (int, error) {
+func (s *ContactService) ImportContacts(ctx context.Context, orgID int, appID int, listID *int, reader io.Reader) (int, error) {
 	csvReader := csv.NewReader(reader)
 	csvReader.TrimLeadingSpace = true
 
@@ -235,6 +255,10 @@ func (s *ContactService) ImportContacts(ctx context.Context, orgID int, listID *
 			PhoneNumber:    phone,
 		}
 
+		if appID != 0 {
+			contact.ApplicationID = &appID
+		}
+
 		if idx, ok := colMap["first_name"]; ok && idx < len(record) {
 			contact.FirstName = strings.TrimSpace(record[idx])
 		}
@@ -269,7 +293,7 @@ func (s *ContactService) ImportContacts(ctx context.Context, orgID int, listID *
 	}
 
 	// 3. Bulk Create
-	contactIDs, err := s.store.BulkCreateContacts(ctx, orgID, contactsToCreate)
+	contactIDs, err := s.store.BulkCreateContacts(ctx, orgID, appID, contactsToCreate)
 	if err != nil {
 		return 0, fmt.Errorf("failed to bulk create contacts: %w", err)
 	}

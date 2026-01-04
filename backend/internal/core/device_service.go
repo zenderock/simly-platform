@@ -60,8 +60,22 @@ func (s *DeviceService) RegisterDevice(ctx context.Context, orgID int, req model
 		return existingDevice, nil
 	}
 
+	var appIDPtr *int
+	if req.ApplicationID != 0 {
+		// Verify App exists and belongs to Org
+		app, err := s.store.GetApplicationByID(ctx, req.ApplicationID)
+		if err != nil {
+			return nil, fmt.Errorf("application not found: %w", err)
+		}
+		if app.OrganizationID != orgID {
+			return nil, fmt.Errorf("unauthorized application scope")
+		}
+		appIDPtr = &req.ApplicationID
+	}
+
 	device := &model.Device{
 		OrganizationID: orgID,
+		ApplicationID:  appIDPtr,
 		Name:           req.Name,
 		FCMToken:       req.FCMToken,
 		Status:         "online",
@@ -92,7 +106,10 @@ func (s *DeviceService) CheckSimLimit(ctx context.Context, orgID, deviceID int) 
 	return nil
 }
 
-func (s *DeviceService) ListDevices(ctx context.Context, orgID int) ([]model.Device, error) {
+func (s *DeviceService) ListDevices(ctx context.Context, orgID int, appID int) ([]model.Device, error) {
+	if appID != 0 {
+		return s.store.GetDevicesByApplicationID(ctx, appID)
+	}
 	return s.store.GetDevicesByOrganizationID(ctx, orgID)
 }
 
@@ -205,7 +222,7 @@ func (s *DeviceService) UpdateDevice(ctx context.Context, deviceID, orgID int, r
 }
 
 // GenerateLinkToken creates a new device link token for QR code
-func (s *DeviceService) GenerateLinkToken(ctx context.Context, orgID int) (*model.DeviceLinkToken, error) {
+func (s *DeviceService) GenerateLinkToken(ctx context.Context, orgID int, appID int) (*model.DeviceLinkToken, error) {
 	// Check device limit before generating token
 	org, err := s.store.GetOrganizationByID(ctx, orgID)
 	if err != nil {
@@ -235,7 +252,7 @@ func (s *DeviceService) GenerateLinkToken(ctx context.Context, orgID int) (*mode
 	// Token expires in 10 minutes
 	expiresAt := time.Now().Add(10 * time.Minute)
 
-	if err := s.store.CreateDeviceLinkToken(ctx, orgID, token, expiresAt); err != nil {
+	if err := s.store.CreateDeviceLinkToken(ctx, orgID, appID, token, expiresAt); err != nil {
 		return nil, err
 	}
 
@@ -322,6 +339,7 @@ func (s *DeviceService) LinkDevice(ctx context.Context, req model.LinkDeviceRequ
 	now := time.Now()
 	device := &model.Device{
 		OrganizationID: tokenData.OrganizationID,
+		ApplicationID:  tokenData.ApplicationID,
 		Name:           req.Name,
 		Model:          req.Model,
 		FCMToken:       req.FCMToken,

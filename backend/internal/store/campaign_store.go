@@ -10,12 +10,13 @@ import (
 
 func (s *Store) CreateCampaign(ctx context.Context, c *model.Campaign) error {
 	query := `
-		INSERT INTO campaigns (organization_id, name, template_body, list_id, device_id, sim_slot, status, scheduled_at, send_window_start, send_window_end, use_all_devices, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
+		INSERT INTO campaigns (organization_id, application_id, name, template_body, list_id, device_id, sim_slot, status, scheduled_at, send_window_start, send_window_end, use_all_devices, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
 		RETURNING id, created_at, updated_at
 	`
 	err := s.db.QueryRow(ctx, query,
 		c.OrganizationID,
+		c.ApplicationID,
 		c.Name,
 		c.TemplateBody,
 		c.ListID,
@@ -65,7 +66,7 @@ func (s *Store) UpdateCampaign(ctx context.Context, c *model.Campaign) error {
 
 func (s *Store) GetCampaignByID(ctx context.Context, id int) (*model.Campaign, error) {
 	query := `
-		SELECT id, organization_id, name, template_body, list_id, device_id, sim_slot, status, scheduled_at, total_messages, sent_messages, failed_messages, send_window_start, send_window_end, pause_reason, estimated_completion_at, use_all_devices, created_at, updated_at
+		SELECT id, organization_id, application_id, name, template_body, list_id, device_id, sim_slot, status, scheduled_at, total_messages, sent_messages, failed_messages, send_window_start, send_window_end, pause_reason, estimated_completion_at, use_all_devices, created_at, updated_at
 		FROM campaigns
 		WHERE id = $1
 	`
@@ -73,6 +74,7 @@ func (s *Store) GetCampaignByID(ctx context.Context, id int) (*model.Campaign, e
 	err := s.db.QueryRow(ctx, query, id).Scan(
 		&c.ID,
 		&c.OrganizationID,
+		&c.ApplicationID,
 		&c.Name,
 		&c.TemplateBody,
 		&c.ListID,
@@ -99,7 +101,7 @@ func (s *Store) GetCampaignByID(ctx context.Context, id int) (*model.Campaign, e
 
 func (s *Store) ListCampaigns(ctx context.Context, orgID int) ([]model.Campaign, error) {
 	query := `
-		SELECT id, organization_id, name, template_body, list_id, device_id, sim_slot, status, scheduled_at, total_messages, sent_messages, failed_messages, send_window_start, send_window_end, pause_reason, estimated_completion_at, use_all_devices, created_at, updated_at
+		SELECT id, organization_id, application_id, name, template_body, list_id, device_id, sim_slot, status, scheduled_at, total_messages, sent_messages, failed_messages, send_window_start, send_window_end, pause_reason, estimated_completion_at, use_all_devices, created_at, updated_at
 		FROM campaigns
 		WHERE organization_id = $1
 		ORDER BY created_at DESC
@@ -116,6 +118,52 @@ func (s *Store) ListCampaigns(ctx context.Context, orgID int) ([]model.Campaign,
 		if err := rows.Scan(
 			&c.ID,
 			&c.OrganizationID,
+			&c.ApplicationID,
+			&c.Name,
+			&c.TemplateBody,
+			&c.ListID,
+			&c.DeviceID,
+			&c.SimSlot,
+			&c.Status,
+			&c.ScheduledAt,
+			&c.TotalMessages,
+			&c.SentMessages,
+			&c.FailedMessages,
+			&c.SendWindowStart,
+			&c.SendWindowEnd,
+			&c.PauseReason,
+			&c.EstimatedCompletionAt,
+			&c.UseAllDevices,
+			&c.CreatedAt,
+			&c.UpdatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan campaign: %w", err)
+		}
+		campaigns = append(campaigns, c)
+	}
+	return campaigns, nil
+}
+
+func (s *Store) ListCampaignsByApplication(ctx context.Context, appID int) ([]model.Campaign, error) {
+	query := `
+		SELECT id, organization_id, application_id, name, template_body, list_id, device_id, sim_slot, status, scheduled_at, total_messages, sent_messages, failed_messages, send_window_start, send_window_end, pause_reason, estimated_completion_at, use_all_devices, created_at, updated_at
+		FROM campaigns
+		WHERE application_id = $1
+		ORDER BY created_at DESC
+	`
+	rows, err := s.db.Query(ctx, query, appID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list campaigns by application: %w", err)
+	}
+	defer rows.Close()
+
+	var campaigns []model.Campaign
+	for rows.Next() {
+		var c model.Campaign
+		if err := rows.Scan(
+			&c.ID,
+			&c.OrganizationID,
+			&c.ApplicationID,
 			&c.Name,
 			&c.TemplateBody,
 			&c.ListID,

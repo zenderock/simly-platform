@@ -12,10 +12,13 @@ const (
 )
 
 type Campaign struct {
-	ID             int        `json:"id"`
-	OrganizationID int        `json:"organization_id"`
-	Name           string     `json:"name"`
-	TemplateBody   string     `json:"template_body"`
+	ID             int    `json:"id"`
+	OrganizationID int    `json:"organization_id"`
+	Name           string `json:"name"`
+	TemplateBody   string `json:"template_body"`
+	// Data Isolation
+	ApplicationID *int `json:"application_id"`
+
 	ListID         *int       `json:"list_id"`
 	DeviceID       *int       `json:"device_id"`
 	SimSlot        *int       `json:"sim_slot"`
@@ -45,6 +48,7 @@ type CreateCampaignRequest struct {
 	SendWindowEnd   *int       `json:"send_window_end,omitempty"`
 	UseAllDevices   bool       `json:"use_all_devices"`
 	AutoLaunch      bool       `json:"auto_launch,omitempty"`
+	ApplicationID   int        `json:"application_id"`
 }
 type CampaignAnalytics struct {
 	CampaignID int            `json:"campaign_id"`

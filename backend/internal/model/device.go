@@ -7,6 +7,7 @@ import (
 type Device struct {
 	ID                 int        `json:"id"`
 	OrganizationID     int        `json:"organization_id"`
+	ApplicationID      *int       `json:"application_id"` // Nullable for organization-wide devices
 	Name               string     `json:"name"`
 	Model              string     `json:"model"`
 	FCMToken           string     `json:"fcm_token"`
@@ -36,10 +37,11 @@ type SimCard struct {
 }
 
 type RegisterDeviceRequest struct {
-	Name        string   `json:"name"`
-	FCMToken    string   `json:"fcm_token"`
-	PhoneNumber string   `json:"phone_number"`
-	Tags        []string `json:"tags,omitempty"`
+	ApplicationID int      `json:"application_id"`
+	Name          string   `json:"name"`
+	FCMToken      string   `json:"fcm_token"`
+	PhoneNumber   string   `json:"phone_number"`
+	Tags          []string `json:"tags,omitempty"`
 }
 
 type UpdateDeviceRequest struct {
@@ -74,6 +76,7 @@ type DeviceLinkToken struct {
 type DeviceLinkTokenFull struct {
 	ID             int        `json:"id"`
 	OrganizationID int        `json:"organization_id"`
+	ApplicationID  *int       `json:"application_id"`
 	Token          string     `json:"token"`
 	ExpiresAt      time.Time  `json:"expires_at"`
 	UsedAt         *time.Time `json:"used_at,omitempty"`

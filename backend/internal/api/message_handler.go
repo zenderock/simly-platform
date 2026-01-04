@@ -34,6 +34,11 @@ func (h *MessageHandler) SendSMS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Enforce Active App ID if present (e.g. App-Scoped API Key)
+	if appID := GetActiveAppID(r); appID != 0 {
+		req.ApplicationID = &appID
+	}
+
 	msg, err := h.service.SendSMS(r.Context(), orgID, req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -89,9 +94,15 @@ func (h *MessageHandler) ListMessages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var appID *int
-	if aidStr := r.URL.Query().Get("application_id"); aidStr != "" {
-		if aid, err := strconv.Atoi(aidStr); err == nil {
-			appID = &aid
+	// 1. Try Header/Context
+	if id := GetActiveAppID(r); id != 0 {
+		appID = &id
+	} else {
+		// 2. Try Query Param
+		if aidStr := r.URL.Query().Get("application_id"); aidStr != "" {
+			if aid, err := strconv.Atoi(aidStr); err == nil {
+				appID = &aid
+			}
 		}
 	}
 

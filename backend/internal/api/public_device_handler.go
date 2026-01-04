@@ -42,6 +42,9 @@ type PublicSimResponse struct {
 	SupportedPrefixes string `json:"supported_prefixes"`
 }
 
+// NOTE: PublicDeviceResponse should arguably include ApplicationID if useful, but maybe not critical for public.
+// Skipping adding ApplicationID to response for now to keep it clean unless requested.
+
 // ListDevices handles GET /v1/devices
 // Returns all devices belonging to the organization associated with the API key
 func (h *PublicDeviceHandler) ListDevices(w http.ResponseWriter, r *http.Request) {
@@ -54,7 +57,7 @@ func (h *PublicDeviceHandler) ListDevices(w http.ResponseWriter, r *http.Request
 	}
 
 	// List devices for organization
-	devices, err := h.deviceService.ListDevices(r.Context(), orgID)
+	devices, err := h.deviceService.ListDevices(r.Context(), orgID, 0)
 	if err != nil {
 		fmt.Printf("Error listing devices: %v\n", err)
 		InternalError(w)

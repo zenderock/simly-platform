@@ -34,6 +34,12 @@ func (h *DeviceHandler) RegisterDevice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Get Active App ID from Header
+	appID := GetActiveAppID(r)
+	if appID != 0 {
+		req.ApplicationID = appID
+	}
+
 	device, err := h.service.RegisterDevice(r.Context(), orgID, req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -58,7 +64,10 @@ func (h *DeviceHandler) ListDevices(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	devices, err := h.service.ListDevices(r.Context(), orgID)
+	// Get Active App ID from Header
+	appID := GetActiveAppID(r)
+
+	devices, err := h.service.ListDevices(r.Context(), orgID, appID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -160,7 +169,10 @@ func (h *DeviceHandler) GenerateLinkToken(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	token, err := h.service.GenerateLinkToken(r.Context(), orgID)
+	// Get Active App ID
+	appID := GetActiveAppID(r)
+
+	token, err := h.service.GenerateLinkToken(r.Context(), orgID, appID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

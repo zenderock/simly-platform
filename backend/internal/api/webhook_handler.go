@@ -27,11 +27,16 @@ func (h *WebhookHandler) RegisterWebhook(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "Organization required", http.StatusForbidden)
 		return
 	}
+	appID := GetActiveAppID(r)
 
 	var req model.CreateWebhookRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
+	}
+
+	if appID != 0 {
+		req.ApplicationID = &appID
 	}
 
 	webhook, err := h.service.RegisterWebhook(r.Context(), orgID, req)
@@ -40,8 +45,6 @@ func (h *WebhookHandler) RegisterWebhook(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(webhook)
@@ -57,8 +60,9 @@ func (h *WebhookHandler) ListWebhooks(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Organization required", http.StatusForbidden)
 		return
 	}
+	appID := GetActiveAppID(r)
 
-	webhooks, err := h.service.ListWebhooks(r.Context(), orgID)
+	webhooks, err := h.service.ListWebhooks(r.Context(), orgID, appID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -117,7 +121,11 @@ func (h *WebhookHandler) TestWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get the webhook to verify ownership and get URL
-	webhooks, err := h.service.ListWebhooks(r.Context(), orgID)
+	// We pass 0 for appID here because we want to find the webhook by ID regardless of current app context?
+	// Or should we enforce app context?
+	// If user is in App A, they should only be able to test Webhooks of App A.
+	appID := GetActiveAppID(r)
+	webhooks, err := h.service.ListWebhooks(r.Context(), orgID, appID)
 	if err != nil {
 		http.Error(w, "Failed to fetch webhooks", http.StatusInternalServerError)
 		return

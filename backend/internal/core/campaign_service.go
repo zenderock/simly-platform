@@ -56,8 +56,15 @@ func (s *CampaignService) CreateCampaign(ctx context.Context, orgID int, req mod
 		status = model.CampaignStatusScheduled
 	}
 
+	// Handle Application Isolation
+	var appIDPtr *int
+	if req.ApplicationID != 0 {
+		appIDPtr = &req.ApplicationID
+	}
+
 	campaign := &model.Campaign{
 		OrganizationID:  orgID,
+		ApplicationID:   appIDPtr,
 		Name:            req.Name,
 		TemplateBody:    req.TemplateBody,
 		Status:          status,
@@ -76,6 +83,10 @@ func (s *CampaignService) CreateCampaign(ctx context.Context, orgID int, req mod
 		}
 		if list.OrganizationID != orgID {
 			return nil, errors.New("unauthorized list access")
+		}
+		// Validate App Scope if both have AppID
+		if list.ApplicationID != nil && appIDPtr != nil && *list.ApplicationID != *appIDPtr {
+			return nil, errors.New("campaign app scope does not match contact list app scope")
 		}
 		campaign.ListID = req.ListID
 	}
@@ -122,7 +133,10 @@ func (s *CampaignService) GetCampaign(ctx context.Context, id, orgID int) (*mode
 	return c, nil
 }
 
-func (s *CampaignService) ListCampaigns(ctx context.Context, orgID int) ([]model.Campaign, error) {
+func (s *CampaignService) ListCampaigns(ctx context.Context, orgID int, appID int) ([]model.Campaign, error) {
+	if appID != 0 {
+		return s.store.ListCampaignsByApplication(ctx, appID)
+	}
 	return s.store.ListCampaigns(ctx, orgID)
 }
 

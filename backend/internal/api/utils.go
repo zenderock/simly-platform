@@ -57,3 +57,18 @@ func GetActiveOrgID(r *http.Request, orgService *core.OrganizationService) (int,
 	}
 	return orgs[0].ID, nil
 }
+
+// GetActiveAppID resolves the application ID from the request context.
+// Priority:
+// 1. X-Application-ID Header
+// 2. Default: 0 (No specific application context)
+func GetActiveAppID(r *http.Request) int {
+	appIDStr := r.Header.Get("X-Application-ID")
+	if appIDStr != "" {
+		appID, err := strconv.Atoi(appIDStr)
+		if err == nil {
+			return appID
+		}
+	}
+	return 0
+}

@@ -35,6 +35,10 @@ func (h *APIKeyHandler) CreateAPIKey(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Verify App belongs to Org
+	if appID := GetActiveAppID(r); appID != 0 {
+		req.ApplicationID = appID
+	}
+
 	app, err := h.appService.GetApplication(r.Context(), req.ApplicationID)
 	if err != nil {
 		http.Error(w, "Application not found", http.StatusNotFound)
@@ -67,11 +71,23 @@ func (h *APIKeyHandler) ListAPIKeys(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	appIDStr := r.URL.Query().Get("application_id")
-	appID, err := strconv.Atoi(appIDStr)
-	if err != nil {
-		http.Error(w, "application_id query param required", http.StatusBadRequest)
-		return
+	var appID int
+	// 1. Try header
+	if headerAppID := GetActiveAppID(r); headerAppID != 0 {
+		appID = headerAppID
+	} else {
+		// 2. Try Query Param
+		appIDStr := r.URL.Query().Get("application_id")
+		if appIDStr == "" {
+			http.Error(w, "application_id query param or X-Application-ID header required", http.StatusBadRequest)
+			return
+		}
+		id, err := strconv.Atoi(appIDStr)
+		if err != nil {
+			http.Error(w, "Invalid application_id", http.StatusBadRequest)
+			return
+		}
+		appID = id
 	}
 
 	// Verify App

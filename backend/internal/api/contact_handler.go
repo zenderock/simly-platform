@@ -28,8 +28,9 @@ func (h *ContactHandler) ListContacts(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Organization required", http.StatusForbidden)
 		return
 	}
+	appID := GetActiveAppID(r)
 
-	contacts, err := h.service.ListContacts(r.Context(), orgID)
+	contacts, err := h.service.ListContacts(r.Context(), orgID, appID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -45,11 +46,17 @@ func (h *ContactHandler) CreateContact(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Organization required", http.StatusForbidden)
 		return
 	}
+	appID := GetActiveAppID(r)
 
 	var req model.CreateContactRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
+	}
+
+	// Force AppID from context
+	if appID != 0 {
+		req.ApplicationID = appID
 	}
 
 	contact, err := h.service.CreateContact(r.Context(), orgID, req)
@@ -127,8 +134,9 @@ func (h *ContactHandler) ListLists(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Organization required", http.StatusForbidden)
 		return
 	}
+	appID := GetActiveAppID(r)
 
-	lists, err := h.service.ListContactLists(r.Context(), orgID)
+	lists, err := h.service.ListContactLists(r.Context(), orgID, appID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -144,11 +152,16 @@ func (h *ContactHandler) CreateList(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Organization required", http.StatusForbidden)
 		return
 	}
+	appID := GetActiveAppID(r)
 
 	var req model.CreateContactListRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
+	}
+
+	if appID != 0 {
+		req.ApplicationID = appID
 	}
 
 	list, err := h.service.CreateContactList(r.Context(), orgID, req)
@@ -276,6 +289,7 @@ func (h *ContactHandler) ImportContacts(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "Organization required", http.StatusForbidden)
 		return
 	}
+	appID := GetActiveAppID(r)
 
 	// Max 10MB
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
@@ -299,7 +313,7 @@ func (h *ContactHandler) ImportContacts(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	count, err := h.service.ImportContacts(r.Context(), orgID, listIDPtr, file)
+	count, err := h.service.ImportContacts(r.Context(), orgID, appID, listIDPtr, file)
 	if err != nil {
 		if errors.Is(err, core.ErrLimitExceeded) {
 			http.Error(w, err.Error(), http.StatusForbidden)

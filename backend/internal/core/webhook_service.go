@@ -47,8 +47,26 @@ func (s *WebhookService) RegisterWebhook(ctx context.Context, orgID int, req mod
 	return webhook, nil
 }
 
-func (s *WebhookService) ListWebhooks(ctx context.Context, orgID int) ([]model.Webhook, error) {
-	return s.store.GetWebhooksByOrganizationID(ctx, orgID)
+func (s *WebhookService) ListWebhooks(ctx context.Context, orgID int, appID int) ([]model.Webhook, error) {
+	webhooks, err := s.store.GetWebhooksByOrganizationID(ctx, orgID)
+	if err != nil {
+		return nil, err
+	}
+	if appID == 0 {
+		return webhooks, nil
+	}
+
+	var filtered []model.Webhook
+	for _, wh := range webhooks {
+		// Include if AppID matches OR if webhook is global (nil) ??
+		// Actually, if I am in App View, I probably only want to see Webhooks SPECIFIC to this App.
+		// Or Global ones too? Global ones might fire for this app.
+		// Let's assume strict scoping: only show webhooks created for this App.
+		if wh.ApplicationID != nil && *wh.ApplicationID == appID {
+			filtered = append(filtered, wh)
+		}
+	}
+	return filtered, nil
 }
 
 // DispatchEvent finds webhooks for the org (and optional app) and sends payload
