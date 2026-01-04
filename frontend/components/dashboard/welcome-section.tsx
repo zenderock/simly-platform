@@ -8,7 +8,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, Download, FileText } from "lucide-react";
 import { NewMessageDialog } from "@/components/dashboard/new-message-dialog";
 import api from "@/lib/api";
 import { DashboardStats } from "@/types";
@@ -16,6 +15,7 @@ import { useAuth } from "@/lib/auth";
 import { useDashboardStore } from "@/store/dashboard-store";
 import { useToast } from "@/components/ui/use-toast";
 import { Message } from "@/types";
+import { IconDownload, IconChevronDown } from "@tabler/icons-react";
 
 export function WelcomeSection() {
   const { user } = useAuth();
@@ -62,7 +62,7 @@ export function WelcomeSection() {
         "Status",
         "Device",
         "Date",
-        "Scheduled At"
+        "Scheduled At",
       ];
 
       const rows = messages.map((msg) => [
@@ -73,19 +73,22 @@ export function WelcomeSection() {
         msg.status,
         msg.device_name || "—",
         msg.created_at ? new Date(msg.created_at).toISOString() : "",
-        msg.scheduled_at ? new Date(msg.scheduled_at).toISOString() : ""
+        msg.scheduled_at ? new Date(msg.scheduled_at).toISOString() : "",
       ]);
 
       const csvContent = [
         headers.join(","),
-        ...rows.map((row) => row.join(","))
+        ...rows.map((row) => row.join(",")),
       ].join("\n");
 
       const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.setAttribute("href", url);
-      link.setAttribute("download", `activity_log_export_${new Date().toISOString().split('T')[0]}.csv`);
+      link.setAttribute(
+        "download",
+        `activity_log_export_${new Date().toISOString().split("T")[0]}.csv`
+      );
       link.style.visibility = "hidden";
       document.body.appendChild(link);
       link.click();
@@ -114,16 +117,26 @@ export function WelcomeSection() {
     <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 sm:gap-6">
       <div className="space-y-2 sm:space-y-5">
         <h2 className="text-xl sm:text-[24px] font-bold leading-relaxed tracking-tight">
-          Welcome back, {user?.name?.split(' ')[0] || "User"}!
+          Welcome back, {user?.name?.split(" ")[0] || "User"}!
         </h2>
         <p className="text-sm sm:text-base text-muted-foreground">
-          Today you have <span className="text-foreground font-semibold">{pending} messages</span> pending,{" "}
+          Today you have{" "}
+          <span className="text-foreground font-semibold">
+            {pending} messages
+          </span>{" "}
+          pending,{" "}
           {totalDevices === 0 ? (
-            <span className="text-orange-500 font-semibold italic">no devices connected</span>
+            <span className="text-orange-500 font-semibold italic">
+              no devices connected
+            </span>
           ) : allOnline ? (
-            <span className="text-emerald-500 font-semibold italic">all your devices are online</span>
+            <span className="text-emerald-500 font-semibold italic">
+              all your devices are online
+            </span>
           ) : (
-            <span className="text-amber-500 font-semibold italic">{activeDevices}/{totalDevices} devices online</span>
+            <span className="text-amber-500 font-semibold italic">
+              {activeDevices}/{totalDevices} devices online
+            </span>
           )}
         </p>
       </div>
@@ -131,17 +144,21 @@ export function WelcomeSection() {
       <div className="flex items-center gap-2 sm:gap-3">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-2 sm:gap-3 h-8 sm:h-9 text-xs sm:text-sm shadow-none border font-medium">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 sm:gap-3 h-8 sm:h-9 text-xs sm:text-sm shadow-none border font-medium"
+            >
               <span className="hidden xs:inline">Activity Log</span>
               <span className="xs:hidden">
-                <Download className="size-4" />
+                <IconDownload className="size-4" />
               </span>
-              <ChevronDown className="size-3 sm:size-4 text-muted-foreground opacity-50" />
+              <IconChevronDown className="size-3 sm:size-4 text-muted-foreground opacity-50" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={handleExportCSV}>
-              <Download className="size-4 mr-2" />
+              <IconDownload className="size-4 mr-2" />
               Export CSV
             </DropdownMenuItem>
           </DropdownMenuContent>
