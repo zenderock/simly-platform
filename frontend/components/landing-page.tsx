@@ -67,18 +67,18 @@ const HeroSection: React.FC = () => {
           </div>
 
           <h1 className="text-5xl sm:text-6xl lg:text-7xl text-white leading-[1.1] mb-8 font-light tracking-tighter">
-            Transform your
+            Global SMS
             <br />
-            phone into an
+            infrastructure.
             <br />
             <span className="font-light tracking-tighter text-white bg-[#6e3ff3] px-2">
-              SMS gateway.
+              Powered by you.
             </span>
           </h1>
 
           <p className="text-lg sm:text-xl leading-relaxed max-w-lg mb-12 font-light text-white/80">
-            Send SMS via your own SIM card and mobile plan. A simple,
-            affordable, and reliable API for your projects.
+            The most cost-effective way to send transactional and marketing SMS.
+            No hidden fees, no per-message costs. Just pure execution.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 border border-white/10 max-w-lg rounded-sm overflow-hidden gap-4">
@@ -270,8 +270,8 @@ const ServicesSection: React.FC = () => {
           number="01"
           label="Features"
           title="Unmatched"
-          subtitle="power."
-          description="A complete suite of tools to manage your marketing SMS, transactional messages, and system notifications."
+          subtitle="infrastructure."
+          description="A pro-grade engine designed for high-volume execution, automated compliance, and developer happiness."
           buttonText="View documentation"
           buttonLink="/docs"
         />
@@ -286,32 +286,34 @@ const ServicesSection: React.FC = () => {
                 </span>
               </div>
               <h2 className="text-3xl md:text-4xl text-white font-light tracking-tighter mb-4">
-                Maximum reliability.
+                Smart Dispatcher.
               </h2>
               <p className="text-sm leading-relaxed text-white/70">
-                Our local queuing and synchronization technology ensures your
-                messages go out, even during temporary network outages.
+                Our intelligent routing engine automatically prioritizes OTPs to
+                ensure critical codes arrive first, while managing massive
+                marketing bursts with surgical precision.
               </p>
             </div>
 
             <div className="col-span-12 md:col-span-8 grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-white/10">
               <ServiceCard
-                title="REST API & Webhooks"
-                description="Integrate SMS sending in a few lines of code. Receive real-time responses on your server."
+                title="Unified 2-Way SMS"
+                description="Send and receive messages with a single API. Build chatbots, handle replies, and sync everything to your unified inbox."
+                icon={<RefreshCw className="w-4 h-4 text-white" />}
               />
               <ServiceCard
-                title="Background Mode"
-                description="The Android app runs silently in the background. Your phone remains usable."
-                icon={<Layers className="w-4 h-4 text-white" />}
+                title="Compliance Engine"
+                description="Automated opt-out management. We handle 'STOP' keywords and blacklisting instantly to keep your SIM cards safe."
+                icon={<ShieldCheck className="w-4 h-4 text-white" />}
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-white/10 border border-white/10 border-b">
             <MiniFeature
-              icon={<RefreshCw className="w-5 h-5" />}
-              title="Dual SIM"
-              subtitle="Native multi-SIM support."
+              icon={<AreaChart className="w-5 h-5" />}
+              title="Command Center"
+              subtitle="Live dispatch monitoring."
             />
             <MiniFeature
               icon={<ShieldCheck className="w-5 h-5" />}
@@ -537,10 +539,12 @@ const AlertsPanel: React.FC = () => {
   return (
     <div className="col-span-12 md:col-span-4 border-b md:border-b-0 md:border-r border-white/10 p-8 flex flex-col h-[360px]">
       <div className="mb-6">
-        <h3 className="text-white font-medium text-lg mb-2">SMS MARKETING</h3>
+        <h3 className="text-white font-medium text-lg mb-2 uppercase">
+          Command Center
+        </h3>
         <p className="text-xs leading-relaxed text-white/70">
-          Create engaging campaigns with higher open rates using real mobile
-          numbers.
+          Monitor your dispatch live. Real-time logging of every message
+          attempt, delivery status, and carrier response.
         </p>
       </div>
 
@@ -856,9 +860,9 @@ const InsightsSection: React.FC = () => {
         <SectionHeader
           number="03"
           label="Insights"
-          title="Designed for"
-          subtitle="growth."
-          description="Detailed analytics and reporting to optimize your campaigns."
+          title="Execution"
+          subtitle="transparency."
+          description="Live event streaming and deep analytics. Know exactly how your traffic is performing across all devices."
         />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -892,17 +896,16 @@ const PricingSection: React.FC = () => {
       icon: <Sprout className="w-4.5 h-4.5" />,
       category: "Free",
       title: "Discovery",
-      description: "For hobbyists and testing",
+      description: "Perfect for testing and small-scale automation.",
       price: "$0",
       period: "/month",
       initials: "D",
       features: [
         "100 SMS / month included",
         "1 application",
-        "100 contacts",
-        "1 campaign",
-        "100 recipients per campaign",
+        "100 contacts & 1 campaign",
         "1 device connection",
+        "Standard latency dispatch",
         "Basic receipt webhooks",
         "Community support",
       ],
@@ -911,39 +914,36 @@ const PricingSection: React.FC = () => {
       icon: <Gem className="w-4.5 h-4.5" />,
       category: "Popular",
       title: "Professional",
-      description: "For startups and small businesses",
+      description: "For startups needing high-volume reliability.",
       price: "$10",
       period: "/month",
       initials: "P",
       features: [
-        "Unlimited SMS",
-        "5 applications",
-        "1,000 contacts",
-        "5 campaigns",
-        "1,000 recipients per campaign",
+        "Unlimited SMS volume",
         "Up to 2 devices",
-        "1 SIM per device",
-        "Priority support",
-        "API access & Advanced webhooks",
+        "Smart Priority: Normal",
+        "Advanced Webhooks (JSON)",
+        "Campaign Command Center",
+        "Opt-out Compliance Engine",
+        "Priority Email Support",
       ],
     },
     {
       icon: <Building2 className="w-4.5 h-4.5" />,
       category: "Enterprise",
       title: "Enterprise",
-      description: "For large campaigns and fleets",
+      description: "Pro-grade infrastructure for massive fleets.",
       price: "$99",
       period: "/month",
       initials: "E",
       features: [
         "Unlimited SMS & Apps",
-        "Unlimited contacts & campaigns",
-        "Unlimited recipients",
-        "Unlimited devices",
-        "4 SIMs per device",
+        "Unlimited devices / fleets",
+        "Smart Priority: High (OTPs)",
+        "Sim-slot steering",
         "White-label options",
-        "Dedicated support",
-        "Full API access & Advanced webhooks",
+        "Custom webhooks & integrations",
+        "Dedicated Account Manager",
       ],
     },
   ];
