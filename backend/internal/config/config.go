@@ -30,6 +30,7 @@ type Config struct {
 	R2BucketName           string
 	R2PublicURL            string
 	OpenRouterAPIKey       string
+	OpenRouterModel        string
 }
 
 func Load() *Config {
@@ -61,6 +62,7 @@ func Load() *Config {
 		R2BucketName:           getEnv("R2_BUCKET_NAME", ""),
 		R2PublicURL:            getEnv("R2_PUBLIC_URL", ""),
 		OpenRouterAPIKey:       getEnv("OPENROUTER_API_KEY", ""),
+		OpenRouterModel:        getEnv("OPENROUTER_MODEL", "google/gemini-2.0-flash-exp:free"),
 	}
 }
 

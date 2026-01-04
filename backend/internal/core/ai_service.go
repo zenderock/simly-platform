@@ -13,10 +13,11 @@ import (
 
 type AIService struct {
 	apiKey string
+	model  string
 }
 
-func NewAIService(apiKey string) *AIService {
-	return &AIService{apiKey: apiKey}
+func NewAIService(apiKey, model string) *AIService {
+	return &AIService{apiKey: apiKey, model: model}
 }
 
 type OpenRouterRequest struct {
@@ -49,7 +50,7 @@ If you don't know, return "unknown".
 Example Output: +336, +337`
 
 	reqBody := OpenRouterRequest{
-		Model: "google/gemini-2.0-flash-exp:free",
+		Model: s.model,
 		Messages: []Message{
 			{Role: "system", Content: systemPrompt},
 			{Role: "user", Content: prompt},

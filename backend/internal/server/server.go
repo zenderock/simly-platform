@@ -116,7 +116,7 @@ func (s *Server) setupRoutes() {
 	appDIDService := core.NewAppDIDService(s.DB)
 
 	// AI Service
-	aiService := core.NewAIService(s.Config.OpenRouterAPIKey)
+	aiService := core.NewAIService(s.Config.OpenRouterAPIKey, s.Config.OpenRouterModel)
 
 	// Message Service with Asynq Client
 	messageService := core.NewMessageService(s.DB, webhookService, notificationProvider, rateLimitService, appService, s.Config.SandboxSuccessNumber, s.Config.SandboxFailureNumber, alertService, devicePoolManager, appDIDService, taskClient)
