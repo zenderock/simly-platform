@@ -15,7 +15,7 @@ interface LinkToken {
 }
 
 interface ConnectDeviceContentProps {
-  onSuccess?: () => void;
+  onSuccess?: (deviceId?: number) => void;
   isDialog?: boolean;
 }
 
@@ -36,6 +36,10 @@ export function ConnectDeviceContent({
     }
   }, [step]);
 
+  const [connectedDeviceId, setConnectedDeviceId] = useState<number | null>(
+    null
+  );
+
   // Poll for token status
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -45,10 +49,15 @@ export function ConnectDeviceContent({
         try {
           const res = await api.get<{
             status: string;
-            device_id?: string;
+            device_id?: number | string;
             device_name?: string;
           }>(`/devices/link-token/${linkToken.token}`);
           if (res.data.status === "success") {
+            const devId =
+              typeof res.data.device_id === "string"
+                ? parseInt(res.data.device_id)
+                : res.data.device_id;
+            setConnectedDeviceId(devId || null);
             setStep(3);
             triggerRefresh();
           } else if (res.data.status === "expired") {
@@ -202,7 +211,7 @@ export function ConnectDeviceContent({
             </p>
           </div>
           <Button
-            onClick={() => onSuccess?.()}
+            onClick={() => onSuccess?.(connectedDeviceId || undefined)}
             className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
           >
             Done

@@ -9,17 +9,21 @@ import { NewMessageForm } from "@/components/dashboard/new-message-form";
 import { ArrowRight, Check, MessageSquare } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import api from "@/lib/api";
-import { DashboardStats } from "@/types";
+import { DashboardStats, Device } from "@/types";
 import confetti from "canvas-confetti";
+import { SimPrefixConfig } from "@/components/devices/sim-prefix-config";
+import { Loader2 } from "lucide-react";
 
 export function OnboardingModal() {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<
-    "welcome" | "connect" | "message" | "complete"
+    "welcome" | "connect" | "configure" | "message" | "complete"
   >("welcome");
   const refreshKey = useDashboardStore((state) => state.refreshKey);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [connectedDevice, setConnectedDevice] = useState<Device | null>(null);
+  const [fetchingDevice, setFetchingDevice] = useState(false);
 
   // Check stats to determine if onboarding is needed
   useEffect(() => {
@@ -53,8 +57,29 @@ export function OnboardingModal() {
   // We force it open if devices == 0 ?
   // Let's allow closing for now but it will reappear on refresh if condition meets.
 
-  const handleConnectSuccess = () => {
-    setStep("message");
+  const handleConnectSuccess = async (deviceId?: number) => {
+    if (deviceId) {
+      setFetchingDevice(true);
+      try {
+        const res = await api.get<Device>(`/devices`);
+        // Find the device that was just connected
+        const devices = (res.data as any) || [];
+        const device = devices.find((d: Device) => d.id === deviceId);
+        if (device) {
+          setConnectedDevice(device);
+          setStep("configure");
+        } else {
+          setStep("message");
+        }
+      } catch (err) {
+        console.error("Failed to fetch connected device", err);
+        setStep("message");
+      } finally {
+        setFetchingDevice(false);
+      }
+    } else {
+      setStep("message");
+    }
   };
 
   const handleMessageSuccess = () => {
@@ -96,6 +121,14 @@ export function OnboardingModal() {
                 layout
                 className={`h-2.5 rounded-full transition-colors ${
                   step === "connect"
+                    ? "bg-primary w-12"
+                    : "bg-primary/30 w-8 hover:bg-primary/50"
+                }`}
+              />
+              <motion.div
+                layout
+                className={`h-2.5 rounded-full transition-colors ${
+                  step === "configure"
                     ? "bg-primary w-12"
                     : "bg-primary/30 w-8 hover:bg-primary/50"
                 }`}
@@ -228,6 +261,42 @@ export function OnboardingModal() {
                       onSuccess={handleConnectSuccess}
                       isDialog={false}
                     />
+                  </div>
+                </motion.div>
+              )}
+              {step === "configure" && (
+                <motion.div
+                  key="configure"
+                  initial={{ opacity: 0, x: 50, filter: "blur(10px)" }}
+                  animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+                  exit={{ opacity: 0, x: -50, filter: "blur(10px)" }}
+                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  className="w-full max-w-xl"
+                >
+                  <div className="text-center mb-6 sm:mb-8">
+                    <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">
+                      Configure Global Routing
+                    </h2>
+                    <p className="text-muted-foreground text-sm sm:text-base">
+                      Set up destination prefixes for your SIM cards.
+                    </p>
+                  </div>
+
+                  <div className="bg-card border rounded-3xl shadow-xl overflow-hidden p-6 sm:p-8 transform transition-all hover:shadow-2xl">
+                    {connectedDevice ? (
+                      <SimPrefixConfig
+                        device={connectedDevice}
+                        onSuccess={() => setStep("message")}
+                        isOnboarding
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                        <Loader2 className="size-8 animate-spin text-primary" />
+                        <p className="text-sm text-muted-foreground">
+                          Loading device configuration...
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               )}
