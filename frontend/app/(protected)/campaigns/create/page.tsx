@@ -405,26 +405,38 @@ export default function CreateCampaignPage() {
                                     ?.map((s: any) => s.phone_number)
                                     .filter(Boolean)
                                     .join(", ");
+
+                                  const isDisabled =
+                                    device.status !== "online" ||
+                                    device.requires_setup;
+
                                   return (
                                     <SelectItem
                                       key={device.id}
                                       value={device.id.toString()}
-                                      disabled={device.status !== "online"}
+                                      disabled={isDisabled}
                                     >
                                       <div className="flex items-center">
                                         <div
                                           className={`size-2 rounded-full mr-2 ${
-                                            device.status === "online"
+                                            device.status === "online" &&
+                                            !device.requires_setup
                                               ? "bg-green-500"
                                               : "bg-gray-300"
                                           }`}
                                         />
                                         <span>{device.name}</span>
-                                        {phoneNumbers && (
-                                          <span className="text-xs text-muted-foreground ml-2">
-                                            ({phoneNumbers})
+                                        {device.requires_setup && (
+                                          <span className="text-xs text-red-500 ml-2 font-medium">
+                                            (Requires Setup)
                                           </span>
                                         )}
+                                        {phoneNumbers &&
+                                          !device.requires_setup && (
+                                            <span className="text-xs text-muted-foreground ml-2">
+                                              ({phoneNumbers})
+                                            </span>
+                                          )}
                                       </div>
                                     </SelectItem>
                                   );

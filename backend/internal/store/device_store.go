@@ -11,8 +11,8 @@ import (
 
 func (s *Store) CreateDevice(ctx context.Context, d *model.Device) error {
 	query := `
-		INSERT INTO devices (organization_id, name, model, fcm_token, status, battery_level, signal_strength, tags, last_seen_at, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, 'offline', $5, $6, $7, NOW(), NOW(), NOW())
+		INSERT INTO devices (organization_id, name, model, fcm_token, status, battery_level, signal_strength, tags, requires_setup, last_seen_at, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, 'offline', $5, $6, $7, TRUE, NOW(), NOW(), NOW())
 		RETURNING id, created_at, updated_at
 	`
 	tags := d.Tags
@@ -47,7 +47,7 @@ func (s *Store) CreateSimCard(ctx context.Context, sim *model.SimCard) error {
 
 func (s *Store) GetDevicesByOrganizationID(ctx context.Context, orgID int) ([]model.Device, error) {
 	query := `
-		SELECT id, organization_id, name, model, fcm_token, status, battery_level, signal_strength, tags, last_seen_at, last_battery_alert_at, created_at, updated_at
+		SELECT id, organization_id, name, model, fcm_token, status, battery_level, signal_strength, tags, requires_setup, last_seen_at, last_battery_alert_at, created_at, updated_at
 		FROM devices
 		WHERE organization_id = $1
 		ORDER BY created_at DESC
@@ -62,7 +62,7 @@ func (s *Store) GetDevicesByOrganizationID(ctx context.Context, orgID int) ([]mo
 	for rows.Next() {
 		var d model.Device
 		var tags []string
-		if err := rows.Scan(&d.ID, &d.OrganizationID, &d.Name, &d.Model, &d.FCMToken, &d.Status, &d.BatteryLevel, &d.SignalStrength, &tags, &d.LastSeenAt, &d.LastBatteryAlertAt, &d.CreatedAt, &d.UpdatedAt); err != nil {
+		if err := rows.Scan(&d.ID, &d.OrganizationID, &d.Name, &d.Model, &d.FCMToken, &d.Status, &d.BatteryLevel, &d.SignalStrength, &tags, &d.RequiresSetup, &d.LastSeenAt, &d.LastBatteryAlertAt, &d.CreatedAt, &d.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("failed to scan device: %w", err)
 		}
 		d.Tags = tags
@@ -105,13 +105,13 @@ func (s *Store) GetSimCardsByDeviceID(ctx context.Context, deviceID int) ([]mode
 
 func (s *Store) GetDeviceByID(ctx context.Context, id int) (*model.Device, error) {
 	query := `
-		SELECT id, organization_id, name, model, fcm_token, status, battery_level, signal_strength, tags, last_seen_at, last_battery_alert_at, created_at, updated_at
+		SELECT id, organization_id, name, model, fcm_token, status, battery_level, signal_strength, tags, requires_setup, last_seen_at, last_battery_alert_at, created_at, updated_at
 		FROM devices
 		WHERE id = $1
 	`
 	var d model.Device
 	var tags []string
-	err := s.db.QueryRow(ctx, query, id).Scan(&d.ID, &d.OrganizationID, &d.Name, &d.Model, &d.FCMToken, &d.Status, &d.BatteryLevel, &d.SignalStrength, &tags, &d.LastSeenAt, &d.LastBatteryAlertAt, &d.CreatedAt, &d.UpdatedAt)
+	err := s.db.QueryRow(ctx, query, id).Scan(&d.ID, &d.OrganizationID, &d.Name, &d.Model, &d.FCMToken, &d.Status, &d.BatteryLevel, &d.SignalStrength, &tags, &d.RequiresSetup, &d.LastSeenAt, &d.LastBatteryAlertAt, &d.CreatedAt, &d.UpdatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get device: %w", err)
 	}
@@ -183,6 +183,27 @@ func (s *Store) UpdateDeviceSimCards(ctx context.Context, deviceID int, simCards
 		}
 
 		log.Printf("Successfully updated %d SIM cards for device %d", len(simCards), deviceID)
+
+		// Recalculate requires_setup for the device
+		// Logic: device is configured if at least one active SIM has prefixes
+		hasPrefixes := false
+		for _, sim := range simCards {
+			prefixes := sim.SupportedPrefixes
+			if prefixes == "" {
+				prefixes = prefixMap[sim.SlotIndex]
+			}
+			if sim.IsActive && prefixes != "" {
+				hasPrefixes = true
+				break
+			}
+		}
+
+		requiresSetup := !hasPrefixes
+		_, err = tx.db.Exec(ctx, "UPDATE devices SET requires_setup = $1, updated_at = NOW() WHERE id = $2", requiresSetup, deviceID)
+		if err != nil {
+			return err
+		}
+
 		return nil
 	})
 }
@@ -299,13 +320,13 @@ func (s *Store) UpdateDeviceStatus(ctx context.Context, id int, status string) e
 }
 func (s *Store) GetDeviceByName(ctx context.Context, orgID int, name string) (*model.Device, error) {
 	query := `
-		SELECT id, organization_id, name, model, fcm_token, status, battery_level, signal_strength, tags, last_seen_at, last_battery_alert_at, created_at, updated_at
+		SELECT id, organization_id, name, model, fcm_token, status, battery_level, signal_strength, tags, requires_setup, last_seen_at, last_battery_alert_at, created_at, updated_at
 		FROM devices
 		WHERE organization_id = $1 AND name = $2
 	`
 	var d model.Device
 	var tags []string
-	err := s.db.QueryRow(ctx, query, orgID, name).Scan(&d.ID, &d.OrganizationID, &d.Name, &d.Model, &d.FCMToken, &d.Status, &d.BatteryLevel, &d.SignalStrength, &tags, &d.LastSeenAt, &d.LastBatteryAlertAt, &d.CreatedAt, &d.UpdatedAt)
+	err := s.db.QueryRow(ctx, query, orgID, name).Scan(&d.ID, &d.OrganizationID, &d.Name, &d.Model, &d.FCMToken, &d.Status, &d.BatteryLevel, &d.SignalStrength, &tags, &d.RequiresSetup, &d.LastSeenAt, &d.LastBatteryAlertAt, &d.CreatedAt, &d.UpdatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get device: %w", err)
 	}
@@ -316,13 +337,13 @@ func (s *Store) GetDeviceByName(ctx context.Context, orgID int, name string) (*m
 func (s *Store) UpdateDevice(ctx context.Context, d *model.Device) error {
 	query := `
 		UPDATE devices 
-		SET organization_id=$1, name=$2, model=$3, fcm_token=$4, status=$5, battery_level=$6, signal_strength=$7, tags=$8, last_seen_at=$9, updated_at=NOW()
-		WHERE id=$10
+		SET organization_id=$1, name=$2, model=$3, fcm_token=$4, status=$5, battery_level=$6, signal_strength=$7, tags=$8, requires_setup=$9, last_seen_at=$10, updated_at=NOW()
+		WHERE id=$11
 	`
 	tags := d.Tags
 	if tags == nil {
 		tags = []string{}
 	}
-	_, err := s.db.Exec(ctx, query, d.OrganizationID, d.Name, d.Model, d.FCMToken, d.Status, d.BatteryLevel, d.SignalStrength, tags, d.LastSeenAt, d.ID)
+	_, err := s.db.Exec(ctx, query, d.OrganizationID, d.Name, d.Model, d.FCMToken, d.Status, d.BatteryLevel, d.SignalStrength, tags, d.RequiresSetup, d.LastSeenAt, d.ID)
 	return err
 }

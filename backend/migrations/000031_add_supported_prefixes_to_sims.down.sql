@@ -1,1 +1,1 @@
-ALTER TABLE sim_cards DROP COLUMN supported_prefixes;
+ALTER TABLE device_sims DROP COLUMN supported_prefixes;

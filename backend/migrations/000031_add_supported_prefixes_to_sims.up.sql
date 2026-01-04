@@ -1,1 +1,1 @@
-ALTER TABLE sim_cards ADD COLUMN supported_prefixes TEXT;
+ALTER TABLE device_sims ADD COLUMN supported_prefixes TEXT;

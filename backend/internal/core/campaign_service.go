@@ -152,7 +152,7 @@ func (s *CampaignService) LaunchCampaign(ctx context.Context, id, orgID int) err
 			return err
 		}
 		for _, d := range devices {
-			if d.Status == "online" {
+			if d.Status == "online" && !d.RequiresSetup {
 				eligibleDevices = append(eligibleDevices, d)
 			}
 		}
@@ -161,9 +161,11 @@ func (s *CampaignService) LaunchCampaign(ctx context.Context, id, orgID int) err
 		if err != nil {
 			return err
 		}
-		// For specific device, we use it even if offline (it will just queue)
-		// unless we want to enforce online? Let's check organization ownership.
+		// Check ownership and setup status
 		if d.OrganizationID == orgID {
+			if d.RequiresSetup {
+				return errors.New("selected device requires initial SIM prefix configuration")
+			}
 			eligibleDevices = append(eligibleDevices, *d)
 		}
 	}

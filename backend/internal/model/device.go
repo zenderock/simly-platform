@@ -15,6 +15,7 @@ type Device struct {
 	SignalStrength     int        `json:"signal_strength"`
 	Tags               []string   `json:"tags"` // e.g. ["marketing", "otp", "uk-sim"]
 	SimCards           []SimCard  `json:"sim_cards"`
+	RequiresSetup      bool       `json:"requires_setup"`
 	LastSeenAt         *time.Time `json:"last_seen_at"`
 	LastBatteryAlertAt *time.Time `json:"last_battery_alert_at"`
 	CreatedAt          time.Time  `json:"created_at"`

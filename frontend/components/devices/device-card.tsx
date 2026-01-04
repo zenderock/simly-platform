@@ -67,8 +67,16 @@ export function DeviceCard({
                 <h3 className="font-bold text-base text-zinc-900 dark:text-zinc-100 leading-tight">
                   {device.name}
                 </h3>
-                {isOnline && (
+                {isOnline && !device.requires_setup && (
                   <span className="flex size-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                )}
+                {device.requires_setup && (
+                  <Badge
+                    variant="destructive"
+                    className="text-[10px] uppercase tracking-wider h-4 px-1.5 animate-pulse"
+                  >
+                    Setup Required
+                  </Badge>
                 )}
               </div>
               <p className="text-xs font-mono text-zinc-500 tracking-tight">
@@ -158,6 +166,30 @@ export function DeviceCard({
               </div>
             </div>
           </div>
+
+          {/* Setup Warning */}
+          {device.requires_setup && (
+            <div className="flex flex-col gap-2 p-3 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/50">
+              <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
+                <ShieldAlert className="size-4" />
+                <span className="text-xs font-bold uppercase tracking-tight">
+                  Configuration Needed
+                </span>
+              </div>
+              <p className="text-[11px] text-red-600/80 dark:text-red-400/80 leading-snug">
+                This device is linked but unusable. You must configure SIM
+                prefixes before sending messages.
+              </p>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="h-7 text-[10px] w-full mt-1 bg-red-600 hover:bg-red-700"
+                onClick={() => onEdit?.(device)}
+              >
+                Configure Now
+              </Button>
+            </div>
+          )}
 
           {/* SIM Cards List */}
           <div className="space-y-2">

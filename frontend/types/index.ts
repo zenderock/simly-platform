@@ -66,6 +66,7 @@ export interface Device {
   signal_strength: number;
   tags: string[];
   sim_cards: SimCard[];
+  requires_setup: boolean;
   last_seen_at?: string;
   created_at: string;
   updated_at: string;
