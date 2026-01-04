@@ -2,9 +2,6 @@
 
 import React, { useEffect, useRef } from "react";
 import {
-  Menu,
-  ArrowRight,
-  LayoutGrid,
   FileText,
   MoreHorizontal,
   Gem,
@@ -26,16 +23,12 @@ import {
   AreaChart,
   Bar,
   BarChart,
-  CartesianGrid,
   Cell,
-  Label,
   PolarRadiusAxis,
   RadialBar,
   RadialBarChart,
   ResponsiveContainer,
   Tooltip,
-  XAxis,
-  YAxis,
 } from "recharts";
 import Image from "next/image";
 import Link from "next/link";
@@ -81,7 +74,7 @@ const HeroSection: React.FC = () => {
             No hidden fees, no per-message costs. Just pure execution.
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 border border-white/10 max-w-lg rounded-sm overflow-hidden gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 border border-white/10 max-w-lg rounded-sm overflow-hidden">
             <Link
               href="/register"
               className="group flex items-center bg-[#474747] justify-center gap-3 px-8 py-5 hover:bg-[#575656] transition-all duration-300 border-b sm:border-b-0 sm:border-r border-white/10"
