@@ -75,6 +75,7 @@ export interface Message {
   application_id?: number;
   device_id?: number;
   to: string;
+  from?: string;
   body: string;
   status: string;
   direction: string;

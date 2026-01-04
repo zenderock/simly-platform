@@ -51,6 +51,9 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  ArrowUpRight,
+  ArrowDownLeft,
+  PhoneIncoming,
   Clock,
 } from "lucide-react";
 import { useDashboardStore } from "@/store/dashboard-store";
@@ -66,11 +69,15 @@ export function MessagesTable() {
   const { toast } = useToast();
   const searchQuery = useDashboardStore((state) => state.searchQuery);
   const statusFilter = useDashboardStore((state) => state.statusFilter);
+  const directionFilter = useDashboardStore((state) => state.directionFilter);
   const appFilter = useDashboardStore((state) => state.appFilter);
   const deviceFilter = useDashboardStore((state) => state.deviceFilter);
 
   const setSearchQuery = useDashboardStore((state) => state.setSearchQuery);
   const setStatusFilter = useDashboardStore((state) => state.setStatusFilter);
+  const setDirectionFilter = useDashboardStore(
+    (state) => state.setDirectionFilter
+  );
   const setAppFilter = useDashboardStore((state) => state.setAppFilter);
   const setDeviceFilter = useDashboardStore((state) => state.setDeviceFilter);
   const clearFilters = useDashboardStore((state) => state.clearFilters);
@@ -101,7 +108,10 @@ export function MessagesTable() {
   }, [searchParams, setDeviceFilter]);
 
   const hasActiveFilters =
-    statusFilter !== "all" || appFilter !== "all" || deviceFilter !== "all";
+    statusFilter !== "all" ||
+    directionFilter !== "all" ||
+    appFilter !== "all" ||
+    deviceFilter !== "all";
 
   const uniqueApps = React.useMemo(() => {
     const names = messages.map((m) => m.application_name || "Direct API");
@@ -122,6 +132,7 @@ export function MessagesTable() {
     return messages.filter((msg) => {
       const matchesSearch =
         msg.to.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (msg.from || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
         msg.body.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (msg.application_name || "")
           .toLowerCase()
@@ -140,9 +151,25 @@ export function MessagesTable() {
       const matchesDevice =
         deviceFilter === "all" || msg.device_name === deviceFilter;
 
-      return matchesSearch && matchesStatus && matchesApp && matchesDevice;
+      const matchesDirection =
+        directionFilter === "all" || msg.direction === directionFilter;
+
+      return (
+        matchesSearch &&
+        matchesStatus &&
+        matchesDirection &&
+        matchesApp &&
+        matchesDevice
+      );
     });
-  }, [messages, searchQuery, statusFilter, appFilter, deviceFilter]);
+  }, [
+    messages,
+    searchQuery,
+    statusFilter,
+    directionFilter,
+    appFilter,
+    deviceFilter,
+  ]);
 
   const totalPages = Math.ceil(filteredMessages.length / pageSize);
 
@@ -154,7 +181,14 @@ export function MessagesTable() {
 
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, statusFilter, appFilter, deviceFilter, pageSize]);
+  }, [
+    searchQuery,
+    statusFilter,
+    directionFilter,
+    appFilter,
+    deviceFilter,
+    pageSize,
+  ]);
 
   const goToPage = (page: number) => {
     setCurrentPage(Math.max(1, Math.min(page, totalPages)));
@@ -312,6 +346,28 @@ export function MessagesTable() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-[220px]">
+              <DropdownMenuLabel>Filter by Direction</DropdownMenuLabel>
+              <DropdownMenuCheckboxItem
+                checked={directionFilter === "all"}
+                onCheckedChange={() => setDirectionFilter("all")}
+              >
+                All directions
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={directionFilter === "inbound"}
+                onCheckedChange={() => setDirectionFilter("inbound")}
+              >
+                Inbound only
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={directionFilter === "outbound"}
+                onCheckedChange={() => setDirectionFilter("outbound")}
+              >
+                Outbound only
+              </DropdownMenuCheckboxItem>
+
+              <DropdownMenuSeparator />
+
               <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
               <DropdownMenuCheckboxItem
                 checked={statusFilter === "all"}
@@ -414,7 +470,10 @@ export function MessagesTable() {
                 #
               </TableHead>
               <TableHead className="min-w-[150px] font-bold text-muted-foreground text-[10px] uppercase italic">
-                Recipient
+                Contact
+              </TableHead>
+              <TableHead className="min-w-[80px] font-bold text-muted-foreground text-[10px] uppercase italic">
+                Dir
               </TableHead>
               <TableHead className="min-w-[200px] font-bold text-muted-foreground text-[10px] uppercase italic">
                 Message
@@ -454,7 +513,26 @@ export function MessagesTable() {
                     {(currentPage - 1) * pageSize + index + 1}
                   </TableCell>
                   <TableCell className="font-bold text-xs tabular-nums">
-                    {msg.to}
+                    {msg.direction === "inbound"
+                      ? msg.from || "Unknown"
+                      : msg.to}
+                  </TableCell>
+                  <TableCell>
+                    {msg.direction === "inbound" ? (
+                      <div className="flex items-center gap-1 text-blue-500">
+                        <ArrowDownLeft className="size-3" />
+                        <span className="text-[10px] font-bold uppercase tracking-tighter">
+                          In
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 text-emerald-500">
+                        <ArrowUpRight className="size-3" />
+                        <span className="text-[10px] font-bold uppercase tracking-tighter">
+                          Out
+                        </span>
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell className="max-w-[200px] truncate text-xs text-muted-foreground italic">
                     {msg.body}

@@ -139,6 +139,20 @@ func (s *CampaignService) LaunchCampaign(ctx context.Context, id, orgID int) err
 		return errors.New("no contacts found")
 	}
 
+	// Filter out Blacklisted numbers
+	var activeContacts []model.Contact
+	for _, contact := range contacts {
+		blacklisted, _ := s.store.IsBlacklisted(ctx, orgID, contact.PhoneNumber)
+		if !blacklisted {
+			activeContacts = append(activeContacts, contact)
+		}
+	}
+
+	if len(activeContacts) == 0 {
+		return errors.New("all contacts in this list have opted out (STOP)")
+	}
+	contacts = activeContacts
+
 	// Check limit
 	if err := s.featureLimits.ValidateCampaignRecipients(ctx, orgID, len(contacts)); err != nil {
 		return err

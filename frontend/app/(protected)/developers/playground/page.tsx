@@ -63,6 +63,8 @@ interface PlaygroundEndpoint {
     label: string;
     placeholder: string;
     required: boolean;
+    type?: "text" | "number" | "select";
+    options?: { label: string; value: string }[];
     multiline?: boolean;
   }[];
 }
@@ -88,6 +90,20 @@ const ENDPOINTS: PlaygroundEndpoint[] = [
         placeholder: "Hello from Simly!",
         required: true,
         multiline: true,
+      },
+      {
+        name: "device_id",
+        label: "Device ID (Optional)",
+        placeholder: "123",
+        required: false,
+        type: "number",
+      },
+      {
+        name: "sim_slot",
+        label: "SIM Slot (Optional)",
+        placeholder: "0 or 1",
+        required: false,
+        type: "number",
       },
     ],
   },
@@ -278,10 +294,15 @@ export default function PlaygroundPage() {
       };
 
       if (selectedEndpoint.hasBody && selectedEndpoint.bodyFields) {
-        const body: Record<string, string> = {};
+        const body: Record<string, any> = {};
         selectedEndpoint.bodyFields.forEach((field) => {
-          if (formData[field.name]) {
-            body[field.name] = formData[field.name];
+          const value = formData[field.name];
+          if (value !== undefined && value !== "") {
+            if (field.type === "number") {
+              body[field.name] = parseInt(value, 10);
+            } else {
+              body[field.name] = value;
+            }
           }
         });
         fetchOptions.body = JSON.stringify(body);
@@ -566,7 +587,25 @@ export default function PlaygroundPage() {
                       <span className="text-red-500 ml-1">*</span>
                     )}
                   </Label>
-                  {field.multiline ? (
+                  {field.type === "select" ? (
+                    <Select
+                      value={formData[field.name] || ""}
+                      onValueChange={(value) =>
+                        handleInputChange(field.name, value)
+                      }
+                    >
+                      <SelectTrigger id={field.name}>
+                        <SelectValue placeholder={`Select ${field.label}...`} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {field.options?.map((opt) => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : field.multiline ? (
                     <Textarea
                       id={field.name}
                       placeholder={field.placeholder}
@@ -579,6 +618,7 @@ export default function PlaygroundPage() {
                   ) : (
                     <Input
                       id={field.name}
+                      type={field.type === "number" ? "number" : "text"}
                       placeholder={field.placeholder}
                       value={formData[field.name] || ""}
                       onChange={(e) =>

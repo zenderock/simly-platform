@@ -91,8 +91,36 @@ func (s *MessageService) ReceiveSMS(ctx context.Context, orgID int, fromNumber s
 		return err
 	}
 
+	// Automated Opt-Out / Opt-In Handling
+	cleanBody := strings.TrimSpace(strings.ToUpper(body))
+	optOutKeywords := []string{"STOP", "QUIT", "UNSUBSCRIBE", "CANCEL", "END"}
+	optInKeywords := []string{"START", "YES", "JOIN", "OPTIN"}
+
+	isOptOut := false
+	for _, kw := range optOutKeywords {
+		if cleanBody == kw {
+			isOptOut = true
+			break
+		}
+	}
+
+	if isOptOut {
+		_ = s.store.AddToBlacklist(ctx, orgID, fromNumber)
+	} else {
+		isOptIn := false
+		for _, kw := range optInKeywords {
+			if cleanBody == kw {
+				isOptIn = true
+				break
+			}
+		}
+		if isOptIn {
+			_ = s.store.RemoveFromBlacklist(ctx, orgID, fromNumber)
+		}
+	}
+
 	// Dispatch webhook with resolved AppID
-	s.webhook.DispatchEvent(orgID, applicationID, "sms.received", msg)
+	s.webhook.DispatchEvent(orgID, applicationID, "message.received", msg)
 	return nil
 }
 
@@ -180,6 +208,15 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 		}
 	}
 
+	// Blacklist Check
+	blacklisted, err := s.store.IsBlacklisted(ctx, orgID, req.To)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check blacklist: %w", err)
+	}
+	if blacklisted {
+		return nil, errors.New("cannot send message: recipient has opted out (STOP)")
+	}
+
 	// 1. Rate Limiting Check
 	if req.ApplicationID != nil {
 		if err := s.rateLimiter.AllowRequest(ctx, *req.ApplicationID, orgID); err != nil {
@@ -263,15 +300,13 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 		}
 	}
 
-	// Enforce Plan-based Priority
+	// Enforce Plan-based Priority (Automated)
 	if org.Plan == model.PlanFree {
-		// Free plan always gets low priority regardless of request
 		msg.Priority = "low"
+	} else if org.Plan == model.PlanAgency {
+		msg.Priority = "high"
 	} else {
-		// Paid plans: default to normal if not specified, but allow "high" or "low"
-		if msg.Priority == "" {
-			msg.Priority = "normal"
-		}
+		msg.Priority = "normal"
 	}
 
 	if msg.RequiredTags == nil {
@@ -522,12 +557,32 @@ func (s *MessageService) UpdateStatus(ctx context.Context, msgID int, status str
 		s.alertService.NotifyOrganization(ctx, msg.OrganizationID, "message_failed", title, message, "warning")
 	}
 
-	// 7. Dispatch Webhook
-	s.webhook.DispatchEvent(msg.OrganizationID, msg.ApplicationID, "sms.status_updated", map[string]interface{}{
+	// Determine event type for webhooks
+	eventType := "message.status_updated"
+	if status == "sent" {
+		eventType = "message.sent"
+	} else if status == "delivered" {
+		eventType = "message.delivered"
+	} else if status == "failed" {
+		eventType = "message.failed"
+	}
+
+	s.webhook.DispatchEvent(msg.OrganizationID, msg.ApplicationID, eventType, map[string]interface{}{
 		"message_id":  msgID,
 		"status":      status,
 		"retry_count": msg.RetryCount,
+		"message":     msg, // Include full message context
 	})
+
+	// Also dispatch generic status update event for those who want everything
+	if eventType != "message.status_updated" {
+		s.webhook.DispatchEvent(msg.OrganizationID, msg.ApplicationID, "message.status_updated", map[string]interface{}{
+			"message_id":  msgID,
+			"status":      status,
+			"retry_count": msg.RetryCount,
+			"message":     msg,
+		})
+	}
 
 	return nil
 }

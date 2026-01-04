@@ -106,12 +106,10 @@ func (h *PublicMessageHandler) SendMessage(w http.ResponseWriter, r *http.Reques
 		}
 	}
 
-	// Create the send message request
 	sendReq := model.SendMessageRequest{
 		ApplicationID: &appID,
 		To:            req.To,
 		Body:          req.Body,
-		Priority:      "normal",
 	}
 
 	// Send the message

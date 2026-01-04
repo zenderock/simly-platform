@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/zenderock/simly-backend/internal/model"
@@ -59,9 +60,19 @@ func (s *WebhookService) DispatchEvent(orgID int, appID *int, eventType string, 
 	}
 
 	for _, wh := range webhooks {
-		// 1. Event Type Filter
-		if wh.EventTypes != "" && wh.EventTypes != eventType {
-			continue
+		// 1. Event Type Filter (support comma separated list)
+		if wh.EventTypes != "" {
+			subscribed := strings.Split(wh.EventTypes, ",")
+			match := false
+			for _, t := range subscribed {
+				if strings.TrimSpace(t) == eventType {
+					match = true
+					break
+				}
+			}
+			if !match {
+				continue
+			}
 		}
 
 		// 2. Application Scope Filter

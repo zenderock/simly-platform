@@ -129,10 +129,26 @@ const API_ENDPOINTS: APIEndpoint[] = [
         description: "Message content (max 1600 characters)",
         example: "Hello from Simly!",
       },
+      {
+        name: "device_id",
+        type: "integer",
+        required: false,
+        description: "Force sending via a specific device ID",
+        example: "123",
+      },
+      {
+        name: "sim_slot",
+        type: "integer",
+        required: false,
+        description: "Sim slot to use (0 or 1)",
+        example: "0",
+      },
     ],
     requestExample: {
       to: "+33612345678",
       body: "Hello from Simly!",
+      device_id: 123,
+      sim_slot: 0,
     },
     responseExample: {
       id: "msg_abc123xyz",

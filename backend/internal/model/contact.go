@@ -14,6 +14,13 @@ type Contact struct {
 	UpdatedAt      time.Time `json:"updated_at"`
 }
 
+type Blacklist struct {
+	ID             int       `json:"id"`
+	OrganizationID int       `json:"organization_id"`
+	PhoneNumber    string    `json:"phone_number"`
+	CreatedAt      time.Time `json:"created_at"`
+}
+
 type ContactList struct {
 	ID             int       `json:"id"`
 	OrganizationID int       `json:"organization_id"`

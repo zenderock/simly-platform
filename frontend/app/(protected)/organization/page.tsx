@@ -326,7 +326,7 @@ export default function OrganizationPage() {
                     </div>
                     <Button
                       asChild
-                      className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0"
+                      className="w-full bg-linear-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0"
                     >
                       <Link href="/organization/plans">Upgrade to Pro</Link>
                     </Button>

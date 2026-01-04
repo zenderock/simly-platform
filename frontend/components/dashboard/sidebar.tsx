@@ -117,7 +117,6 @@ const developerMenuItems = [
 export function DashboardSidebar({
   ...props
 }: React.ComponentProps<typeof Sidebar>) {
-  const [appsOpen, setAppsOpen] = React.useState(true);
   const [developersOpen, setDevelopersOpen] = React.useState(true);
   const pathname = usePathname();
   const { user, logout, organizations, organizationId } = useAuth();
@@ -235,57 +234,136 @@ export function DashboardSidebar({
         </SidebarHeader>
 
         <SidebarContent className="px-3 sm:px-4 lg:px-5">
-          {/* Active Application Context */}
-          <div className="flex items-center gap-2 sm:gap-3 rounded-lg border bg-card p-2 sm:p-3 mb-3 sm:mb-4 mt-4">
-            <div
-              className={`flex size-8 sm:size-[34px] items-center justify-center rounded-lg shrink-0 ${
-                activeApp
-                  ? activeApp.is_sandbox
-                    ? "bg-orange-500 text-white"
-                    : "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground"
-              }`}
-            >
-              {activeApp ? (
-                activeApp.is_sandbox ? (
-                  <IconShieldHalfFilled className="size-4 sm:size-5" />
-                ) : (
-                  <IconCategory2 className="size-4 sm:size-5" />
-                )
-              ) : (
-                <IconFolder className="size-4 sm:size-5" />
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-xs sm:text-sm truncate">
-                {activeApp?.name || "No App Selected"}
-              </p>
-              {activeApp && (
-                <div className="flex items-center gap-1 text-muted-foreground">
-                  {activeApp.is_sandbox ? (
-                    <>
-                      <IconShieldHalfFilled className="size-3 text-orange-500" />
-                      <span className="text-[10px] sm:text-xs font-bold text-orange-500">
-                        Sandbox
-                      </span>
-                    </>
+          {/* Active Application Switcher */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <div className="flex items-center gap-2 sm:gap-3 rounded-lg border bg-card p-2 sm:p-3 mb-3 sm:mb-4 mt-4 cursor-pointer hover:bg-accent/50 transition-colors group">
+                <div
+                  className={`flex size-8 sm:size-[34px] items-center justify-center rounded-lg shrink-0 ${
+                    activeApp
+                      ? activeApp.is_sandbox
+                        ? "bg-orange-500 text-white"
+                        : "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {activeApp ? (
+                    activeApp.is_sandbox ? (
+                      <IconShieldHalfFilled className="size-4 sm:size-5" />
+                    ) : (
+                      <IconCategory2 className="size-4 sm:size-5" />
+                    )
                   ) : (
-                    <>
-                      <IconCategory2 className="size-3 text-emerald-500" />
-                      <span className="text-[10px] sm:text-xs font-bold text-emerald-500">
-                        Production
-                      </span>
-                    </>
+                    <IconFolder className="size-4 sm:size-5" />
                   )}
                 </div>
-              )}
-              {!activeApp && (
-                <p className="text-[10px] sm:text-xs text-muted-foreground">
-                  Select an application to get started
-                </p>
-              )}
-            </div>
-          </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-xs sm:text-sm truncate">
+                    {activeApp?.name || "No App Selected"}
+                  </p>
+                  {activeApp && (
+                    <div className="flex items-center gap-1 text-muted-foreground font-bold tracking-tighter">
+                      {activeApp.is_sandbox ? (
+                        <>
+                          <IconShieldHalfFilled className="size-3 text-orange-500" />
+                          <span className="text-[10px] sm:text-xs text-orange-500">
+                            Sandbox
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <IconCategory2 className="size-3 text-emerald-500" />
+                          <span className="text-[10px] sm:text-xs text-emerald-500">
+                            Production
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  )}
+                  {!activeApp && (
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">
+                      Switch application
+                    </p>
+                  )}
+                </div>
+                <IconChevronDown className="size-4 text-muted-foreground opacity-50 group-hover:opacity-100 transition-opacity" />
+              </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-[280px]">
+              <div className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                Switch Application
+              </div>
+              <DropdownMenuSeparator />
+              <div className="max-h-[300px] overflow-y-auto">
+                {applications.map((app) => (
+                  <ContextMenu key={app.id}>
+                    <ContextMenuTrigger>
+                      <DropdownMenuItem
+                        onClick={() => setActiveAppId(app.id)}
+                        className={`gap-3 h-11 px-3 ${
+                          activeAppId === app.id ? "bg-accent" : ""
+                        }`}
+                      >
+                        <div
+                          className={`p-1.5 rounded-md ${
+                            app.is_sandbox
+                              ? "bg-orange-100 text-orange-600"
+                              : "bg-emerald-100 text-emerald-600"
+                          }`}
+                        >
+                          <IconCategory2 className="size-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p
+                            className={`text-sm truncate ${
+                              activeAppId === app.id
+                                ? "font-bold"
+                                : "font-medium"
+                            }`}
+                          >
+                            {app.name}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-tight">
+                            {app.is_sandbox ? "Sandbox" : "Production"}
+                          </p>
+                        </div>
+                        {activeAppId === app.id && (
+                          <div className="size-2 rounded-full bg-primary" />
+                        )}
+                      </DropdownMenuItem>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent>
+                      <ContextMenuItem onClick={() => handleRenameClick(app)}>
+                        <IconPencil className="size-4 mr-2" />
+                        Rename
+                      </ContextMenuItem>
+                      <ContextMenuItem
+                        className="text-destructive font-medium"
+                        onClick={() => handleDeleteClick(app)}
+                      >
+                        <IconTrash className="size-4 mr-2" />
+                        Delete
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
+                ))}
+              </div>
+              <DropdownMenuSeparator />
+              <CreateApplicationDialog
+                onCreated={() =>
+                  useApplicationStore.getState().fetchApplications()
+                }
+              >
+                <DropdownMenuItem
+                  onSelect={(e) => e.preventDefault()}
+                  className="gap-3 h-11 px-3 text-primary font-bold cursor-pointer transition-colors active:scale-95"
+                >
+                  <IconPlus className="size-5" />
+                  Create New Application
+                </DropdownMenuItem>
+              </CreateApplicationDialog>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <SidebarGroup className="p-0">
             <SidebarGroupContent>
@@ -365,103 +443,6 @@ export function DashboardSidebar({
                         </SidebarMenuButton>
                       </SidebarMenuItem>
                     ))}
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </CollapsibleContent>
-            </SidebarGroup>
-          </Collapsible>
-
-          <Collapsible
-            open={appsOpen}
-            onOpenChange={setAppsOpen}
-            className="mt-4"
-          >
-            <SidebarGroup className="p-0">
-              <SidebarGroupLabel className="flex items-center justify-between px-0 text-[10px] sm:text-[11px] font-semibold tracking-wider text-muted-foreground">
-                <CollapsibleTrigger asChild>
-                  <div className="flex items-center gap-1.5 cursor-pointer">
-                    <IconChevronDown
-                      className={`size-3 sm:size-3.5 transition-transform ${
-                        appsOpen ? "" : "-rotate-90"
-                      }`}
-                    />
-                    APPLICATIONS
-                  </div>
-                </CollapsibleTrigger>
-                <CreateApplicationDialog
-                  onCreated={() =>
-                    useApplicationStore.getState().fetchApplications()
-                  }
-                >
-                  <IconPlus className="size-4 cursor-pointer hover:text-foreground transition-colors" />
-                </CreateApplicationDialog>
-              </SidebarGroupLabel>
-              <CollapsibleContent>
-                <SidebarGroupContent>
-                  <SidebarMenu className="mt-2">
-                    {applications.map((app) => (
-                      <SidebarMenuItem key={app.id}>
-                        <ContextMenu>
-                          <ContextMenuTrigger asChild>
-                            <SidebarMenuButton
-                              isActive={activeAppId === app.id}
-                              className="h-9 sm:h-[38px] w-full"
-                              onClick={() => setActiveAppId(app.id)}
-                            >
-                              <IconCategory2
-                                className={`size-4 sm:size-5 ${
-                                  activeAppId === app.id
-                                    ? "text-primary"
-                                    : "text-muted-foreground"
-                                }`}
-                              />
-                              <span
-                                className={`flex-1 text-sm truncate ${
-                                  activeAppId === app.id
-                                    ? "font-bold"
-                                    : "text-muted-foreground"
-                                }`}
-                              >
-                                {app.name}
-                              </span>
-                              {app.is_sandbox && (
-                                <div className="size-1.5 rounded-full bg-orange-500 shrink-0" />
-                              )}
-                              {!app.is_sandbox && activeAppId === app.id && (
-                                <div className="size-1.5 rounded-full bg-primary shrink-0" />
-                              )}
-                            </SidebarMenuButton>
-                          </ContextMenuTrigger>
-                          <ContextMenuContent>
-                            <ContextMenuItem
-                              onClick={() => handleRenameClick(app)}
-                            >
-                              <IconPencil className="size-4 mr-2" />
-                              Rename
-                            </ContextMenuItem>
-                            <ContextMenuItem
-                              className="text-destructive"
-                              onClick={() => handleDeleteClick(app)}
-                            >
-                              <IconTrash className="size-4 mr-2" />
-                              Delete
-                            </ContextMenuItem>
-                          </ContextMenuContent>
-                        </ContextMenu>
-                      </SidebarMenuItem>
-                    ))}
-                    <SidebarMenuItem>
-                      <CreateApplicationDialog
-                        onCreated={() =>
-                          useApplicationStore.getState().fetchApplications()
-                        }
-                      >
-                        <SidebarMenuButton className="h-9 sm:h-[38px] border-zinc-200/50 text-muted-foreground hover:text-primary">
-                          <IconPlus className="size-4" />
-                          <span className="text-xs">Create New App</span>
-                        </SidebarMenuButton>
-                      </CreateApplicationDialog>
-                    </SidebarMenuItem>
                   </SidebarMenu>
                 </SidebarGroupContent>
               </CollapsibleContent>
