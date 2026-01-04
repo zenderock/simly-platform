@@ -36,6 +36,7 @@ func (s *SchedulerService) Start(ctx context.Context) {
 		case <-ticker.C:
 			s.processScheduledMessages(ctx)
 			s.processScheduledCampaigns(ctx)
+			s.monitorProcessingCampaigns(ctx)
 		}
 	}
 }
@@ -75,10 +76,39 @@ func (s *SchedulerService) processScheduledCampaigns(ctx context.Context) {
 			// Launch the campaign
 			if err := s.campaignService.LaunchCampaign(ctx, c.ID, c.OrganizationID); err != nil {
 				log.Printf("Scheduler: Failed to launch campaign %d: %v", c.ID, err)
-				// Optional: Set status to failed or add a retry mechanism?
-				// For now, if launch fails, it stays scheduled and might be picked up again
-				// unless we change its status or have a retry count.
-				// But LaunchCampaign updates status to Processing on success.
+			}
+		}
+	}
+}
+
+func (s *SchedulerService) monitorProcessingCampaigns(ctx context.Context) {
+	campaigns, err := s.db.GetProcessingCampaigns(ctx)
+	if err != nil {
+		log.Printf("Scheduler: Failed to fetch processing campaigns: %v", err)
+		return
+	}
+
+	for _, c := range campaigns {
+		stats, err := s.db.GetCampaignMessageStats(ctx, c.ID)
+		if err != nil {
+			log.Printf("Scheduler: Failed to fetch stats for campaign %d: %v", c.ID, err)
+			continue
+		}
+
+		// A campaign is completed when all its messages are in a terminal state
+		// Terminal states: sent, delivered, failed
+		// Active states: queued, pending, (scheduled - though shouldn't happen for active campaign messages)
+		if stats.Queued == 0 && stats.Pending == 0 {
+			log.Printf("Scheduler: Campaign %d (%s) finished. Finalizing...", c.ID, c.Name)
+
+			if err := s.db.UpdateCampaignStatus(ctx, c.ID, "completed"); err != nil {
+				log.Printf("Scheduler: Failed to update campaign %d status to completed: %v", c.ID, err)
+				continue
+			}
+
+			// Update final stats for quick access
+			if err := s.db.UpdateCampaignFinalStats(ctx, c.ID, stats.Sent+stats.Delivered, stats.Failed); err != nil {
+				log.Printf("Scheduler: Failed to update campaign %d final stats: %v", c.ID, err)
 			}
 		}
 	}

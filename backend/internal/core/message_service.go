@@ -484,6 +484,37 @@ func (s *MessageService) UpdateStatus(ctx context.Context, msgID int, status str
 		}
 	}
 
+	// Increment Campaign Stats if message belongs to a campaign
+	if msg.CampaignID != nil {
+		sentDelta := 0
+		failedDelta := 0
+
+		// Terminal states: sent, delivered, failed
+		// Logic: only increment if transitioning FROM a non-terminal state
+		isOldTerminal := msg.Status == "sent" || msg.Status == "delivered" || msg.Status == "failed"
+		isNewTerminal := status == "sent" || status == "delivered" || status == "failed"
+
+		if !isOldTerminal && isNewTerminal {
+			if status == "sent" || status == "delivered" {
+				sentDelta = 1
+			} else if status == "failed" {
+				failedDelta = 1
+			}
+		} else if (msg.Status == "failed") && (status == "sent" || status == "delivered") {
+			// If it was failed but now succeeded (e.g. manual retry? though usually retries are new messages)
+			// Actually retries in this service create a NEW message or reset the SAME message?
+			// Line 449 resets the status to "queued". So it's no longer terminal.
+			sentDelta = 1
+			failedDelta = -1
+		}
+
+		if sentDelta != 0 || failedDelta != 0 {
+			if err := s.store.IncrementCampaignStats(ctx, *msg.CampaignID, sentDelta, failedDelta); err != nil {
+				log.Printf("Warning: failed to increment campaign stats for campaign %d: %v\n", *msg.CampaignID, err)
+			}
+		}
+	}
+
 	// 6. Trigger Alert if Fail in terminal state
 	if status == "failed" {
 		title := "Message Delivery Failed"
