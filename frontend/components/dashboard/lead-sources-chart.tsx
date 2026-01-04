@@ -24,28 +24,19 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Sector } from "recharts";
 import api from "@/lib/api";
 import { DashboardStats } from "@/types";
 import { useDashboardStore } from "@/store/dashboard-store";
+import { useApplicationStore } from "@/store/application-store";
+import { useDashboardStats } from "@/hooks/use-dashboard-stats";
 import { toPng } from "html-to-image";
 import { toast } from "sonner";
 
 export function LeadSourcesChart() {
-  const refreshKey = useDashboardStore((state) => state.refreshKey);
   const triggerRefresh = useDashboardStore((state) => state.triggerRefresh);
+  const activeAppId = useApplicationStore((state) => state.activeAppId);
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [showLabels, setShowLabels] = useState(true);
-  const [stats, setStats] = useState<DashboardStats | null>(null);
   const chartRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const res = await api.get<DashboardStats>("/dashboard/stats");
-        setStats(res.data);
-      } catch (error) {
-        console.error("Failed to fetch dashboard stats", error);
-      }
-    };
-    fetchStats();
-  }, [refreshKey]);
+  const { data: stats } = useDashboardStats(activeAppId);
 
   const sent = stats?.sent_messages || 0;
   const delivered = stats?.delivered_messages || 0;
