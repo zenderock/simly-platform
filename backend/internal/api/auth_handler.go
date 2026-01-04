@@ -25,13 +25,13 @@ func NewAuthHandler(service *core.UserService, captchaService *core.CaptchaServi
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req model.CreateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		RespondWithError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	// Verify Turnstile Token
 	if err := h.captchaService.VerifyToken(r.Context(), req.TurnstileToken); err != nil {
-		http.Error(w, "Security check failed", http.StatusForbidden)
+		RespondWithError(w, http.StatusForbidden, "Security check failed")
 		return
 	}
 
@@ -59,13 +59,13 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req model.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		RespondWithError(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
 	// Verify Turnstile Token
 	if err := h.captchaService.VerifyToken(r.Context(), req.TurnstileToken); err != nil {
-		http.Error(w, "Security check failed", http.StatusForbidden)
+		RespondWithError(w, http.StatusForbidden, "Security check failed")
 		return
 	}
 

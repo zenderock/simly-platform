@@ -39,6 +39,11 @@ export function ConnectDeviceContent({
   const [connectedDeviceId, setConnectedDeviceId] = useState<number | null>(
     null
   );
+  const [downloadUrl, setDownloadUrl] = useState("");
+
+  useEffect(() => {
+    setDownloadUrl(`${window.location.origin}/releases/simly-gateway-v1.apk`);
+  }, []);
 
   // Poll for token status
   useEffect(() => {
@@ -122,28 +127,40 @@ export function ConnectDeviceContent({
           animate={{ opacity: 1, y: 0 }}
           className="space-y-6 max-w-sm mx-auto"
         >
-          <div className="size-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto">
-            <Download className="size-8 text-primary" />
-          </div>
           <div className="space-y-2">
-            <p className="font-semibold">Step 1: Download the App</p>
+            <p className="font-semibold">Step 1: Install Simly App</p>
             <p className="text-sm text-muted-foreground px-6">
-              Download the Simly APK on your Android phone. Ensure "Install from
-              unknown sources" is enabled.
+              Scan this QR code with your Android phone to download the app.
             </p>
           </div>
+
+          <div className="bg-white p-4 rounded-xl border inline-block shadow-sm">
+            {downloadUrl && (
+              <QRCodeSVG
+                value={downloadUrl}
+                size={160}
+                level="M"
+                includeMargin={false}
+              />
+            )}
+          </div>
+
           <div className="flex flex-col gap-2">
-            <Button onClick={handleDownload} className="w-full h-11 font-bold">
-              <Download className="size-4 mr-2" />
-              Download APK
-            </Button>
+            <div className="text-xs text-muted-foreground mb-2">
+              Can't scan?{" "}
+              <button
+                onClick={handleDownload}
+                className="text-primary hover:underline font-medium"
+              >
+                Download APK manually
+              </button>
+            </div>
             <Button
-              variant="ghost"
-              size="sm"
               onClick={() => setStep(2)}
-              className="text-xs text-muted-foreground"
+              className="w-full h-11 font-bold"
             >
-              I've already installed the app
+              I have installed the app
+              <Check className="size-4 ml-2" />
             </Button>
           </div>
         </motion.div>
