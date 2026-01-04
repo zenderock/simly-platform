@@ -5,7 +5,7 @@ import { Footer } from "@/components/landing/footer";
 
 export default function PrivacyPage() {
   return (
-    <div className="bg-[#05080A] min-h-screen flex flex-col text-white selection:bg-[#6e3ff3]/30 selection:text-[#6e3ff3]">
+    <div className="bg-[#05080A] min-h-screen flex flex-col text-white selection:bg-[#8c52ff]/30 selection:text-[#8c52ff]">
       <Header />
       <main className="grow py-24 px-6 sm:px-12">
         <div className="max-w-3xl mx-auto space-y-12">

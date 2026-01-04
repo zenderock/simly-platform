@@ -163,7 +163,7 @@ export default function ApplicationsPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
             placeholder="Search applications..."
-            className="pl-10 h-10 shadow-none border-zinc-200 dark:border-zinc-800 focus-visible:ring-[#6e3ff3]"
+            className="pl-10 h-10 shadow-none border-zinc-200 dark:border-zinc-800 focus-visible:ring-[#8c52ff]"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />

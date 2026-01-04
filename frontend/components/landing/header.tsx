@@ -60,7 +60,7 @@ export const Header: React.FC = () => {
           </Link>
           <Link
             href="/register"
-            className="h-full w-full md:w-auto px-8 flex items-center justify-center text-xs font-medium tracking-wide text-white hover:text-[#6e3ff3] transition-colors gap-2"
+            className="h-full w-full md:w-auto px-8 flex items-center justify-center text-xs font-medium tracking-wide text-white hover:text-[#8c52ff] transition-colors gap-2"
           >
             REGISTER
             <ArrowRight className="w-4 h-4" />

@@ -8,7 +8,7 @@ export const Footer: React.FC = () => {
     <footer className="border bg-[#05080A] border-white/10 border-t pt-20 pb-10">
       <div className="max-w-6xl mx-auto w-full flex flex-col">
         {/* Green Section */}
-        <div className="relative bg-[#6e3ff3] text-black w-full overflow-hidden border-x border-t border-white/10">
+        <div className="relative bg-[#8c52ff] text-black w-full overflow-hidden border-x border-t border-white/10">
           <div className="absolute inset-0 grid grid-cols-4 w-full h-full pointer-events-none">
             <div className="border-r border-black/10 h-full"></div>
             <div className="border-r border-black/10 h-full"></div>

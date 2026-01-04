@@ -130,7 +130,7 @@ export default function CampaignDetailsPage() {
     chartData.push({
       name: "Sent",
       value: analytics.sent,
-      color: "#6e3ff3",
+      color: "#8c52ff",
     });
   }
 
@@ -148,7 +148,7 @@ export default function CampaignDetailsPage() {
         );
       case "processing":
         return (
-          <Badge className="bg-[#6e3ff3] shadow-[0_0_15px_rgba(110,63,243,0.3)] animate-pulse">
+          <Badge className="bg-[#8c52ff] shadow-[0_0_15px_rgba(110,63,243,0.3)] animate-pulse">
             <IconBolt className="size-3 mr-1 fill-white" />
             Live Processing
           </Badge>
@@ -333,7 +333,7 @@ export default function CampaignDetailsPage() {
                               (analytics.sent / (analytics.total || 1)) * 100
                             }%`,
                           }}
-                          className="h-full bg-[#6e3ff3]"
+                          className="h-full bg-[#8c52ff]"
                         />
                       </div>
                     </div>
@@ -570,7 +570,7 @@ function StatsCard({ title, value, icon, color, footer }: any) {
     emerald: "text-emerald-500 bg-emerald-50 dark:bg-emerald-950/30",
     amber: "text-amber-500 bg-amber-50 dark:bg-amber-950/30",
     rose: "text-rose-500 bg-rose-50 dark:bg-rose-950/30",
-    indigo: "text-[#6e3ff3] bg-[#6e3ff3]/10",
+    indigo: "text-[#8c52ff] bg-[#8c52ff]/10",
   };
 
   return (

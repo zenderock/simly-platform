@@ -8,27 +8,27 @@ import { Footer } from "@/components/landing/footer";
 
 export default function DownloadPage() {
   return (
-    <div className="bg-[#05080A] min-h-screen flex flex-col text-white/70 font-sans selection:bg-[#6e3ff3]/30 selection:text-[#6e3ff3]">
+    <div className="bg-[#05080A] min-h-screen flex flex-col text-white/70 font-sans selection:bg-[#8c52ff]/30 selection:text-[#8c52ff]">
       <Header />
 
       <main className="grow flex flex-col items-center justify-center relative overflow-hidden py-24 px-4 sm:px-6 lg:px-8">
         {/* Background Effects */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-          <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#6e3ff3]/10 blur-[120px] rounded-full"></div>
-          <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#6e3ff3]/5 blur-[120px] rounded-full"></div>
+          <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#8c52ff]/10 blur-[120px] rounded-full"></div>
+          <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#8c52ff]/5 blur-[120px] rounded-full"></div>
         </div>
 
         <div className="relative z-10 max-w-2xl w-full text-center space-y-10">
           <div className="flex justify-center pt-8">
-            <div className="w-24 h-24 bg-[#6e3ff3]/5 rounded-3xl flex items-center justify-center border border-[#6e3ff3]/20 shadow-[0_0_40px_rgba(110,63,243,0.15)] relative">
-              <div className="absolute inset-0 bg-[#6e3ff3]/10 blur-xl rounded-full"></div>
-              <Smartphone className="w-10 h-10 text-[#6e3ff3] relative z-10" />
+            <div className="w-24 h-24 bg-[#8c52ff]/5 rounded-3xl flex items-center justify-center border border-[#8c52ff]/20 shadow-[0_0_40px_rgba(110,63,243,0.15)] relative">
+              <div className="absolute inset-0 bg-[#8c52ff]/10 blur-xl rounded-full"></div>
+              <Smartphone className="w-10 h-10 text-[#8c52ff] relative z-10" />
             </div>
           </div>
 
           <div className="space-y-4">
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-light tracking-tighter text-white">
-              Download <span className="text-[#6e3ff3]">Simly Gateway</span>
+              Download <span className="text-[#8c52ff]">Simly Gateway</span>
             </h1>
             <p className="text-lg text-white/60 leading-relaxed max-w-lg mx-auto font-light">
               Turn your Android phone into a powerful SMS gateway in minutes.
@@ -37,7 +37,7 @@ export default function DownloadPage() {
 
           <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-8 sm:p-10 text-left space-y-8 backdrop-blur-sm shadow-xl">
             <div className="flex items-start gap-5 group">
-              <div className="w-10 h-10 rounded-full bg-[#15191E] border border-white/10 flex items-center justify-center text-white/90 font-medium shrink-0 group-hover:border-[#6e3ff3]/50 transition-colors">
+              <div className="w-10 h-10 rounded-full bg-[#15191E] border border-white/10 flex items-center justify-center text-white/90 font-medium shrink-0 group-hover:border-[#8c52ff]/50 transition-colors">
                 1
               </div>
               <div>
@@ -52,7 +52,7 @@ export default function DownloadPage() {
             </div>
             <div className="w-px h-8 bg-white/5 ml-5 -my-4"></div>
             <div className="flex items-start gap-5 group">
-              <div className="w-10 h-10 rounded-full bg-[#15191E] border border-white/10 flex items-center justify-center text-white/90 font-medium shrink-0 group-hover:border-[#6e3ff3]/50 transition-colors">
+              <div className="w-10 h-10 rounded-full bg-[#15191E] border border-white/10 flex items-center justify-center text-white/90 font-medium shrink-0 group-hover:border-[#8c52ff]/50 transition-colors">
                 2
               </div>
               <div>
@@ -67,7 +67,7 @@ export default function DownloadPage() {
             </div>
             <div className="w-px h-8 bg-white/5 ml-5 -my-4"></div>
             <div className="flex items-start gap-5 group">
-              <div className="w-10 h-10 rounded-full bg-[#15191E] border border-white/10 flex items-center justify-center text-white/90 font-medium shrink-0 group-hover:border-[#6e3ff3]/50 transition-colors">
+              <div className="w-10 h-10 rounded-full bg-[#15191E] border border-white/10 flex items-center justify-center text-white/90 font-medium shrink-0 group-hover:border-[#8c52ff]/50 transition-colors">
                 3
               </div>
               <div>
@@ -89,7 +89,7 @@ export default function DownloadPage() {
             >
               <Button
                 size="lg"
-                className="w-full sm:min-w-[200px] bg-[#6e3ff3] hover:bg-[#5b32d1] text-white gap-2 h-14 text-sm uppercase tracking-wide font-medium rounded-sm"
+                className="w-full sm:min-w-[200px] bg-[#8c52ff] hover:bg-[#5b32d1] text-white gap-2 h-14 text-sm uppercase tracking-wide font-medium rounded-sm"
               >
                 <Download className="w-4 h-4" />
                 Download APK (v1.0)

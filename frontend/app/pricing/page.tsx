@@ -28,9 +28,9 @@ const PricingCard: React.FC<PricingCardProps> = ({
   features,
 }) => {
   return (
-    <div className="group relative flex h-full flex-col bg-[#05080A] border border-white/10 p-8 hover:border-[#6e3ff3]/50 transition-all duration-300 rounded-lg">
+    <div className="group relative flex h-full flex-col bg-[#05080A] border border-white/10 p-8 hover:border-[#8c52ff]/50 transition-all duration-300 rounded-lg">
       <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-[#6e3ff3]">
+        <div className="flex items-center gap-2 text-[#8c52ff]">
           {icon}
           <span className="text-xs font-semibold tracking-wide uppercase">
             {category}
@@ -39,7 +39,7 @@ const PricingCard: React.FC<PricingCardProps> = ({
       </div>
 
       <div className="flex-1 flex flex-col">
-        <div className="w-10 h-10 rounded bg-[#6e3ff3] flex items-center justify-center text-black font-bold text-lg mb-6">
+        <div className="w-10 h-10 rounded bg-[#8c52ff] flex items-center justify-center text-black font-bold text-lg mb-6">
           {initials}
         </div>
 
@@ -52,7 +52,7 @@ const PricingCard: React.FC<PricingCardProps> = ({
         <ul className="space-y-3 mb-8 flex-1">
           {features.map((feature, i) => (
             <li key={i} className="flex items-start gap-3">
-              <Check className="w-4 h-4 text-[#6e3ff3] flex-shrink-0 mt-0.5" />
+              <Check className="w-4 h-4 text-[#8c52ff] flex-shrink-0 mt-0.5" />
               <span className="text-white/70 text-xs font-light leading-relaxed">
                 {feature}
               </span>
@@ -67,7 +67,7 @@ const PricingCard: React.FC<PricingCardProps> = ({
           </div>
 
           <Link href="/register" className="w-full">
-            <Button className="w-full bg-white/5 hover:bg-[#6e3ff3] hover:text-white text-white border border-white/10 transition-colors uppercase text-xs tracking-wider">
+            <Button className="w-full bg-white/5 hover:bg-[#8c52ff] hover:text-white text-white border border-white/10 transition-colors uppercase text-xs tracking-wider">
               Choose Plan
             </Button>
           </Link>
@@ -140,7 +140,7 @@ export default function PricingPage() {
   ];
 
   return (
-    <div className="bg-[#05080A] min-h-screen font-sans flex flex-col text-white selection:bg-[#6e3ff3]/30 selection:text-[#6e3ff3]">
+    <div className="bg-[#05080A] min-h-screen font-sans flex flex-col text-white selection:bg-[#8c52ff]/30 selection:text-[#8c52ff]">
       <Header />
       <main className="grow">
         <div className="max-w-6xl mx-auto px-6 py-24">

@@ -53,8 +53,8 @@ const HeroSection: React.FC = () => {
 
         <div className="relative z-10 max-w-2xl">
           <div className="flex items-center gap-2 mb-6">
-            <span className="flex h-2 w-2 rounded-full bg-[#6e3ff3]"></span>
-            <p className="text-[#6e3ff3] text-xs tracking-widest uppercase text-white/70">
+            <span className="flex h-2 w-2 rounded-full bg-[#8c52ff]"></span>
+            <p className="text-[#8c52ff] text-xs tracking-widest uppercase text-white/70">
               Simly Android SMS Gateway v1.0
             </p>
           </div>
@@ -64,7 +64,7 @@ const HeroSection: React.FC = () => {
             <br />
             infrastructure.
             <br />
-            <span className="font-light tracking-tighter text-white bg-[#6e3ff3] px-2">
+            <span className="font-light tracking-tighter text-white bg-[#8c52ff] px-2">
               Powered by you.
             </span>
           </h1>
@@ -115,7 +115,7 @@ const HeroSection: React.FC = () => {
 const DashboardMockup: React.FC = () => {
   return (
     <div className="relative w-full max-w-[600px] mx-auto md:max-w-none">
-      <div className="relative z-10  overflow-hidden shadow-2xl border border-white/10 bg-[#6e3ff3]">
+      <div className="relative z-10  overflow-hidden shadow-2xl border border-white/10 bg-[#8c52ff]">
         <Image
           src="/hero.png"
           alt="Simly Dashboard"
@@ -127,7 +127,7 @@ const DashboardMockup: React.FC = () => {
       </div>
 
       {/* Background Glow Effect */}
-      <div className="absolute -inset-4 bg-[#6e3ff3]/20 blur-3xl -z-10 rounded-full opacity-50"></div>
+      <div className="absolute -inset-4 bg-[#8c52ff]/20 blur-3xl -z-10 rounded-full opacity-50"></div>
     </div>
   );
 };
@@ -221,7 +221,7 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-8 z-10 relative">
         <div className="max-w-2xl">
           <div className="flex items-center gap-3 mb-4">
-            <span className="uppercase text-xs font-semibold text-[#6e3ff3] tracking-widest">
+            <span className="uppercase text-xs font-semibold text-[#8c52ff] tracking-widest">
               {number}. {label}
             </span>
           </div>
@@ -273,8 +273,8 @@ const ServicesSection: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-12 border border-white/10 border-b">
             <div className="col-span-12 md:col-span-4 md:p-12 md:border-b-0 md:border-r flex flex-col border-white/10 border-b pt-8 pr-8 pb-8 pl-8 justify-center">
               <div className="flex items-center gap-2 mb-4">
-                <Cpu className="w-4 h-4 text-[#6e3ff3]" />
-                <span className="text-[#6e3ff3] text-xs tracking-widest uppercase">
+                <Cpu className="w-4 h-4 text-[#8c52ff]" />
+                <span className="text-[#8c52ff] text-xs tracking-widest uppercase">
                   Infrastructure
                 </span>
               </div>
@@ -370,7 +370,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
             <div className="w-8 h-8 rounded bg-[#0E1216] border border-white/10 flex items-center justify-center relative z-10 shadow-[0_0_15px_rgba(198,249,31,0.1)]">
               {icon}
             </div>
-            <div className="absolute top-4 right-10 w-2 h-2 bg-[#6e3ff3] rounded-full animate-pulse"></div>
+            <div className="absolute top-4 right-10 w-2 h-2 bg-[#8c52ff] rounded-full animate-pulse"></div>
           </div>
         ) : (
           <svg
@@ -391,13 +391,13 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
             />
             <defs>
               <linearGradient id="grad1" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#6e3ff3" stopOpacity="1" />
+                <stop offset="0%" stopColor="#8c52ff" stopOpacity="1" />
                 <stop offset="100%" stopColor="#000000" stopOpacity="0" />
               </linearGradient>
             </defs>
           </svg>
         )}
-        <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-[#6e3ff3]/10 blur-[40px] rounded-full group-hover:bg-[#6e3ff3]/20 transition-colors"></div>
+        <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-[#8c52ff]/10 blur-[40px] rounded-full group-hover:bg-[#8c52ff]/20 transition-colors"></div>
       </div>
       <h3 className="text-white font-medium mb-2 flex items-center gap-2">
         {title}
@@ -417,7 +417,7 @@ interface MiniFeatureProps {
 const MiniFeature: React.FC<MiniFeatureProps> = ({ icon, title, subtitle }) => {
   return (
     <div className="flex flex-col gap-3 group hover:bg-white/[0.02] transition-colors pt-6 pr-6 pb-6 pl-6">
-      <div className="text-slate-400 group-hover:text-[#6e3ff3] transition-colors">
+      <div className="text-slate-400 group-hover:text-[#8c52ff] transition-colors">
         {icon}
       </div>
       <div>
@@ -455,8 +455,8 @@ const WhyUsSection: React.FC = () => {
                 <div className="absolute w-[120px] h-[120px] rounded-full border border-white/5"></div>
                 <div className="absolute w-[280px] h-[280px] rounded-full bg-[conic-gradient(from_0deg,transparent_0deg_240deg,rgba(198,249,31,0.2)_360deg)] animate-[spin_4s_linear_infinite]"></div>
                 <div className="absolute top-10 left-10 flex items-center gap-2 z-10">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#6e3ff3] shadow-[0_0_10px_#6e3ff3]"></div>
-                  <span className="text-[10px] text-[#6e3ff3] uppercase tracking-widest font-medium">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#8c52ff] shadow-[0_0_10px_#8c52ff]"></div>
+                  <span className="text-[10px] text-[#8c52ff] uppercase tracking-widest font-medium">
                     Active Monitoring
                   </span>
                 </div>
@@ -486,12 +486,12 @@ const WhyUsSection: React.FC = () => {
                 <div className="w-24 h-[20%] bg-white/[0.02] border-t border-l border-r border-white/10"></div>
                 <div className="w-24 h-[40%] bg-white/[0.02] border-t border-l border-r border-white/10"></div>
                 <div className="w-24 h-[60%] bg-white/[0.02] border-t border-l border-r border-white/10"></div>
-                <div className="w-24 h-[80%] bg-[#6e3ff3]/5 border-t border-l border-r border-[#6e3ff3]/30 relative">
-                  <Layers className="absolute -top-8 left-1/2 -translate-x-1/2 text-[#6e3ff3]" />
+                <div className="w-24 h-[80%] bg-[#8c52ff]/5 border-t border-l border-r border-[#8c52ff]/30 relative">
+                  <Layers className="absolute -top-8 left-1/2 -translate-x-1/2 text-[#8c52ff]" />
                 </div>
               </div>
               <div className="relative z-10 mt-12">
-                <div className="text-[64px] leading-none font-light text-[#6e3ff3] tracking-tighter mb-2">
+                <div className="text-[64px] leading-none font-light text-[#8c52ff] tracking-tighter mb-2">
                   10x
                 </div>
                 <h3 className="text-white font-medium text-lg mb-2 uppercase tracking-wide">
@@ -528,7 +528,7 @@ const AlertsPanel: React.FC = () => {
       icon: "↑",
       label: "Delivery Rate 99%",
       time: "NOW",
-      color: "#6e3ff3",
+      color: "#8c52ff",
       width: "w-full",
     },
     {
@@ -566,8 +566,8 @@ const AlertsPanel: React.FC = () => {
               <div className="flex items-center gap-3">
                 <div
                   className={`w-7 h-7 rounded ${
-                    alert.color === "#6e3ff3"
-                      ? "bg-[#6e3ff3]/10 border-[#6e3ff3]/20 text-[#6e3ff3]"
+                    alert.color === "#8c52ff"
+                      ? "bg-[#8c52ff]/10 border-[#8c52ff]/20 text-[#8c52ff]"
                       : "bg-white/5 border-white/10 text-slate-500 group-hover:text-white group-hover:border-white/20"
                   } border flex items-center justify-center transition-colors`}
                 >
@@ -575,8 +575,8 @@ const AlertsPanel: React.FC = () => {
                 </div>
                 <span
                   className={`text-[10px] font-semibold uppercase tracking-wide ${
-                    alert.color === "#6e3ff3"
-                      ? "text-[#6e3ff3]"
+                    alert.color === "#8c52ff"
+                      ? "text-[#8c52ff]"
                       : "text-slate-500 group-hover:text-white"
                   } transition-colors`}
                 >
@@ -588,8 +588,8 @@ const AlertsPanel: React.FC = () => {
             <div className="h-[2px] w-full bg-white/5 rounded-full overflow-hidden">
               <div
                 className={`h-full ${alert.width} ${
-                  alert.color === "#6e3ff3"
-                    ? "bg-[#6e3ff3] shadow-[0_0_10px_#6e3ff3]"
+                  alert.color === "#8c52ff"
+                    ? "bg-[#8c52ff] shadow-[0_0_10px_#8c52ff]"
                     : "bg-slate-700 group-hover:bg-slate-500"
                 } transition-colors`}
               ></div>
@@ -629,8 +629,8 @@ const AssetGrid: React.FC = () => {
                 key={i}
                 className="flex items-center justify-center relative"
               >
-                <div className="absolute inset-0 bg-[#6e3ff3]/20 blur-[30px]"></div>
-                <div className="relative z-10 text-[#6e3ff3]">
+                <div className="absolute inset-0 bg-[#8c52ff]/20 blur-[30px]"></div>
+                <div className="relative z-10 text-[#8c52ff]">
                   <Cpu className="w-12 h-12" strokeWidth={1.5} />
                 </div>
               </div>
@@ -673,7 +673,7 @@ const AssetGrid: React.FC = () => {
 // Chart Components
 
 const DeliveryRadialChart = () => {
-  const data = [{ name: "Delivery Rate", value: 99.8, fill: "#6e3ff3" }];
+  const data = [{ name: "Delivery Rate", value: 99.8, fill: "#8c52ff" }];
 
   return (
     <div className="flex flex-col items-center justify-center h-full p-6 relative">
@@ -701,7 +701,7 @@ const DeliveryRadialChart = () => {
           >
             <defs>
               <linearGradient id="radialGradient" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#6e3ff3" />
+                <stop offset="0%" stopColor="#8c52ff" />
                 <stop offset="100%" stopColor="#9C7DFF" />
               </linearGradient>
             </defs>
@@ -770,8 +770,8 @@ const VolumeAreaChart = () => {
           <AreaChart data={data}>
             <defs>
               <linearGradient id="volumeGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#6e3ff3" stopOpacity={0.4} />
-                <stop offset="95%" stopColor="#6e3ff3" stopOpacity={0} />
+                <stop offset="5%" stopColor="#8c52ff" stopOpacity={0.4} />
+                <stop offset="95%" stopColor="#8c52ff" stopOpacity={0} />
               </linearGradient>
             </defs>
             <Tooltip
@@ -794,7 +794,7 @@ const VolumeAreaChart = () => {
             <Area
               type="monotone"
               dataKey="value"
-              stroke="#6e3ff3"
+              stroke="#8c52ff"
               strokeWidth={3}
               fillOpacity={1}
               fill="url(#volumeGradient)"
@@ -831,8 +831,8 @@ const LatencyBarChart = () => {
           <BarChart data={data} barSize={40}>
             <defs>
               <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#6e3ff3" />
-                <stop offset="100%" stopColor="#6e3ff3" stopOpacity={0.6} />
+                <stop offset="0%" stopColor="#8c52ff" />
+                <stop offset="100%" stopColor="#8c52ff" stopOpacity={0.6} />
               </linearGradient>
             </defs>
             <Tooltip
@@ -1011,7 +1011,7 @@ const PricingCard: React.FC<PricingCardProps> = ({
         <div className="absolute inset-0 bg-gradient-to-b from-white/[0.06] via-transparent to-transparent"></div>
       </div>
       <div className="relative flex-1 flex flex-col p-10">
-        <div className="flex items-center gap-2 text-[#6e3ff3] mb-6">
+        <div className="flex items-center gap-2 text-[#8c52ff] mb-6">
           {icon}
           <span className="text-xs font-semibold tracking-wide uppercase">
             {category}
@@ -1141,13 +1141,13 @@ const ContactCard: React.FC<ContactCardProps> = ({
 }) => {
   return (
     <div className="flex flex-col group hover:bg-white/[0.04] transition-colors duration-300 h-full border-white/10 border rounded-none p-10 relative">
-      <div className="absolute -top-px -left-px w-4 h-4 border-t-2 border-l-2 border-[#6e3ff3] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-      <div className="absolute -top-px -right-px w-4 h-4 border-t-2 border-r-2 border-[#6e3ff3] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-      <div className="absolute -bottom-px -left-px w-4 h-4 border-b-2 border-l-2 border-[#6e3ff3] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-      <div className="absolute -bottom-px -right-px w-4 h-4 border-b-2 border-r-2 border-[#6e3ff3] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      <div className="absolute -top-px -left-px w-4 h-4 border-t-2 border-l-2 border-[#8c52ff] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      <div className="absolute -top-px -right-px w-4 h-4 border-t-2 border-r-2 border-[#8c52ff] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      <div className="absolute -bottom-px -left-px w-4 h-4 border-b-2 border-l-2 border-[#8c52ff] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      <div className="absolute -bottom-px -right-px w-4 h-4 border-b-2 border-r-2 border-[#8c52ff] opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
       <div className="mb-8">
-        <span className="inline-block px-3 py-1 text-xs font-medium text-slate-300 border border-white/10 rounded bg-white/5 group-hover:text-[#6e3ff3] group-hover:border-[#6e3ff3] group-hover:bg-[#6e3ff3]/10 transition-colors duration-300">
+        <span className="inline-block px-3 py-1 text-xs font-medium text-slate-300 border border-white/10 rounded bg-white/5 group-hover:text-[#8c52ff] group-hover:border-[#8c52ff] group-hover:bg-[#8c52ff]/10 transition-colors duration-300">
           {label}
         </span>
       </div>
@@ -1159,7 +1159,7 @@ const ContactCard: React.FC<ContactCardProps> = ({
       <p className="text-white/70 text-sm mb-8 font-light">{description}</p>
       <Link
         href={link}
-        className="w-full block text-center items-center gap-2 py-4 mb-10 rounded-lg border border-white/10 bg-transparent text-white group-hover:bg-[#6e3ff3] group-hover:text-white group-hover:border-[#6e3ff3] transition-all duration-300 text-sm font-medium"
+        className="w-full block text-center items-center gap-2 py-4 mb-10 rounded-lg border border-white/10 bg-transparent text-white group-hover:bg-[#8c52ff] group-hover:text-white group-hover:border-[#8c52ff] transition-all duration-300 text-sm font-medium"
       >
         {buttonText}
       </Link>
@@ -1229,7 +1229,7 @@ export default function SimlyLandingPage() {
   useScrollAnimation();
 
   return (
-    <div className="bg-[#05080A] min-h-screen flex flex-col overflow-x-hidden selection:bg-[#6e3ff3]/30 selection:text-[#6e3ff3] text-white/70">
+    <div className="bg-[#05080A] min-h-screen flex flex-col overflow-x-hidden selection:bg-[#8c52ff]/30 selection:text-[#8c52ff] text-white/70">
       <style>{`
         
         body {

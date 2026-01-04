@@ -85,7 +85,7 @@ export default function DevicesPage() {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2">
         <div className="space-y-1">
-          <div className="flex items-center gap-2 text-[#6e3ff3]">
+          <div className="flex items-center gap-2 text-[#8c52ff]">
             <Smartphone className="size-5" />
             <span className="text-sm font-bold uppercase tracking-widest">
               Device Fleet
@@ -139,7 +139,7 @@ export default function DevicesPage() {
                 {org.plan.toUpperCase()}
                 <Badge
                   variant="outline"
-                  className="text-[10px] h-4 px-1 border-[#6e3ff3]/20 text-[#6e3ff3]"
+                  className="text-[10px] h-4 px-1 border-[#8c52ff]/20 text-[#8c52ff]"
                 >
                   Active
                 </Badge>
@@ -187,7 +187,7 @@ export default function DevicesPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
               placeholder="Search by name, model or number..."
-              className="pl-10 h-10 shadow-none border-zinc-200 dark:border-zinc-800 focus-visible:ring-[#6e3ff3]"
+              className="pl-10 h-10 shadow-none border-zinc-200 dark:border-zinc-800 focus-visible:ring-[#8c52ff]"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -202,7 +202,7 @@ export default function DevicesPage() {
               <DropdownMenuTrigger>
                 <Filter
                   className={`size-4 ${
-                    statusFilter !== "all" ? "text-[#6e3ff3]" : ""
+                    statusFilter !== "all" ? "text-[#8c52ff]" : ""
                   }`}
                 />
               </DropdownMenuTrigger>

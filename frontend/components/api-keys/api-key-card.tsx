@@ -42,7 +42,7 @@ export function APIKeyCard({ apiKey, isSandbox, onRevoke }: APIKeyCardProps) {
 
   return (
     <div
-      className={`group relative flex items-center justify-between p-4 rounded-xl border bg-card transition-all hover:border-[#6e3ff3]/30 ${
+      className={`group relative flex items-center justify-between p-4 rounded-xl border bg-card transition-all hover:border-[#8c52ff]/30 ${
         isTest ? "border-dashed border-orange-200" : ""
       }`}
     >

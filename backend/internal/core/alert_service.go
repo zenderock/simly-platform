@@ -76,7 +76,7 @@ func (s *AlertService) NotifyOrganization(ctx context.Context, orgID int, alertT
 	subject := fmt.Sprintf("[%s] Simly Alert: %s", severity, title)
 	htmlContent := fmt.Sprintf(`
 		<div style="font-family: sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
-			<h2 style="color: #6e3ff3;">Simly Alert</h2>
+			<h2 style="color: #8c52ff;">Simly Alert</h2>
 			<p><strong>Severity:</strong> %s</p>
 			<p><strong>Type:</strong> %s</p>
 			<p><strong>Message:</strong> %s</p>

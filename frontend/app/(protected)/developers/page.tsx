@@ -9,7 +9,13 @@ import api from "@/lib/api";
 import { APIKey } from "@/types";
 import { apiKeyKeys } from "@/hooks/use-api-keys";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CodeSnippet } from "@/components/developers/code-snippet";
 import {
@@ -39,8 +45,14 @@ export default function DevelopersPage() {
     queries: apps.map((app) => ({
       queryKey: apiKeyKeys.byApp(app.id),
       queryFn: async () => {
-        const res = await api.get<APIKey[]>(`/api-keys?application_id=${app.id}`);
-        return { appId: app.id, keys: res.data || [], isSandbox: app.is_sandbox };
+        const res = await api.get<APIKey[]>(
+          `/api-keys?application_id=${app.id}`
+        );
+        return {
+          appId: app.id,
+          keys: res.data || [],
+          isSandbox: app.is_sandbox,
+        };
       },
       staleTime: 60000,
       enabled: apps.length > 0,
@@ -103,17 +115,20 @@ export default function DevelopersPage() {
     {
       number: 1,
       title: "Get your API Key",
-      description: "Create an API key from the API Keys page. Use sk_test_* keys for sandbox testing.",
+      description:
+        "Create an API key from the API Keys page. Use sk_test_* keys for sandbox testing.",
     },
     {
       number: 2,
       title: "Send your first SMS",
-      description: "Make a POST request to /v1/messages with your recipient and message body.",
+      description:
+        "Make a POST request to /v1/messages with your recipient and message body.",
     },
     {
       number: 3,
       title: "Check delivery status",
-      description: "Query the message status or configure webhooks for real-time updates.",
+      description:
+        "Query the message status or configure webhooks for real-time updates.",
     },
   ];
 
@@ -126,10 +141,13 @@ export default function DevelopersPage() {
             <IconCode className="size-3.5" />
             Developer Portal
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight">API Integration</h1>
+          <h1 className="text-3xl font-extrabold tracking-tight">
+            API Integration
+          </h1>
           <p className="text-muted-foreground text-sm sm:text-base max-w-xl leading-relaxed">
-            Everything you need to integrate SMS sending into your application. 
-            Explore our documentation, test in the playground, and monitor your requests.
+            Everything you need to integrate SMS sending into your application.
+            Explore our documentation, test in the playground, and monitor your
+            requests.
           </p>
         </div>
       </div>
@@ -143,17 +161,21 @@ export default function DevelopersPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
           >
-            <Link href={link.href}> 
+            <Link href={link.href}>
               <Card className="h-full hover:border-primary/50 transition-all cursor-pointer group shadow-none">
                 <CardContent className="p-4 flex flex-col gap-3">
-                  <div className={`size-10 rounded-lg ${link.color} flex items-center justify-center`}>
+                  <div
+                    className={`size-10 rounded-lg ${link.color} flex items-center justify-center`}
+                  >
                     <link.icon className="size-5" />
                   </div>
                   <div>
                     <h3 className="font-semibold text-sm group-hover:text-primary transition-colors">
                       {link.title}
                     </h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">{link.description}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {link.description}
+                    </p>
                   </div>
                 </CardContent>
               </Card>
@@ -171,7 +193,9 @@ export default function DevelopersPage() {
             </div>
             <div>
               <CardTitle className="text-lg">Quick Start Guide</CardTitle>
-              <CardDescription>Get started with the Simly API in minutes</CardDescription>
+              <CardDescription>
+                Get started with the Simly API in minutes
+              </CardDescription>
             </div>
           </div>
         </CardHeader>
@@ -185,7 +209,9 @@ export default function DevelopersPage() {
                 </div>
                 <div>
                   <h4 className="font-semibold text-sm">{step.title}</h4>
-                  <p className="text-xs text-muted-foreground mt-0.5">{step.description}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {step.description}
+                  </p>
                 </div>
               </div>
             ))}
@@ -194,7 +220,9 @@ export default function DevelopersPage() {
           {/* API Key Selector */}
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-lg bg-muted/50 border">
             <div className="flex-1">
-              <p className="text-sm font-medium">Select an API Key for code examples</p>
+              <p className="text-sm font-medium">
+                Select an API Key for code examples
+              </p>
               <p className="text-xs text-muted-foreground">
                 Your key will be inserted into the code snippets below
               </p>
@@ -210,11 +238,13 @@ export default function DevelopersPage() {
                   {allKeys.map((key) => (
                     <SelectItem key={key.id} value={key.id.toString()}>
                       <span className="flex items-center gap-2">
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
-                          key.isSandbox 
-                            ? "bg-orange-500/10 text-orange-600" 
-                            : "bg-green-500/10 text-green-600"
-                        }`}>
+                        <span
+                          className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                            key.isSandbox
+                              ? "bg-orange-500/10 text-orange-600"
+                              : "bg-green-500/10 text-green-600"
+                          }`}
+                        >
                           {key.isSandbox ? "TEST" : "LIVE"}
                         </span>
                         {key.name}
@@ -257,7 +287,7 @@ export default function DevelopersPage() {
             <h4 className="font-semibold text-sm">Example Response</h4>
             <div className="rounded-lg border bg-zinc-950 p-4 overflow-x-auto">
               <pre className="text-sm text-zinc-300 font-mono">
-{`{
+                {`{
   "id": "msg_abc123xyz",
   "status": "pending",
   "to": "+33612345678",
@@ -275,7 +305,9 @@ export default function DevelopersPage() {
         <Card className="shadow-none">
           <CardHeader>
             <CardTitle className="text-base">Check Message Status</CardTitle>
-            <CardDescription>Query the delivery status of a sent message</CardDescription>
+            <CardDescription>
+              Query the delivery status of a sent message
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <CodeSnippet
@@ -290,12 +322,14 @@ export default function DevelopersPage() {
         <Card className="shadow-none">
           <CardHeader>
             <CardTitle className="text-base">Error Handling</CardTitle>
-            <CardDescription>All errors follow a consistent JSON format</CardDescription>
+            <CardDescription>
+              All errors follow a consistent JSON format
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="rounded-lg border bg-zinc-950 p-4 overflow-x-auto">
               <pre className="text-sm text-zinc-300 font-mono">
-{`{
+                {`{
   "error": {
     "code": "invalid_request",
     "message": "The 'to' field must be a valid E.164 phone number",
@@ -305,23 +339,37 @@ export default function DevelopersPage() {
               </pre>
             </div>
             <div className="mt-4 space-y-2">
-              <p className="text-xs text-muted-foreground">Common error codes:</p>
+              <p className="text-xs text-muted-foreground">
+                Common error codes:
+              </p>
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="flex items-center gap-2">
-                  <code className="bg-red-500/10 text-red-600 px-1.5 py-0.5 rounded">400</code>
+                  <code className="bg-red-500/10 text-red-600 px-1.5 py-0.5 rounded">
+                    400
+                  </code>
                   <span className="text-muted-foreground">invalid_request</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <code className="bg-red-500/10 text-red-600 px-1.5 py-0.5 rounded">401</code>
+                  <code className="bg-red-500/10 text-red-600 px-1.5 py-0.5 rounded">
+                    401
+                  </code>
                   <span className="text-muted-foreground">invalid_api_key</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <code className="bg-orange-500/10 text-orange-600 px-1.5 py-0.5 rounded">429</code>
-                  <span className="text-muted-foreground">rate_limit_exceeded</span>
+                  <code className="bg-orange-500/10 text-orange-600 px-1.5 py-0.5 rounded">
+                    429
+                  </code>
+                  <span className="text-muted-foreground">
+                    rate_limit_exceeded
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <code className="bg-red-500/10 text-red-600 px-1.5 py-0.5 rounded">404</code>
-                  <span className="text-muted-foreground">resource_not_found</span>
+                  <code className="bg-red-500/10 text-red-600 px-1.5 py-0.5 rounded">
+                    404
+                  </code>
+                  <span className="text-muted-foreground">
+                    resource_not_found
+                  </span>
                 </div>
               </div>
             </div>
@@ -330,17 +378,35 @@ export default function DevelopersPage() {
       </div>
 
       {/* Info Box */}
-      <div className="rounded-xl border bg-[#6e3ff3]/5 p-4 sm:p-6 flex gap-4">
-        <div className="size-10 bg-[#6e3ff3]/10 rounded-xl flex items-center justify-center shrink-0">
-          <IconCode className="size-5 text-[#6e3ff3]" />
+      <div className="rounded-xl border bg-[#8c52ff]/5 p-4 sm:p-6 flex gap-4">
+        <div className="size-10 bg-[#8c52ff]/10 rounded-xl flex items-center justify-center shrink-0">
+          <IconCode className="size-5 text-[#8c52ff]" />
         </div>
         <div className="space-y-1">
           <h4 className="text-sm font-bold tracking-tight">Need Help?</h4>
           <p className="text-xs text-muted-foreground leading-relaxed max-w-2xl">
-            Check out our <Link href="/developers/docs" className="text-primary hover:underline">API Documentation</Link> for 
-            detailed endpoint references, or use the <Link href="/developers/playground" className="text-primary hover:underline">API Playground</Link> to 
-            test requests interactively. You can also view your <Link href="/developers/logs" className="text-primary hover:underline">Request Logs</Link> to 
-            debug any integration issues.
+            Check out our{" "}
+            <Link
+              href="/developers/docs"
+              className="text-primary hover:underline"
+            >
+              API Documentation
+            </Link>{" "}
+            for detailed endpoint references, or use the{" "}
+            <Link
+              href="/developers/playground"
+              className="text-primary hover:underline"
+            >
+              API Playground
+            </Link>{" "}
+            to test requests interactively. You can also view your{" "}
+            <Link
+              href="/developers/logs"
+              className="text-primary hover:underline"
+            >
+              Request Logs
+            </Link>{" "}
+            to debug any integration issues.
           </p>
         </div>
       </div>

@@ -16,13 +16,13 @@ import { motion } from "framer-motion";
 
 export default function UseCasesPage() {
   return (
-    <div className="bg-[#05080A] font-sans min-h-screen flex flex-col text-white selection:bg-[#6e3ff3]/30 selection:text-[#6e3ff3] ">
+    <div className="bg-[#05080A] font-sans min-h-screen flex flex-col text-white selection:bg-[#8c52ff]/30 selection:text-[#8c52ff] ">
       <Header />
 
       <main className="grow">
         {/* Hero Section */}
         <section className="relative py-24 px-6 md:px-12 lg:px-24 overflow-hidden">
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-[#6e3ff3]/10 blur-[120px] rounded-full pointer-events-none"></div>
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-[#8c52ff]/10 blur-[120px] rounded-full pointer-events-none"></div>
           <div className="max-w-4xl mx-auto text-center relative z-10">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -30,7 +30,7 @@ export default function UseCasesPage() {
               transition={{ duration: 0.6 }}
             >
               <h1 className="text-5xl md:text-7xl font-light tracking-tighter mb-8 text-white">
-                Built for <span className="text-[#6e3ff3]">real impact.</span>
+                Built for <span className="text-[#8c52ff]">real impact.</span>
               </h1>
               <p className="text-xl text-white/60 leading-relaxed max-w-2xl mx-auto">
                 See how businesses and developers are using Simly to solve
@@ -48,7 +48,7 @@ export default function UseCasesPage() {
           description="Automate order confirmations and delivery updates. Reduce anxiety by keeping your customers informed at every step of the journey, directly on their phone."
           quote="Since using Simly for delivery notifications, our support tickets dropped by 40%."
           author="David M., Operations Manager"
-          icon={<ShoppingBag className="w-6 h-6 text-[#6e3ff3]" />}
+          icon={<ShoppingBag className="w-6 h-6 text-[#8c52ff]" />}
           features={[
             "Order Confirmation",
             "Shipping Updates",
@@ -133,7 +133,7 @@ export default function UseCasesPage() {
         {/* CTA Section */}
         <section className="py-32 px-6">
           <div className="max-w-4xl mx-auto text-center bg-white/2 border border-white/10 rounded-3xl p-12 md:p-20 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-[#6e3ff3]/10 blur-[100px] rounded-full pointer-events-none"></div>
+            <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-[#8c52ff]/10 blur-[100px] rounded-full pointer-events-none"></div>
             <div className="relative z-10">
               <h2 className="text-4xl md:text-5xl font-semibold mb-6 text-white">
                 Ready to tell your story?
@@ -146,7 +146,7 @@ export default function UseCasesPage() {
                 <Link href="/register" className="w-full sm:w-auto">
                   <Button
                     size="lg"
-                    className="w-full sm:min-w-[200px] bg-[#6e3ff3] hover:bg-[#5b32d1] text-white h-14 text-base rounded-none"
+                    className="w-full sm:min-w-[200px] bg-[#8c52ff] hover:bg-[#5b32d1] text-white h-14 text-base rounded-none"
                   >
                     Get Started Free
                     <ArrowRight className="w-5 h-5 ml-2" />
@@ -156,7 +156,7 @@ export default function UseCasesPage() {
                   <Button
                     variant="outline"
                     size="lg"
-                    className="w-full sm:min-w-[200px] border-white/10 hover:bg-white/5 text-white hover:text-[#6e3ff3] bg-transparent h-14 text-base rounded-none"
+                    className="w-full sm:min-w-[200px] border-white/10 hover:bg-white/5 text-white hover:text-[#8c52ff] bg-transparent h-14 text-base rounded-none"
                   >
                     View Pricing
                   </Button>
@@ -207,7 +207,7 @@ const UseCaseSection: React.FC<UseCaseSectionProps> = ({
             <div className="flex items-center justify-center w-12 h-12 rounded-full bg-white/5 border border-white/10">
               {icon}
             </div>
-            <span className="text-[#6e3ff3] font-mono text-sm tracking-widest uppercase">
+            <span className="text-[#8c52ff] font-mono text-sm tracking-widest uppercase">
               {category}
             </span>
           </div>
@@ -223,7 +223,7 @@ const UseCaseSection: React.FC<UseCaseSectionProps> = ({
                 key={i}
                 className="flex items-center gap-3 text-sm text-white/80"
               >
-                <div className="w-1.5 h-1.5 rounded-full bg-[#6e3ff3]"></div>
+                <div className="w-1.5 h-1.5 rounded-full bg-[#8c52ff]"></div>
                 {feature}
               </div>
             ))}
@@ -232,7 +232,7 @@ const UseCaseSection: React.FC<UseCaseSectionProps> = ({
 
         {/* Visual / Quote Content */}
         <div className="flex-1 w-full relative group">
-          <div className="absolute inset-0 bg-linear-to-r from-[#6e3ff3]/10 to-purple-500/10 blur-3xl opacity-20 group-hover:opacity-40 transition-opacity duration-700"></div>
+          <div className="absolute inset-0 bg-linear-to-r from-[#8c52ff]/10 to-purple-500/10 blur-3xl opacity-20 group-hover:opacity-40 transition-opacity duration-700"></div>
           <div className="relative bg-[#0A0D11] border border-white/10 p-10 md:p-14 rounded-3xl overflow-hidden min-h-[320px] flex flex-col justify-center">
             <div className="absolute top-0 right-0 p-8 opacity-10">
               <QuoteIcon className="w-24 h-24 text-white" />

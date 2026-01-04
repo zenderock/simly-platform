@@ -54,7 +54,7 @@ export function LeadSourcesChart() {
 
   const data = [
     { name: "Sent", value: sent, color: "#35b9e9" },
-    { name: "Delivered", value: delivered, color: "#6e3ff3" },
+    { name: "Delivered", value: delivered, color: "#8c52ff" },
     { name: "Failed", value: failed, color: "#e255f2" },
     { name: "Pending", value: pending, color: "#375dfb" },
   ];

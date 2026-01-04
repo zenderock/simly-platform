@@ -250,13 +250,13 @@ const MESSAGE_STATUSES = [
 
 export default function DocsPage() {
   return (
-    <div className="bg-[#05080A] min-h-screen flex flex-col text-white selection:bg-[#6e3ff3]/30 selection:text-[#6e3ff3]">
+    <div className="bg-[#05080A] min-h-screen flex flex-col text-white selection:bg-[#8c52ff]/30 selection:text-[#8c52ff]">
       <Header />
 
       <main className="grow flex flex-col md:flex-row max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
         {/* Sidebar */}
         <aside className="hidden md:block w-64 pt-8 pb-8 pr-8 border-r border-white/10 sticky top-20 h-[calc(100vh-80px)] overflow-y-auto">
-          <div className="flex items-center gap-2 text-[#6e3ff3] font-bold uppercase tracking-[0.2em] text-[10px] mb-6">
+          <div className="flex items-center gap-2 text-[#8c52ff] font-bold uppercase tracking-[0.2em] text-[10px] mb-6">
             <IconBook className="size-3.5" />
             API Documentation
           </div>
@@ -269,7 +269,7 @@ export default function DocsPage() {
                 <li>
                   <a
                     href="#authentication"
-                    className="block text-sm text-white/60 hover:text-[#6e3ff3] transition-colors py-1"
+                    className="block text-sm text-white/60 hover:text-[#8c52ff] transition-colors py-1"
                   >
                     Authentication
                   </a>
@@ -277,7 +277,7 @@ export default function DocsPage() {
                 <li>
                   <a
                     href="#base-url"
-                    className="block text-sm text-white/60 hover:text-[#6e3ff3] transition-colors py-1"
+                    className="block text-sm text-white/60 hover:text-[#8c52ff] transition-colors py-1"
                   >
                     Base URL
                   </a>
@@ -293,7 +293,7 @@ export default function DocsPage() {
                 <li>
                   <a
                     href="#messages"
-                    className="block text-sm text-white/60 hover:text-[#6e3ff3] transition-colors py-1"
+                    className="block text-sm text-white/60 hover:text-[#8c52ff] transition-colors py-1"
                   >
                     Messages
                   </a>
@@ -301,7 +301,7 @@ export default function DocsPage() {
                 <li>
                   <a
                     href="#campaigns"
-                    className="block text-sm text-white/60 hover:text-[#6e3ff3] transition-colors py-1"
+                    className="block text-sm text-white/60 hover:text-[#8c52ff] transition-colors py-1"
                   >
                     Campaigns
                   </a>
@@ -317,7 +317,7 @@ export default function DocsPage() {
                 <li>
                   <a
                     href="#statuses"
-                    className="block text-sm text-white/60 hover:text-[#6e3ff3] transition-colors py-1"
+                    className="block text-sm text-white/60 hover:text-[#8c52ff] transition-colors py-1"
                   >
                     Message Statuses
                   </a>
@@ -325,7 +325,7 @@ export default function DocsPage() {
                 <li>
                   <a
                     href="#errors"
-                    className="block text-sm text-white/60 hover:text-[#6e3ff3] transition-colors py-1"
+                    className="block text-sm text-white/60 hover:text-[#8c52ff] transition-colors py-1"
                   >
                     Error Handling
                   </a>
@@ -340,7 +340,7 @@ export default function DocsPage() {
           <div className="space-y-16">
             {/* Intro */}
             <div className="space-y-4">
-              <div className="flex items-center gap-2 text-[#6e3ff3] font-bold uppercase tracking-[0.2em] text-[10px] md:hidden mb-2">
+              <div className="flex items-center gap-2 text-[#8c52ff] font-bold uppercase tracking-[0.2em] text-[10px] md:hidden mb-2">
                 <IconBook className="size-3.5" />
                 API Documentation
               </div>
@@ -553,7 +553,7 @@ export default function DocsPage() {
                       {MESSAGE_STATUSES.map((item) => (
                         <tr key={item.status} className="hover:bg-white/[0.02]">
                           <td className="px-4 py-3">
-                            <code className="text-xs bg-[#6e3ff3]/10 text-[#6e3ff3] border border-[#6e3ff3]/20 px-1.5 py-0.5 rounded font-mono">
+                            <code className="text-xs bg-[#8c52ff]/10 text-[#8c52ff] border border-[#8c52ff]/20 px-1.5 py-0.5 rounded font-mono">
                               {item.status}
                             </code>
                           </td>

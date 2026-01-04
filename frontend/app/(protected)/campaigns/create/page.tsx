@@ -311,7 +311,7 @@ export default function CreateCampaignPage() {
                           <div className="flex justify-between items-center text-xs text-muted-foreground">
                             <div>
                               {isFreePlan && (
-                                <div className="flex items-center gap-1.5 text-[#6e3ff3] dark:text-blue-400 font-medium">
+                                <div className="flex items-center gap-1.5 text-[#8c52ff] dark:text-blue-400 font-medium">
                                   <Info className="size-3" />
                                   Branding will be added (+17 chars)
                                 </div>
@@ -552,7 +552,7 @@ export default function CreateCampaignPage() {
                             timeStyle: "short",
                           })}
                         </div>
-                        <div className="text-xs text-[#6e3ff3]/80 dark:text-blue-400/80 mt-1">
+                        <div className="text-xs text-[#8c52ff]/80 dark:text-blue-400/80 mt-1">
                           This campaign will automatically start at this time.
                         </div>
                       </div>
@@ -570,7 +570,7 @@ export default function CreateCampaignPage() {
                     <Separator />
 
                     <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-md border border-blue-100 dark:border-blue-900 flex gap-3">
-                      <Rocket className="size-5 text-[#6e3ff3] shrink-0" />
+                      <Rocket className="size-5 text-[#8c52ff] shrink-0" />
                       <p className="text-sm text-blue-900 dark:text-blue-100">
                         You are about to{" "}
                         {isScheduled ? (
@@ -627,7 +627,7 @@ export default function CreateCampaignPage() {
                         createMutation.isPending || launchMutation.isPending
                       }
                       onClick={() => setIsLaunching(true)}
-                      className="bg-[#6e3ff3] hover:bg-[#6e3ff3]/80 text-white"
+                      className="bg-[#8c52ff] hover:bg-[#8c52ff]/80 text-white"
                     >
                       {(createMutation.isPending ||
                         launchMutation.isPending) && (

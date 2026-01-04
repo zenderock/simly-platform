@@ -88,7 +88,7 @@ export function CreateApplicationDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {children || (
-          <Button className="gap-2 bg-black dark:bg-[#6e3ff3] dark:hover:bg-[#5b32cc] text-white shadow-lg shadow-[#6e3ff3]/10 font-bold">
+          <Button className="gap-2 bg-black dark:bg-[#8c52ff] dark:hover:bg-[#5b32cc] text-white shadow-lg shadow-[#8c52ff]/10 font-bold">
             <Plus className="size-4" />
             Create Application
           </Button>

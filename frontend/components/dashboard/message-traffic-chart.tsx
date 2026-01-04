@@ -70,14 +70,18 @@ function CustomTooltip({
 
   return (
     <div className="bg-popover border border-border rounded-lg p-2 sm:p-3 shadow-lg">
-      <p className="text-xs sm:text-sm font-medium text-foreground mb-1.5 sm:mb-2">{label}</p>
+      <p className="text-xs sm:text-sm font-medium text-foreground mb-1.5 sm:mb-2">
+        {label}
+      </p>
       <div className="space-y-1 sm:space-y-1.5">
         <div className="flex items-center gap-1.5 sm:gap-2">
           <div
             className="size-2 sm:size-2.5 rounded-full"
-            style={{ background: "#6e3ff3" }}
+            style={{ background: "#8c52ff" }}
           />
-          <span className="text-[10px] sm:text-sm text-muted-foreground">Messages:</span>
+          <span className="text-[10px] sm:text-sm text-muted-foreground">
+            Messages:
+          </span>
           <span className="text-[10px] sm:text-sm font-medium text-foreground">
             {Number(count).toLocaleString()}
           </span>
@@ -111,7 +115,7 @@ export function MessageTrafficChart() {
         if (activeAppId) {
           url += `&application_id=${activeAppId}`;
         }
-        const res = await api.get<TrafficStat[]>(url); 
+        const res = await api.get<TrafficStat[]>(url);
         setData(res.data || []);
       } catch (error) {
         console.error("Failed to fetch traffic stats", error);
@@ -129,9 +133,11 @@ export function MessageTrafficChart() {
           <Button variant="outline" size="icon" className="size-7 sm:size-8">
             <BarChart2 className="size-4 sm:size-[18px] text-muted-foreground" />
           </Button>
-          <span className="text-sm sm:text-base font-medium">Message Traffic</span>
+          <span className="text-sm sm:text-base font-medium">
+            Message Traffic
+          </span>
         </div>
-        
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="size-7 sm:size-8">
@@ -262,7 +268,7 @@ export function MessageTrafficChart() {
                 />
                 <Bar
                   dataKey="count"
-                  fill="#6e3ff3"
+                  fill="#8c52ff"
                   radius={[4, 4, 0, 0]}
                   maxBarSize={40}
                 />
@@ -298,10 +304,10 @@ export function MessageTrafficChart() {
                 <Line
                   type={smoothCurve ? "monotone" : "linear"}
                   dataKey="count"
-                  stroke="#6e3ff3"
+                  stroke="#8c52ff"
                   strokeWidth={2}
-                  dot={{ fill: "#6e3ff3", strokeWidth: 0, r: 3 }}
-                  activeDot={{ r: 5, fill: "#6e3ff3" }}
+                  dot={{ fill: "#8c52ff", strokeWidth: 0, r: 3 }}
+                  activeDot={{ r: 5, fill: "#8c52ff" }}
                 />
               </LineChart>
             ) : (
@@ -335,9 +341,9 @@ export function MessageTrafficChart() {
                 <Area
                   type={smoothCurve ? "monotone" : "linear"}
                   dataKey="count"
-                  stroke="#6e3ff3"
+                  stroke="#8c52ff"
                   strokeWidth={2}
-                  fill="#6e3ff3"
+                  fill="#8c52ff"
                   fillOpacity={0.1}
                 />
               </AreaChart>
