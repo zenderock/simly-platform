@@ -122,36 +122,46 @@ export default function CampaignsPage() {
       </div>
 
       <div className="flex-1 p-6 overflow-auto">
-        <div className="border rounded-md">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Campaign Name</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Progress</TableHead>
-                <TableHead>Created At</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
+        {isLoading ? (
+          <div className="flex h-64 items-center justify-center">
+            <LoaderQuater />
+          </div>
+        ) : campaigns?.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-[400px] text-center border rounded-2xl bg-zinc-50/50 dark:bg-zinc-900/20 border-dashed animate-in fade-in zoom-in duration-300">
+            <div className="size-20 bg-primary/10 rounded-full flex items-center justify-center mb-6">
+              <IconSpeakerphone className="size-10 text-primary" />
+            </div>
+            <h2 className="text-2xl font-bold tracking-tight">
+              Create your first campaign
+            </h2>
+            <p className="text-muted-foreground text-base max-w-[400px] mt-2 mb-8">
+              Launch your first SMS campaign to start engaging with your
+              audience. Reach your contacts instantly or schedule for later.
+            </p>
+            <Link href="/campaigns/create">
+              <Button
+                size="lg"
+                className="px-8 bg-[#6e3ff3] hover:bg-[#5b32cc]"
+              >
+                <IconPlus className="mr-2 size-5" />
+                Start My First Campaign
+              </Button>
+            </Link>
+          </div>
+        ) : (
+          <div className="border rounded-md">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
-                    <LoaderQuater className="mx-auto" />
-                  </TableCell>
+                  <TableHead>Campaign Name</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Progress</TableHead>
+                  <TableHead>Created At</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
-              ) : campaigns?.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="h-24 text-center text-muted-foreground"
-                  >
-                    No campaigns found. Create your first campaign to get
-                    started.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                campaigns?.map((campaign) => {
+              </TableHeader>
+              <TableBody>
+                {campaigns?.map((campaign) => {
                   const formattedCampaignId = `sy-c-${String(
                     campaign.id
                   ).padStart(2, "0")}-${campaign.id}`;
@@ -255,11 +265,11 @@ export default function CampaignsPage() {
                       </TableCell>
                     </TableRow>
                   );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        )}
 
         <AlertDialog
           open={!!deleteId}
