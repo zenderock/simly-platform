@@ -1,1 +1,1 @@
-ALTER TABLE devices ADD COLUMN last_battery_alert_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE devices ADD COLUMN IF NOT EXISTS last_battery_alert_at TIMESTAMP WITH TIME ZONE;
