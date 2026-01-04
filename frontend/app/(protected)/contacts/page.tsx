@@ -101,7 +101,7 @@ export default function ContactsPage() {
     queryKey: ["contacts"],
     queryFn: listContacts,
     enabled: selectedList === null,
-    staleTime: 60000, // Contacts don't change often - 1 minute
+    staleTime: 60000,
   });
 
   const { data: listDetails, isLoading: listDetailsLoading } = useQuery({

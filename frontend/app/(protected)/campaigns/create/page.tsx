@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
@@ -75,7 +75,7 @@ export default function CreateCampaignPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState(1);
-  const [isLaunching, setIsLaunching] = useState(false);
+  const isLaunchingRef = useRef(false);
   const { organizations, organizationId } = useAuth();
   const currentOrg = organizations.find((o) => o.id === organizationId);
   const isFreePlan = currentOrg?.plan === "free";
@@ -131,7 +131,7 @@ export default function CreateCampaignPage() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["campaigns"] });
       // If launching immediately AND NOT scheduled
-      if (isLaunching && !isScheduled) {
+      if (isLaunchingRef.current && !isScheduled) {
         launchMutation.mutate(data.id);
       } else {
         toast.success(
@@ -618,7 +618,7 @@ export default function CreateCampaignPage() {
                       disabled={
                         createMutation.isPending || launchMutation.isPending
                       }
-                      onClick={() => setIsLaunching(false)}
+                      onClick={() => (isLaunchingRef.current = false)}
                     >
                       Save Draft
                     </Button>
@@ -627,7 +627,7 @@ export default function CreateCampaignPage() {
                       disabled={
                         createMutation.isPending || launchMutation.isPending
                       }
-                      onClick={() => setIsLaunching(true)}
+                      onClick={() => (isLaunchingRef.current = true)}
                       className="bg-[#8c52ff] hover:bg-[#8c52ff]/80 text-white"
                     >
                       {(createMutation.isPending ||

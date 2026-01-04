@@ -98,7 +98,7 @@ export default function CampaignDetailsPage() {
   });
 
   const deviceName = campaign?.device_id
-    ? devices.find((d) => d.id === campaign.device_id)?.name ||
+    ? (devices || []).find((d) => d.id === campaign.device_id)?.name ||
       `Device ${campaign.device_id}`
     : null;
 
@@ -434,7 +434,7 @@ export default function CampaignDetailsPage() {
                           <LoaderQuater />
                         </TableCell>
                       </TableRow>
-                    ) : messages.length === 0 ? (
+                    ) : (messages || []).length === 0 ? (
                       <TableRow>
                         <TableCell
                           colSpan={4}
@@ -445,7 +445,7 @@ export default function CampaignDetailsPage() {
                       </TableRow>
                     ) : (
                       <AnimatePresence mode="popLayout">
-                        {messages.map((msg: any) => (
+                        {(messages || []).map((msg: any) => (
                           <motion.tr
                             key={msg.id}
                             initial={{ opacity: 0, x: -10 }}
