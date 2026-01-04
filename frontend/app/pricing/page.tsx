@@ -140,7 +140,7 @@ export default function PricingPage() {
   ];
 
   return (
-    <div className="bg-[#05080A] min-h-screen flex flex-col text-white selection:bg-[#6e3ff3]/30 selection:text-[#6e3ff3]">
+    <div className="bg-[#05080A] min-h-screen font-sans flex flex-col text-white selection:bg-[#6e3ff3]/30 selection:text-[#6e3ff3]">
       <Header />
       <main className="grow">
         <div className="max-w-6xl mx-auto px-6 py-24">
