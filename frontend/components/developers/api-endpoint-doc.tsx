@@ -5,7 +5,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CodeSnippet, SupportedLanguage } from "@/components/developers/code-snippet";
+import {
+  CodeSnippet,
+  SupportedLanguage,
+} from "@/components/developers/code-snippet";
 import { IconChevronDown, IconChevronUp } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 
@@ -42,9 +45,9 @@ export interface APIEndpoint {
   /** Request body parameters */
   bodyParams?: APIParameter[];
   /** Example request body */
-  requestExample?: Record<string, unknown>;
+  requestExample?: any;
   /** Example response body */
-  responseExample?: Record<string, unknown>;
+  responseExample?: any;
   /** Possible error responses */
   errorResponses?: {
     status: number;
@@ -67,11 +70,11 @@ const METHOD_COLORS: Record<string, string> = {
   DELETE: "bg-red-500/10 text-red-600 border-red-500/20",
 };
 
-function ParameterTable({ 
-  title, 
-  parameters 
-}: { 
-  title: string; 
+function ParameterTable({
+  title,
+  parameters,
+}: {
+  title: string;
   parameters: APIParameter[];
 }) {
   if (!parameters || parameters.length === 0) return null;
@@ -102,7 +105,10 @@ function ParameterTable({
                 </td>
                 <td className="px-4 py-2">
                   {param.required ? (
-                    <Badge variant="outline" className="text-[10px] bg-red-500/10 text-red-600 border-red-500/20">
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] bg-red-500/10 text-red-600 border-red-500/20"
+                    >
                       Required
                     </Badge>
                   ) : (
@@ -115,7 +121,10 @@ function ParameterTable({
                   {param.description}
                   {param.example && (
                     <span className="block text-xs mt-0.5">
-                      Example: <code className="bg-muted px-1 rounded">{param.example}</code>
+                      Example:{" "}
+                      <code className="bg-muted px-1 rounded">
+                        {param.example}
+                      </code>
                     </span>
                   )}
                 </td>
@@ -154,7 +163,10 @@ function HeadersTable({ headers }: { headers?: APIHeader[] }) {
                 </td>
                 <td className="px-4 py-2">
                   {header.required ? (
-                    <Badge variant="outline" className="text-[10px] bg-red-500/10 text-red-600 border-red-500/20">
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] bg-red-500/10 text-red-600 border-red-500/20"
+                    >
                       Required
                     </Badge>
                   ) : (
@@ -163,7 +175,9 @@ function HeadersTable({ headers }: { headers?: APIHeader[] }) {
                     </Badge>
                   )}
                 </td>
-                <td className="px-4 py-2 text-muted-foreground">{header.description}</td>
+                <td className="px-4 py-2 text-muted-foreground">
+                  {header.description}
+                </td>
                 <td className="px-4 py-2">
                   <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">
                     {header.example}
@@ -188,19 +202,24 @@ export function APIEndpointDoc({
 
   return (
     <Card className="overflow-hidden shadow-none">
-      <CardHeader 
+      <CardHeader
         className="cursor-pointer hover:bg-muted/30 transition-colors"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Badge 
-              variant="outline" 
-              className={cn("font-mono text-xs px-2 py-0.5", METHOD_COLORS[endpoint.method])}
+            <Badge
+              variant="outline"
+              className={cn(
+                "font-mono text-xs px-2 py-0.5",
+                METHOD_COLORS[endpoint.method]
+              )}
             >
               {endpoint.method}
             </Badge>
-            <code className="text-sm font-mono font-medium">{endpoint.path}</code>
+            <code className="text-sm font-mono font-medium">
+              {endpoint.path}
+            </code>
           </div>
           <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground hidden sm:block">
@@ -240,26 +259,28 @@ export function APIEndpointDoc({
               <HeadersTable headers={endpoint.headers} />
 
               {/* Path Parameters */}
-              <ParameterTable 
-                title="Path Parameters" 
-                parameters={endpoint.pathParams || []} 
+              <ParameterTable
+                title="Path Parameters"
+                parameters={endpoint.pathParams || []}
               />
 
               {/* Query Parameters */}
-              <ParameterTable 
-                title="Query Parameters" 
-                parameters={endpoint.queryParams || []} 
+              <ParameterTable
+                title="Query Parameters"
+                parameters={endpoint.queryParams || []}
               />
 
               {/* Body Parameters */}
-              <ParameterTable 
-                title="Request Body" 
-                parameters={endpoint.bodyParams || []} 
+              <ParameterTable
+                title="Request Body"
+                parameters={endpoint.bodyParams || []}
               />
 
               {/* Code Examples */}
               <div className="space-y-2">
-                <h4 className="text-sm font-semibold text-muted-foreground">Code Examples</h4>
+                <h4 className="text-sm font-semibold text-muted-foreground">
+                  Code Examples
+                </h4>
                 <CodeSnippet
                   endpoint={endpoint.path}
                   method={endpoint.method}
@@ -272,7 +293,9 @@ export function APIEndpointDoc({
               {/* Response Example */}
               {endpoint.responseExample && (
                 <div className="space-y-2">
-                  <h4 className="text-sm font-semibold text-muted-foreground">Response Example</h4>
+                  <h4 className="text-sm font-semibold text-muted-foreground">
+                    Response Example
+                  </h4>
                   <div className="rounded-lg border bg-zinc-950 p-4 overflow-x-auto">
                     <pre className="text-sm text-zinc-300 font-mono">
                       {JSON.stringify(endpoint.responseExample, null, 2)}
@@ -282,51 +305,60 @@ export function APIEndpointDoc({
               )}
 
               {/* Error Responses */}
-              {endpoint.errorResponses && endpoint.errorResponses.length > 0 && (
-                <div className="space-y-2">
-                  <h4 className="text-sm font-semibold text-muted-foreground">Error Responses</h4>
-                  <div className="rounded-lg border overflow-hidden">
-                    <table className="w-full text-sm">
-                      <thead className="bg-muted/50">
-                        <tr>
-                          <th className="text-left px-4 py-2 font-medium">Status</th>
-                          <th className="text-left px-4 py-2 font-medium">Code</th>
-                          <th className="text-left px-4 py-2 font-medium">Description</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y">
-                        {endpoint.errorResponses.map((error) => (
-                          <tr key={error.code}>
-                            <td className="px-4 py-2">
-                              <Badge 
-                                variant="outline" 
-                                className={cn(
-                                  "text-[10px]",
-                                  error.status >= 500 
-                                    ? "bg-red-500/10 text-red-600 border-red-500/20"
-                                    : error.status >= 400
-                                    ? "bg-orange-500/10 text-orange-600 border-orange-500/20"
-                                    : ""
-                                )}
-                              >
-                                {error.status}
-                              </Badge>
-                            </td>
-                            <td className="px-4 py-2">
-                              <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">
-                                {error.code}
-                              </code>
-                            </td>
-                            <td className="px-4 py-2 text-muted-foreground">
-                              {error.description}
-                            </td>
+              {endpoint.errorResponses &&
+                endpoint.errorResponses.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="text-sm font-semibold text-muted-foreground">
+                      Error Responses
+                    </h4>
+                    <div className="rounded-lg border overflow-hidden">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/50">
+                          <tr>
+                            <th className="text-left px-4 py-2 font-medium">
+                              Status
+                            </th>
+                            <th className="text-left px-4 py-2 font-medium">
+                              Code
+                            </th>
+                            <th className="text-left px-4 py-2 font-medium">
+                              Description
+                            </th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody className="divide-y">
+                          {endpoint.errorResponses.map((error) => (
+                            <tr key={error.code}>
+                              <td className="px-4 py-2">
+                                <Badge
+                                  variant="outline"
+                                  className={cn(
+                                    "text-[10px]",
+                                    error.status >= 500
+                                      ? "bg-red-500/10 text-red-600 border-red-500/20"
+                                      : error.status >= 400
+                                      ? "bg-orange-500/10 text-orange-600 border-orange-500/20"
+                                      : ""
+                                  )}
+                                >
+                                  {error.status}
+                                </Badge>
+                              </td>
+                              <td className="px-4 py-2">
+                                <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">
+                                  {error.code}
+                                </code>
+                              </td>
+                              <td className="px-4 py-2 text-muted-foreground">
+                                {error.description}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </CardContent>
           </motion.div>
         )}

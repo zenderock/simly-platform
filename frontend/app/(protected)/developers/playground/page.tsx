@@ -152,6 +152,14 @@ const ENDPOINTS: PlaygroundEndpoint[] = [
     ],
   },
   {
+    id: "list-devices",
+    method: "GET" as const,
+    path: "/v1/devices",
+    name: "List Devices",
+    description: "List all connected devices and their SIM slot information",
+    hasBody: false,
+  },
+  {
     id: "get-campaign",
     method: "GET" as const,
     path: "/v1/campaigns/{id}",

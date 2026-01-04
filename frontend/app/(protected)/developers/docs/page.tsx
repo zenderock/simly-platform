@@ -29,8 +29,66 @@ import {
   IconShieldCheck,
   IconAlertTriangle,
   IconRocket,
+  IconDeviceMobile,
 } from "@tabler/icons-react";
 
+const DEVICE_ENDPOINTS: APIEndpoint[] = [
+  {
+    method: "GET",
+    path: "/v1/devices",
+    summary: "List devices and SIM cards",
+    description:
+      "Retrieve a list of all Android devices connected to your organization, including their current status, battery level, and available SIM slots with their respective IDs and indices.",
+    headers: [
+      {
+        name: "Authorization",
+        required: true,
+        description: "Bearer token with your API key",
+        example: "Bearer sk_live_...",
+      },
+    ],
+    responseExample: [
+      {
+        id: 123,
+        name: "Office Gateway 1",
+        model: "Samsung S21",
+        status: "online",
+        battery: 85,
+        signal: 4,
+        last_seen_at: "2026-01-02T10:30:00Z",
+        requires_setup: false,
+        sim_cards: [
+          {
+            slot_index: 0,
+            operator: "Orange",
+            phone_number: "+33612345678",
+            is_active: true,
+            supported_prefixes: "6,7",
+          },
+          {
+            slot_index: 1,
+            operator: "Free",
+            phone_number: "+33788990011",
+            is_active: true,
+            supported_prefixes: "06,07",
+          },
+        ],
+      },
+    ],
+    errorResponses: [
+      {
+        status: 401,
+        code: "invalid_api_key",
+        description: "API key is invalid",
+      },
+      {
+        status: 500,
+        code: "internal_error",
+        description: "Server error",
+      },
+    ],
+  },
+];
 const CAMPAIGN_ENDPOINTS: APIEndpoint[] = [
   {
     method: "POST",
@@ -479,6 +537,38 @@ export default function APIDocsPage() {
                   endpoint={endpoint}
                   apiKey={selectedKey?.prefix}
                   defaultExpanded={index === 0}
+                />
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Devices */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <div className="size-8 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+              <IconDeviceMobile className="size-4 text-emerald-600" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">Devices</h2>
+              <p className="text-sm text-muted-foreground">
+                List and monitor your Android devices
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {DEVICE_ENDPOINTS.map((endpoint, index) => (
+              <motion.div
+                key={`${endpoint.method}-${endpoint.path}`}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 + index * 0.05 }}
+              >
+                <APIEndpointDoc
+                  endpoint={endpoint}
+                  apiKey={selectedKey?.prefix}
+                  defaultExpanded={true}
                 />
               </motion.div>
             ))}

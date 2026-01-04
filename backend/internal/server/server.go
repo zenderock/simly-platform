@@ -164,7 +164,8 @@ func (s *Server) setupRoutes() {
 	requestLogService := core.NewRequestLogService(s.DB)
 	publicMessageHandler := api.NewPublicMessageHandler(messageService, orgService, appService)
 	publicCampaignHandler := api.NewPublicCampaignHandler(campaignService)
-	publicAPIRouter := api.NewPublicAPIRouter(publicMessageHandler, publicCampaignHandler, apiKeyService, requestLogService)
+	publicDeviceHandler := api.NewPublicDeviceHandler(deviceService)
+	publicAPIRouter := api.NewPublicAPIRouter(publicMessageHandler, publicCampaignHandler, publicDeviceHandler, apiKeyService, requestLogService)
 
 	// Request Log Handler (for dashboard)
 	requestLogHandler := api.NewRequestLogHandler(requestLogService, orgService)

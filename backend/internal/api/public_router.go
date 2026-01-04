@@ -11,18 +11,21 @@ type PublicAPIRouter struct {
 	apiKeyService     *core.APIKeyService
 	requestLogService *core.RequestLogService
 	campaignHandler   *PublicCampaignHandler
+	deviceHandler     *PublicDeviceHandler
 }
 
 // NewPublicAPIRouter creates a new PublicAPIRouter
 func NewPublicAPIRouter(
 	messageHandler *PublicMessageHandler,
 	campaignHandler *PublicCampaignHandler,
+	deviceHandler *PublicDeviceHandler,
 	apiKeyService *core.APIKeyService,
 	requestLogService *core.RequestLogService,
 ) *PublicAPIRouter {
 	return &PublicAPIRouter{
 		messageHandler:    messageHandler,
 		campaignHandler:   campaignHandler,
+		deviceHandler:     deviceHandler,
 		apiKeyService:     apiKeyService,
 		requestLogService: requestLogService,
 	}
@@ -34,6 +37,9 @@ func (pr *PublicAPIRouter) RegisterRoutes(r chi.Router) {
 	// Apply middlewares for all /v1/ routes
 	r.Use(PublicAPIAuthMiddleware(pr.apiKeyService))
 	r.Use(RequestLoggerMiddleware(pr.requestLogService))
+
+	// Device endpoints
+	r.Get("/devices", pr.deviceHandler.ListDevices) // GET /v1/devices
 
 	// Message endpoints
 	r.Route("/messages", func(r chi.Router) {
