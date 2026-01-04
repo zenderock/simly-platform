@@ -126,7 +126,7 @@ export default function CampaignsPage() {
           <div className="flex h-64 items-center justify-center">
             <LoaderQuater />
           </div>
-        ) : campaigns?.length === 0 ? (
+        ) : !campaigns || campaigns.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-[400px] text-center border rounded-2xl bg-zinc-50/50 dark:bg-zinc-900/20 border-dashed animate-in fade-in zoom-in duration-300">
             <div className="size-20 bg-primary/10 rounded-full flex items-center justify-center mb-6">
               <IconSpeakerphone className="size-10 text-primary" />
