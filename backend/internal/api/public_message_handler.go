@@ -139,6 +139,97 @@ func (h *PublicMessageHandler) SendMessage(w http.ResponseWriter, r *http.Reques
 	json.NewEncoder(w).Encode(response)
 }
 
+// SendOTP handles POST /v1/messages/otp
+// Sends a high-priority OTP message with strict validation
+func (h *PublicMessageHandler) SendOTP(w http.ResponseWriter, r *http.Request) {
+	// Get context values from auth middleware
+	orgID := GetPublicOrgID(r.Context())
+	appID := GetPublicAppID(r.Context())
+	isSandbox := GetPublicIsSandbox(r.Context())
+
+	if orgID == 0 || appID == 0 {
+		AuthError(w, "Invalid authentication context")
+		return
+	}
+
+	// Parse request body
+	var req PublicSendMessageRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		ValidationError(w, "Invalid JSON request body", "")
+		return
+	}
+
+	// Validate required fields
+	if req.To == "" {
+		MissingParamError(w, "to")
+		return
+	}
+	if req.Body == "" {
+		MissingParamError(w, "body")
+		return
+	}
+
+	// Validate E.164 phone number format
+	if !e164Regex.MatchString(req.To) {
+		ValidationError(w, "The 'to' field must be a valid E.164 phone number (e.g., +33612345678)", "to")
+		return
+	}
+
+	// Validate message body length - STRICT LIMIT FOR OTP (80 chars)
+	const maxOTPBodyLength = 80
+	if len(req.Body) > maxOTPBodyLength {
+		ValidationError(w, fmt.Sprintf(" The 'body' field must not exceed %d characters for OTP messages", maxOTPBodyLength), "body")
+		return
+	}
+
+	// If sandbox mode, verify the app is actually a sandbox app
+	if isSandbox {
+		app, err := h.appService.GetApplication(r.Context(), appID)
+		if err != nil || !app.IsSandbox {
+			ValidationError(w, "Test API key can only be used with sandbox applications", "")
+			return
+		}
+	}
+
+	sendReq := model.SendMessageRequest{
+		ApplicationID: &appID,
+		To:            req.To,
+		Body:          req.Body,
+		Priority:      "critical", // FORCE CRITICAL PRIORITY
+		Tags:          []string{"otp"},
+	}
+
+	// Send the message
+	msg, err := h.messageService.SendSMS(r.Context(), orgID, sendReq)
+	if err != nil {
+		// Check for specific error types
+		errMsg := err.Error()
+		if errMsg == "no gateways configured" || errMsg == "no online devices available (or all candidates excluded)" {
+			WriteError(w, http.StatusServiceUnavailable, "no_devices_available", "No devices are available to send the OTP. Ensure devices are online.", "")
+			return
+		}
+		if errMsg == "rate limit exceeded (too many requests per second)" {
+			WriteError(w, http.StatusTooManyRequests, "rate_limit_exceeded", "Rate limit exceeded for OTP endpoint", "")
+			return
+		}
+		InternalError(w)
+		return
+	}
+
+	// Build response
+	response := PublicMessageResponse{
+		ID:        fmt.Sprintf("msg_%d", msg.ID),
+		Status:    msg.Status,
+		To:        msg.ToNumber,
+		Body:      msg.Body,
+		CreatedAt: msg.CreatedAt.Format("2006-01-02T15:04:05Z"),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(response)
+}
+
 // GetMessage handles GET /v1/messages/{id}
 // Retrieves the status and details of a message
 func (h *PublicMessageHandler) GetMessage(w http.ResponseWriter, r *http.Request) {

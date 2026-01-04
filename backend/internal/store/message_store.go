@@ -409,3 +409,33 @@ func (s *Store) GetMessagesByCampaignID(ctx context.Context, campaignID int, lim
 	}
 	return messages, nil
 }
+
+// GetStuckMessages fetches messages that have been in 'queued' status since before the cutoff time
+func (s *Store) GetStuckMessages(ctx context.Context, cutoffTime interface{}, limit int) ([]model.Message, error) {
+	query := `
+		SELECT id, organization_id, application_id, campaign_id, device_id, to_number, body, status, direction, priority, required_tags, created_at, updated_at, scheduled_at, processed_at, retry_count, max_retries, last_error, metadata, sim_slot
+		FROM messages
+		WHERE status = 'queued' AND updated_at < $1
+		ORDER BY created_at ASC
+		LIMIT $2
+	`
+	rows, err := s.db.Query(ctx, query, cutoffTime, limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query stuck messages: %w", err)
+	}
+	defer rows.Close()
+
+	var messages []model.Message
+	for rows.Next() {
+		var m model.Message
+		var reqTags []string
+		if err := rows.Scan(
+			&m.ID, &m.OrganizationID, &m.ApplicationID, &m.CampaignID, &m.DeviceID, &m.ToNumber, &m.Body, &m.Status, &m.Direction, &m.Priority, &reqTags, &m.CreatedAt, &m.UpdatedAt, &m.ScheduledAt, &m.ProcessedAt, &m.RetryCount, &m.MaxRetries, &m.LastError, &m.Metadata, &m.SimSlot,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan stuck message: %w", err)
+		}
+		m.RequiredTags = reqTags
+		messages = append(messages, m)
+	}
+	return messages, nil
+}

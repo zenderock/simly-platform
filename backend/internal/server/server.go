@@ -120,7 +120,7 @@ func (s *Server) setupRoutes() {
 
 	// Message Service with Asynq Client
 	messageService := core.NewMessageService(s.DB, webhookService, notificationProvider, rateLimitService, appService, s.Config.SandboxSuccessNumber, s.Config.SandboxFailureNumber, alertService, devicePoolManager, appDIDService, taskClient)
-	campaignService := core.NewCampaignService(s.DB, messageService, featureLimitManager)
+	campaignService := core.NewCampaignService(s.DB, messageService, featureLimitManager, taskClient)
 
 	// Workers
 	scheduler := core.NewSchedulerService(s.DB, messageService, campaignService)
@@ -137,6 +137,7 @@ func (s *Server) setupRoutes() {
 		messageService,
 		devicePoolManager,
 		sendWindowManager,
+		taskClient,
 	)
 	s.RedisWorker = redisWorker
 

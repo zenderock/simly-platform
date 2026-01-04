@@ -245,6 +245,66 @@ const API_ENDPOINTS: APIEndpoint[] = [
     ],
   },
   {
+    method: "POST",
+    path: "/v1/messages/otp",
+    summary: "Send an OTP message",
+    description:
+      "Send a high-priority One-Time Password (OTP) message. This endpoint enforces a strict character limit (80 chars) and automatically assigns 'critical' priority to ensure instant delivery. Ideal for verification codes.",
+    headers: [
+      {
+        name: "Authorization",
+        required: true,
+        description: "Bearer token with your API key",
+        example: "Bearer sk_live_...",
+      },
+      {
+        name: "Content-Type",
+        required: true,
+        description: "Must be application/json",
+        example: "application/json",
+      },
+    ],
+    bodyParams: [
+      {
+        name: "to",
+        type: "string",
+        required: true,
+        description: "Recipient phone number in E.164 format",
+        example: "+33612345678",
+      },
+      {
+        name: "body",
+        type: "string",
+        required: true,
+        description: "OTP content (max 80 characters)",
+        example: "Your Simly code is: 123456",
+      },
+    ],
+    requestExample: {
+      to: "+33612345678",
+      body: "Your Simly code is: 123456",
+    },
+    responseExample: {
+      id: "msg_otp789",
+      status: "pending",
+      to: "+33612345678",
+      body: "Your Simly code is: 123456",
+      created_at: "2026-01-02T10:30:00Z",
+    },
+    errorResponses: [
+      {
+        status: 400,
+        code: "invalid_request",
+        description: "Body exceeds 80 characters or invalid phone number",
+      },
+      {
+        status: 429,
+        code: "rate_limit_exceeded",
+        description: "Too many OTP requests",
+      },
+    ],
+  },
+  {
     method: "GET",
     path: "/v1/messages/{id}",
     summary: "Get message status",

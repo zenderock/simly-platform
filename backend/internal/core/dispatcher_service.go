@@ -160,77 +160,72 @@ func (d *DispatcherService) run(ctx context.Context) {
 	}
 }
 
-// ProcessBatch fetches and processes a batch of queued messages
-// For each message: check send window, get available device, dispatch
+// ProcessBatch checks for stuck messages and re-enqueues them
+// Watchdog Mode: Only picks up messages older than 5 minutes
 func (d *DispatcherService) ProcessBatch(ctx context.Context) error {
-	// Fetch batch of queued messages ordered by priority, created_at
-	messages, err := d.store.GetQueuedMessages(ctx, d.config.BatchSize)
+	// 5 minutes ago
+	cutoff := time.Now().Add(-5 * time.Minute)
+
+	// Fetch stuck messages
+	messages, err := d.store.GetStuckMessages(ctx, cutoff, d.config.BatchSize)
 	if err != nil {
-		return fmt.Errorf("failed to fetch queued messages: %w", err)
+		return fmt.Errorf("failed to fetch stuck messages: %w", err)
 	}
 
 	if len(messages) == 0 {
 		return nil
 	}
 
-	// Track campaigns that need status updates
-	campaignUpdates := make(map[int]string) // campaignID -> pause_reason
+	log.Printf("DispatcherWatchdog: Found %d stuck messages. Re-enqueuing...", len(messages))
 
+	count := 0
 	for i := range messages {
 		msg := &messages[i]
 
-		// Check send window for this message's organization
-		withinWindow, err := d.windowManager.IsWithinWindow(ctx, msg.OrganizationID, msg.CampaignID)
-		if err != nil {
-			log.Printf("DispatcherService: error checking send window for msg %d: %v", msg.ID, err)
+		// Re-enqueue to Redis
+		if err := d.messageService.EnqueueSMSDelivery(ctx, msg); err != nil {
+			log.Printf("DispatcherWatchdog: Failed to re-enqueue message %d: %v", msg.ID, err)
 			continue
 		}
 
-		if !withinWindow {
-			// Outside send window - track for campaign update
-			if msg.CampaignID != nil {
-				campaignUpdates[*msg.CampaignID] = PauseReasonOutsideWindow
-			}
-			continue
+		// Update UpdatedAt to prevent immediate re-fetch in next tick if enqueue relies on task processing time?
+		// Actually EnqueueSMSDelivery doesn't update DB status (it's already queued).
+		// But GetStuckMessages filters by CreatedAt < cutoff.
+		// If we don't update something, it might be picked up again if 5 mins passed?
+		// Actually `created_at` doesn't change.
+		// Issue: If we re-enqueue, RedisWorker will convert it to 'pending' eventually.
+		// But if RedisWorker is slow or queue is full, this watchdog will keep picking it up every tick (1s).
+		// FIX: We should touch `created_at` or better `updated_at`.
+		// But query uses `created_at`.
+		// Let's change query in GetStuckMessages to use `updated_at`? No, original creation matters.
+		// Best approach: Add `processed_at` or similar check.
+		// Or update `updated_at` and change query to `updated_at < cutoff`.
+		// Let's assuming GetStuckMessages implementation I just wrote uses `created_at`.
+		// I should have used `updated_at`.
+		// Let's modify GetStuckMessages to use `updated_at` instead of `created_at` or both?
+		// Standard watchdog pattern: check `updated_at`.
+		// I will update the store method in next step to use `updated_at`.
+
+		// For now, let's assume I will fix the store query to `updated_at < $1`.
+		// So I must touch `updated_at` here.
+		// There is no explicit method to touch updated_at without changing status.
+		// I can use a raw exec or `UpdateMessageStatus` but keeping status 'queued'.
+		// let's use UpdateMessageStatus to 'queued' (msg.Status) just to touch updated_at.
+		if err := d.store.UpdateMessageStatus(ctx, msg.ID, "queued", ""); err != nil {
+			log.Printf("DispatcherWatchdog: Failed to touch message %d: %v", msg.ID, err)
 		}
 
-		// Get available device for this message
-		device, err := d.devicePool.GetNextAvailableDevice(ctx, msg.OrganizationID, msg.RequiredTags)
-		if err != nil {
-			log.Printf("DispatcherService: error getting device for msg %d: %v", msg.ID, err)
-			continue
-		}
-
-		if device == nil {
-			// No device available - determine reason and track for campaign update
-			if msg.CampaignID != nil {
-				reason := d.determineNoDeviceReason(ctx, msg.OrganizationID)
-				campaignUpdates[*msg.CampaignID] = reason
-			}
-			continue
-		}
-
-		// Dispatch the message
-		if err := d.dispatchMessage(ctx, msg, device); err != nil {
-			log.Printf("DispatcherService: error dispatching msg %d: %v", msg.ID, err)
-			// Record failure for circuit breaker
-			d.devicePool.RecordFailure(device.ID)
-			continue
-		}
-
-		// Record successful send for throttling
-		d.devicePool.RecordSend(device.ID)
-		d.devicePool.RecordSuccess(device.ID)
+		count++
 	}
 
-	// Update campaign statuses
-	for campaignID, reason := range campaignUpdates {
-		if err := d.updateCampaignPauseReason(ctx, campaignID, reason); err != nil {
-			log.Printf("DispatcherService: error updating campaign %d pause reason: %v", campaignID, err)
-		}
+	if count > 0 {
+		log.Printf("DispatcherWatchdog: Successfully re-enqueued %d messages", count)
 	}
 
-	// Check for campaign completions
+	// Still check for campaign completions (orphaned logic?)
+	// Yes, campaigns still need completion checks if worker doesn't do it fully?
+	// RedisWorker updates stats. But completion check is polling based in Dispatcher.
+	// So we keep this.
 	if err := d.checkCampaignCompletions(ctx); err != nil {
 		log.Printf("DispatcherService: error checking campaign completions: %v", err)
 	}
@@ -238,23 +233,10 @@ func (d *DispatcherService) ProcessBatch(ctx context.Context) error {
 	return nil
 }
 
-// dispatchMessage assigns a device to the message and triggers notification
-func (d *DispatcherService) dispatchMessage(ctx context.Context, msg *model.Message, device *model.Device) error {
-	// Update message with device assignment and change status to pending
-	if err := d.store.UpdateMessageDeviceAndStatus(ctx, msg.ID, device.ID, model.MessageStatusPending); err != nil {
-		return fmt.Errorf("failed to update message device: %w", err)
-	}
-
-	msg.DeviceID = &device.ID
-	msg.Status = model.MessageStatusPending
-
-	// Trigger FCM notification to device
-	if err := d.messageService.NotifyDevice(ctx, msg); err != nil {
-		return fmt.Errorf("failed to notify device: %w", err)
-	}
-
-	return nil
-}
+// dispatchMessage is removed as it's no longer used actively by Dispatcher
+// But interface might demand it? No, it's a private method.
+// Removing it or leaving it unused. I'll comment it out/remove it.
+// func (d *DispatcherService) dispatchMessage...
 
 // determineNoDeviceReason checks why no device is available
 func (d *DispatcherService) determineNoDeviceReason(ctx context.Context, orgID int) string {
@@ -291,11 +273,6 @@ func (d *DispatcherService) determineNoDeviceReason(ctx context.Context, orgID i
 	}
 
 	return PauseReasonNoDevices
-}
-
-// updateCampaignPauseReason updates the pause reason for a campaign
-func (d *DispatcherService) updateCampaignPauseReason(ctx context.Context, campaignID int, reason string) error {
-	return d.store.UpdateCampaignPauseReason(ctx, campaignID, reason)
 }
 
 // checkCampaignCompletions checks if any processing campaigns have completed

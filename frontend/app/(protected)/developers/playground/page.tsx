@@ -108,6 +108,29 @@ const ENDPOINTS: PlaygroundEndpoint[] = [
     ],
   },
   {
+    id: "send-otp",
+    method: "POST" as const,
+    path: "/v1/messages/otp",
+    name: "Send OTP",
+    description: "Send a OTP message (max 80 chars)",
+    hasBody: true,
+    bodyFields: [
+      {
+        name: "to",
+        label: "Phone Number",
+        placeholder: "+33612345678",
+        required: true,
+      },
+      {
+        name: "body",
+        label: "OTP Content",
+        placeholder: "Your code is: 123456",
+        required: true,
+        multiline: false,
+      },
+    ],
+  },
+  {
     id: "get-message",
     method: "GET" as const,
     path: "/v1/messages/{id}",

@@ -30,6 +30,7 @@ type RedisWorker struct {
 	messageService *core.MessageService
 	devicePool     *core.DevicePoolManager
 	windowManager  *core.SendWindowManager
+	client         *asynq.Client
 }
 
 // NewRedisWorker creates a new RedisWorker instance
@@ -39,6 +40,7 @@ func NewRedisWorker(
 	messageService *core.MessageService,
 	devicePool *core.DevicePoolManager,
 	windowManager *core.SendWindowManager,
+	client *asynq.Client,
 ) *RedisWorker {
 	server := asynq.NewServer(
 		redisOpt,
@@ -69,6 +71,7 @@ func NewRedisWorker(
 		messageService: messageService,
 		devicePool:     devicePool,
 		windowManager:  windowManager,
+		client:         client,
 	}
 }
 
@@ -76,6 +79,7 @@ func NewRedisWorker(
 func (w *RedisWorker) Start() error {
 	mux := asynq.NewServeMux()
 	mux.HandleFunc(core.TypeSMSDelivery, w.HandleSMSDeliveryTask)
+	mux.HandleFunc(core.TypeCampaignIngest, w.HandleCampaignIngestion)
 
 	log.Println("Redis Worker started processing tasks...")
 	return w.server.Run(mux)

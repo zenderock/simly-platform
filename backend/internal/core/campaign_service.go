@@ -2,25 +2,38 @@ package core
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 
+	"github.com/hibiken/asynq"
 	"github.com/zenderock/simly-backend/internal/model"
 	"github.com/zenderock/simly-backend/internal/store"
 )
+
+const (
+	TypeCampaignIngest = "campaign:ingest"
+)
+
+type CampaignIngestPayload struct {
+	CampaignID int `json:"campaign_id"`
+	OrgID      int `json:"org_id"`
+}
 
 type CampaignService struct {
 	store          *store.Store
 	messageService *MessageService
 	featureLimits  *FeatureLimitManager
+	client         *asynq.Client
 }
 
-func NewCampaignService(store *store.Store, messageService *MessageService, featureLimits *FeatureLimitManager) *CampaignService {
+func NewCampaignService(store *store.Store, messageService *MessageService, featureLimits *FeatureLimitManager, client *asynq.Client) *CampaignService {
 	return &CampaignService{
 		store:          store,
 		messageService: messageService,
 		featureLimits:  featureLimits,
+		client:         client,
 	}
 }
 
@@ -302,37 +315,32 @@ func (s *CampaignService) LaunchCampaign(ctx context.Context, id, orgID int) err
 		return err
 	}
 
-	// Fetch created messages to enqueue them
-	queuedMessages, err := s.store.GetQueuedMessagesForCampaign(ctx, c.ID)
+	// ASYNC INGESTION: Enqueue campaign ingestion task instead of processing synchronously
+	payload, err := json.Marshal(CampaignIngestPayload{
+		CampaignID: c.ID,
+		OrgID:      orgID,
+	})
 	if err != nil {
-		// Log error but continuing to update status might be risky if we assume they are processing
-		// But since they are in DB, we can retry later.
-		// For now, return error to trigger retry in scheduler/caller
-		return fmt.Errorf("failed to fetch queued messages for enqueueing: %w", err)
+		return fmt.Errorf("failed to marshal campaign ingest payload: %w", err)
 	}
 
-	// Enqueue tasks
-	count := 0
-	for _, msg := range queuedMessages {
-		if err := s.messageService.EnqueueSMSDelivery(ctx, &msg); err != nil {
-			// Log but continue, maybe partial failure
-			// Scheduler retry might act weird here if we update campaign status
-			// But RedisWorker isn't picking them up from DB, so we rely on this.
-			// Ideally we should transactionally enqueue or use outbox pattern.
-			// For now, log error.
-			// fmt.Printf("Failed to enqueue message %d: %v\n", msg.ID, err)
-			continue
-		}
-		count++
+	task := asynq.NewTask(TypeCampaignIngest, payload, asynq.Queue("default"))
+	if _, err := s.client.EnqueueContext(ctx, task); err != nil {
+		return fmt.Errorf("failed to enqueue campaign ingestion task: %w", err)
 	}
 
 	// Update Status to processing
+	// We do this immediately so UI shows "Processing"
 	if err := s.store.UpdateCampaignStatus(ctx, c.ID, model.CampaignStatusProcessing); err != nil {
 		return err
 	}
 
 	return nil
 }
+
+// Deprecated synchronous logic removed:
+// Fetch created messages to enqueue them...
+// Enqueue tasks...
 
 func replaceVariables(template string, contact *model.Contact) string {
 	res := strings.ReplaceAll(template, "{{first_name}}", contact.FirstName)

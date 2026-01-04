@@ -141,7 +141,7 @@ export default function CampaignsPage() {
             <Link href="/campaigns/create">
               <Button
                 size="lg"
-                className="px-8 bg-[#8c52ff] hover:bg-[#5b32cc]"
+                className="px-8  dark:bg-[#5b32cc] dark:hover:bg-[#5b32cc]"
               >
                 <IconPlus className="mr-2 size-5" />
                 Start My First Campaign

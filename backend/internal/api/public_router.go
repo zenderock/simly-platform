@@ -44,6 +44,7 @@ func (pr *PublicAPIRouter) RegisterRoutes(r chi.Router) {
 	// Message endpoints
 	r.Route("/messages", func(r chi.Router) {
 		r.Post("/", pr.messageHandler.SendMessage)   // POST /v1/messages
+		r.Post("/otp", pr.messageHandler.SendOTP)    // POST /v1/messages/otp
 		r.Get("/{id}", pr.messageHandler.GetMessage) // GET /v1/messages/{id}
 	})
 
