@@ -15,7 +15,7 @@ import api from "@/lib/api";
 import LoaderQuater from "@/components/loader";
 
 export default function ProfilePage() {
-  const { user, organizations, organizationId, setAuth, token } = useAuth();
+  const { user, organizations, organizationId, updateUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -49,8 +49,8 @@ export default function ProfilePage() {
       });
 
       // Update auth state with new user data
-      if (user && token) {
-        setAuth(token, response.data);
+      if (user) {
+        updateUser(response.data);
       }
 
       setMessage("Profile updated successfully!");
