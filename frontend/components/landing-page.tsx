@@ -295,17 +295,35 @@ const ServicesSection: React.FC = () => {
               </p>
             </div>
 
-            <div className="col-span-12 md:col-span-8 grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-white/10">
-              <ServiceCard
-                title="Unified 2-Way SMS"
-                description="Send and receive messages with a single API. Build chatbots, handle replies, and sync everything to your unified inbox."
-                icon={<RefreshCw className="w-4 h-4 text-white" />}
-              />
-              <ServiceCard
-                title="Compliance Engine"
-                description="Automated opt-out management. We handle 'STOP' keywords and blacklisting instantly to keep your SIM cards safe."
-                icon={<ShieldCheck className="w-4 h-4 text-white" />}
-              />
+            <div className="col-span-12 md:col-span-8 grid grid-cols-1 sm:grid-cols-2 divide-white/10 border-white/10">
+              <div className="border-b border-white/10 sm:border-r">
+                <ServiceCard
+                  title="Unified 2-Way SMS"
+                  description="Send and receive messages with a single API. Build chatbots, handle replies, and sync everything to your unified inbox."
+                  icon={<RefreshCw className="w-4 h-4 text-white" />}
+                />
+              </div>
+              <div className="border-b border-white/10">
+                <ServiceCard
+                  title="Compliance Engine"
+                  description="Automated opt-out management. We handle 'STOP' keywords and blacklisting instantly to keep your SIM cards safe."
+                  icon={<ShieldCheck className="w-4 h-4 text-white" />}
+                />
+              </div>
+              <div className="sm:border-r border-white/10">
+                <ServiceCard
+                  title="Mass Campaigns"
+                  description="Pro-grade orchestration for high-volume engagement. Real-time tracking and automated retry logic."
+                  icon={<FileText className="w-4 h-4 text-white" />}
+                />
+              </div>
+              <div>
+                <ServiceCard
+                  title="Smart Audience"
+                  description="Native contact management with deep segmentation and global blacklist enforcement. Your CRM, automated."
+                  icon={<MoreHorizontal className="w-4 h-4 text-white" />}
+                />
+              </div>
             </div>
           </div>
 
@@ -428,9 +446,9 @@ const WhyUsSection: React.FC = () => {
         <SectionHeader
           number="02"
           label="Use Cases"
-          title="A solution for"
-          subtitle="every need."
-          description="Whether you are an indie developer, a startup, or a fleet manager, Simly adapts."
+          title="From OTPs to"
+          subtitle="Mass Marketing."
+          description="Power transactional alerts, appointment reminders, or global marketing campaigns from a single dashboard."
         />
 
         <section className="border z-10 bg-[#05080A] border-white/10 border-b relative">
@@ -920,12 +938,12 @@ const PricingSection: React.FC = () => {
       initials: "P",
       features: [
         "Unlimited SMS volume",
+        "1,000 contacts & 5 campaigns",
         "Up to 2 devices",
         "Smart Priority: Normal",
         "Advanced Webhooks (JSON)",
         "Campaign Command Center",
         "Opt-out Compliance Engine",
-        "Priority Email Support",
       ],
     },
     {
@@ -938,11 +956,11 @@ const PricingSection: React.FC = () => {
       initials: "E",
       features: [
         "Unlimited SMS & Apps",
+        "Unlimited Audience & Campaigns",
         "Unlimited devices / fleets",
         "Smart Priority: High (OTPs)",
         "Sim-slot steering",
         "White-label options",
-        "Custom webhooks & integrations",
         "Dedicated Account Manager",
       ],
     },
@@ -955,7 +973,7 @@ const PricingSection: React.FC = () => {
     >
       <div className="max-w-6xl mr-auto ml-auto pr-6 pl-6">
         <SectionHeader
-          number="03"
+          number="04"
           label="Pricing"
           title="Simple and"
           subtitle="transparent."
