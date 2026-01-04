@@ -152,13 +152,19 @@ export default function ApplicationsPage() {
 
     setIsRenaming(true);
     try {
-      await api.put(`/applications/${editingApp.id}`, {
+      const updates = {
         name: renamingName,
         logo_url: editingApp.logo_url,
         is_sandbox: editingApp.is_sandbox,
         slack_webhook_url: editingApp.slack_webhook_url,
         ntfy_topic: editingApp.ntfy_topic,
-      });
+      };
+
+      await api.put(`/applications/${editingApp.id}`, updates);
+
+      // Update local store immediately for sidebar reflection
+      updateApplication(editingApp.id, updates);
+
       fetchApplications();
       toast({ title: "Application updated", variant: "success" });
       setEditingApp(null);

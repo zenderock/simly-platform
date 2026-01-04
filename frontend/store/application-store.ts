@@ -11,7 +11,7 @@ interface ApplicationState {
   setActiveAppId: (id: number | null) => void;
   getActiveApp: () => Application | null;
   fetchApplications: () => Promise<void>;
-  updateApplication: (id: number, name: string) => void;
+  updateApplication: (id: number, updates: Partial<Application>) => void;
   removeApplication: (id: number) => void;
 }
 
@@ -45,10 +45,10 @@ export const useApplicationStore = create<ApplicationState>()(
           console.error("Failed to fetch applications:", error);
         }
       },
-      updateApplication: (id, name) => {
+      updateApplication: (id, updates) => {
         set((state) => ({
           applications: state.applications.map((a) =>
-            a.id === id ? { ...a, name } : a
+            a.id === id ? { ...a, ...updates } : a
           ),
         }));
       },

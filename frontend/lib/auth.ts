@@ -21,6 +21,7 @@ interface AuthState {
   setOrganizations: (orgs: Organization[]) => void;
   setOrganizationId: (id: number) => void;
   refreshOrganizations: () => Promise<void>;
+  updateUser: (updates: Partial<User>) => void;
   logout: () => void;
 }
 
@@ -56,6 +57,12 @@ export const useAuth = create<AuthState>()(
           set({ organizations: response.data });
         } catch (error) {
           console.error('Failed to refresh organizations:', error);
+        }
+      },
+      updateUser: (updates) => {
+        const { user } = get();
+        if (user) {
+          set({ user: { ...user, ...updates } });
         }
       },
       logout: () => {

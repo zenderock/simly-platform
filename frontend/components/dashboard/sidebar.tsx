@@ -164,7 +164,7 @@ export function DashboardSidebar({
     const previousName = appToRename.name;
 
     // Optimistic update on Zustand store
-    updateApplication(appToRename.id, trimmedName);
+    updateApplication(appToRename.id, { name: trimmedName });
     setRenameDialogOpen(false);
 
     updateAppMutation.mutate(
@@ -172,7 +172,7 @@ export function DashboardSidebar({
       {
         onError: () => {
           // Rollback on error
-          updateApplication(appToRename.id, previousName);
+          updateApplication(appToRename.id, { name: previousName });
         },
       }
     );
@@ -239,7 +239,7 @@ export function DashboardSidebar({
             <DropdownMenuTrigger asChild>
               <div className="flex items-center gap-2 sm:gap-3 rounded-lg border bg-card p-2 sm:p-3 mb-3 sm:mb-4 mt-4 cursor-pointer hover:bg-accent/50 transition-colors group">
                 <div
-                  className={`flex size-8 sm:size-[34px] items-center justify-center rounded-lg shrink-0 ${
+                  className={`flex size-8 sm:size-[34px] items-center justify-center rounded-lg shrink-0 overflow-hidden ${
                     activeApp
                       ? activeApp.is_sandbox
                         ? "bg-orange-500 text-white"
@@ -248,7 +248,13 @@ export function DashboardSidebar({
                   }`}
                 >
                   {activeApp ? (
-                    activeApp.is_sandbox ? (
+                    activeApp.logo_url ? (
+                      <img
+                        src={activeApp.logo_url}
+                        alt={activeApp.name}
+                        className="size-full object-cover"
+                      />
+                    ) : activeApp.is_sandbox ? (
                       <IconShieldHalfFilled className="size-4 sm:size-5" />
                     ) : (
                       <IconCategory2 className="size-4 sm:size-5" />
@@ -305,13 +311,21 @@ export function DashboardSidebar({
                         }`}
                       >
                         <div
-                          className={`p-1.5 rounded-md ${
+                          className={`p-1.5 rounded-md overflow-hidden flex items-center justify-center size-8 ${
                             app.is_sandbox
                               ? "bg-orange-100 text-orange-600"
                               : "bg-emerald-100 text-emerald-600"
                           }`}
                         >
-                          <IconCategory2 className="size-4" />
+                          {app.logo_url ? (
+                            <img
+                              src={app.logo_url}
+                              alt={app.name}
+                              className="size-full object-cover"
+                            />
+                          ) : (
+                            <IconCategory2 className="size-4" />
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p
@@ -476,9 +490,12 @@ export function DashboardSidebar({
               <div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg cursor-pointer hover:bg-accent transition-colors border bg-card/50">
                 <Avatar className="size-7 sm:size-8">
                   <AvatarImage
-                    src={`https://api.dicebear.com/9.x/initials/svg?seed=${
-                      user?.name || "U"
-                    }`}
+                    src={
+                      user?.avatar_url ||
+                      `https://api.dicebear.com/9.x/initials/svg?seed=${
+                        user?.name || "U"
+                      }`
+                    }
                   />
                   <AvatarFallback className="text-xs uppercase">
                     {user?.name?.charAt(0)}
@@ -488,7 +505,7 @@ export function DashboardSidebar({
                   <p className="font-semibold text-xs sm:text-sm truncate">
                     {user?.name || "User"}
                   </p>
-                  <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
+                  <p className="text-muted-foreground text-[10px] sm:text-xs truncate">
                     {user?.email}
                   </p>
                 </div>
