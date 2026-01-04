@@ -264,7 +264,7 @@ export default function CampaignDetailsPage() {
         {/* Command Center Grid */}
         <div className="grid gap-6 grid-cols-1 lg:grid-cols-4">
           {/* Main Visualization Card */}
-          <Card className="lg:col-span-2 shadow-sm border-zinc-200 dark:border-zinc-800 overflow-hidden relative">
+          <Card className="lg:col-span-2 shadow-none border-zinc-200 dark:border-zinc-800 overflow-hidden relative">
             <div className="absolute top-0 right-0 p-4 opacity-5">
               <IconChartBar size={120} />
             </div>
@@ -423,7 +423,7 @@ export default function CampaignDetailsPage() {
 
         <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
           {/* Recent Live Feed */}
-          <Card className="lg:col-span-2 shadow-sm border-zinc-200 dark:border-zinc-800">
+          <Card className="lg:col-span-2 shadow-none border-zinc-200 dark:border-zinc-800">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <div className="space-y-1">
                 <CardTitle className="text-base font-bold flex items-center gap-2">
@@ -516,7 +516,7 @@ export default function CampaignDetailsPage() {
 
           {/* Configuration & Meta */}
           <div className="space-y-6">
-            <Card className="shadow-sm border-zinc-200 dark:border-zinc-800">
+            <Card className="shadow-none border-zinc-200 dark:border-zinc-800">
               <CardHeader>
                 <CardTitle className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
                   Configuration
@@ -566,7 +566,7 @@ export default function CampaignDetailsPage() {
             {/* API Context */}
             {(campaign.status === "draft" ||
               campaign.status === "scheduled") && (
-              <Card className="shadow-sm border-primary/20 bg-primary/5">
+              <Card className="shadow-none border-primary/20 bg-primary/5">
                 <CardContent className="pt-6">
                   <h4 className="text-[10px] font-bold uppercase tracking-widest text-primary mb-3">
                     Terminal Access
@@ -607,7 +607,7 @@ function StatsCard({ title, value, icon, color, footer }: any) {
   };
 
   return (
-    <Card className="shadow-sm border-zinc-200 dark:border-zinc-800 overflow-hidden">
+    <Card className="shadow-none border-zinc-200 dark:border-zinc-800 overflow-hidden">
       <CardContent className="p-5">
         <div className="flex items-center justify-between mb-3">
           <div className={`p-2 rounded-lg ${colors[color]}`}>{icon}</div>

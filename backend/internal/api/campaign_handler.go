@@ -108,10 +108,10 @@ func (h *CampaignHandler) LaunchCampaign(w http.ResponseWriter, r *http.Request)
 
 	if err := h.service.LaunchCampaign(r.Context(), id, orgID); err != nil {
 		if errors.Is(err, core.ErrLimitExceeded) {
-			http.Error(w, err.Error(), http.StatusForbidden)
+			RespondWithError(w, http.StatusForbidden, err.Error())
 			return
 		}
-		http.Error(w, err.Error(), http.StatusBadRequest) // Bad Request usually for "empty list" etc
+		RespondWithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 	w.WriteHeader(http.StatusOK)

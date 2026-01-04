@@ -22,6 +22,7 @@ import { useAuth } from "@/lib/auth";
 import { useApplicationStore } from "@/store/application-store";
 import { IconRocket, IconLock } from "@tabler/icons-react";
 import Link from "next/link";
+import { getErrorMessage } from "@/lib/utils";
 
 interface CreateApplicationDialogProps {
   onCreated: () => void;
@@ -90,10 +91,10 @@ export function CreateApplicationDialog({
         ntfy_topic: "",
       });
     } catch (error: any) {
+      const msg = getErrorMessage(error);
       toast({
         title: "Error",
-        description:
-          error.response?.data?.error || "Failed to create application.",
+        description: msg,
         variant: "destructive",
       });
     } finally {

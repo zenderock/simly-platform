@@ -313,7 +313,7 @@ func (s *Store) BulkCreateMessagesForCampaign(ctx context.Context, campaignID, o
 			}
 
 			for j, m := range batch {
-				n := j * 7
+				n := j * 6
 				query += fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, 'queued', 'outbound', $%d, NOW(), NOW())", n+1, n+2, n+3, n+4, n+5, n+6)
 				vals = append(vals, orgID, deviceIDPtr, m.SimSlot, m.ToNumber, m.Body, campaignID)
 
