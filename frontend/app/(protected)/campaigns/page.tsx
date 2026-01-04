@@ -6,6 +6,7 @@ import {
   deleteCampaign,
   launchCampaign,
 } from "@/lib/api/campaigns";
+import { getErrorMessage } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import {
@@ -66,7 +67,7 @@ export default function CampaignsPage() {
       setDeleteId(null);
     },
     onError: (err: any) => {
-      toast.error("Failed to delete campaign");
+      toast.error(getErrorMessage(err));
       setDeleteId(null);
     },
   });
@@ -78,9 +79,7 @@ export default function CampaignsPage() {
       toast.success("Campaign launched successfully");
     },
     onError: (err: any) => {
-      toast.error(
-        "Failed to launch campaign: " + (err.response?.data || err.message)
-      );
+      toast.error(getErrorMessage(err));
     },
   });
 

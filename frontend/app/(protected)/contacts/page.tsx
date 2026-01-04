@@ -2,19 +2,28 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { 
-  listContacts, 
-  deleteContact, 
+import {
+  listContacts,
+  deleteContact,
   updateContact,
-  Contact, 
+  Contact,
   listLists,
   createList,
   deleteList,
-  getListDetails
+  getListDetails,
 } from "@/lib/api/contacts";
+import { getErrorMessage } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Trash2, Users, MoreHorizontal, Square, Edit } from "lucide-react";
+import {
+  Plus,
+  Search,
+  Trash2,
+  Users,
+  MoreHorizontal,
+  Square,
+  Edit,
+} from "lucide-react";
 import { useState } from "react";
 import {
   Table,
@@ -55,7 +64,7 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { CreateContactDialog } from "./create-contact-dialog";
 import { ImportContactsDialog } from "./import-contacts-dialog";
-import  LoaderQuater  from "@/components/loader";
+import LoaderQuater from "@/components/loader";
 
 export default function ContactsPage() {
   const queryClient = useQueryClient();
@@ -66,7 +75,7 @@ export default function ContactsPage() {
   const [newListDescription, setNewListDescription] = useState("");
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
-  
+
   // Edit form states
   const [editFirstName, setEditFirstName] = useState("");
   const [editLastName, setEditLastName] = useState("");
@@ -105,7 +114,7 @@ export default function ContactsPage() {
     },
   });
 
-   const deleteListMutation = useMutation({
+  const deleteListMutation = useMutation({
     mutationFn: deleteList,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contact-lists"] });
@@ -123,11 +132,12 @@ export default function ContactsPage() {
       setNewListDescription("");
       toast.success("List created");
     },
-    onError: () => toast.error("Failed to create list"),
+    onError: (err: any) => toast.error(getErrorMessage(err)),
   });
 
   const updateContactMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) => updateContact(id, data),
+    mutationFn: ({ id, data }: { id: number; data: any }) =>
+      updateContact(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contacts"] });
       queryClient.invalidateQueries({ queryKey: ["list-details"] });
@@ -135,8 +145,7 @@ export default function ContactsPage() {
       toast.success("Contact updated successfully");
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data || error.message || "Failed to update contact";
-      toast.error(errorMessage);
+      toast.error(getErrorMessage(error));
     },
   });
 
@@ -145,7 +154,10 @@ export default function ContactsPage() {
       toast.error("List name is required");
       return;
     }
-    createListMutation.mutate({ name: newListName, description: newListDescription });
+    createListMutation.mutate({
+      name: newListName,
+      description: newListDescription,
+    });
   };
 
   const handleEditContact = (contact: Contact) => {
@@ -159,12 +171,12 @@ export default function ContactsPage() {
 
   const handleUpdateContact = () => {
     if (!editingContact) return;
-    
+
     if (!editFirstName.trim()) {
       toast.error("First name is required");
       return;
     }
-    
+
     if (!editPhoneNumber.trim()) {
       toast.error("Phone number is required");
       return;
@@ -175,33 +187,41 @@ export default function ContactsPage() {
       last_name: editLastName.trim(),
       phone_number: editPhoneNumber.trim(),
       email: editEmail.trim(),
-      tags: editTags ? editTags.split(",").map(t => t.trim()).filter(Boolean) : [],
+      tags: editTags
+        ? editTags
+            .split(",")
+            .map((t) => t.trim())
+            .filter(Boolean)
+        : [],
     };
 
     updateContactMutation.mutate({ id: editingContact.id, data: updateData });
   };
 
   const contacts = selectedList === null ? allContacts : listDetails?.members;
-  const contactsLoading = selectedList === null ? allContactsLoading : listDetailsLoading;
-
+  const contactsLoading =
+    selectedList === null ? allContactsLoading : listDetailsLoading;
 
   // Client-side filtering on the currently active dataset
-  const filteredContacts = contacts?.filter((c: Contact) => {
-    const term = search.toLowerCase();
-    return (
-      c.first_name.toLowerCase().includes(term) ||
-      c.last_name.toLowerCase().includes(term) ||
-      c.phone_number.includes(term) ||
-      c.email.toLowerCase().includes(term)
-    );
-  }) || [];
+  const filteredContacts =
+    contacts?.filter((c: Contact) => {
+      const term = search.toLowerCase();
+      return (
+        c.first_name.toLowerCase().includes(term) ||
+        c.last_name.toLowerCase().includes(term) ||
+        c.phone_number.includes(term) ||
+        c.email.toLowerCase().includes(term)
+      );
+    }) || [];
 
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center justify-between border-b px-6 py-4">
         <div>
           <h1 className="text-xl font-semibold">Contacts</h1>
-          <p className="text-sm text-muted-foreground">Manage your audience and campaigns</p>
+          <p className="text-sm text-muted-foreground">
+            Manage your audience and campaigns
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <ImportContactsDialog />
@@ -212,199 +232,238 @@ export default function ContactsPage() {
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar Lists */}
         <div className="w-64 border-r bg-muted/10 p-4 flex flex-col gap-4">
-           <div className="flex items-center justify-between mb-2">
-             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Lists</h3>
-             <Dialog open={createListOpen} onOpenChange={setCreateListOpen}>
-               <DialogTrigger asChild>
-                 <Button variant="ghost" size="icon" className="size-6">
-                   <Plus className="size-3" />
-                 </Button>
-               </DialogTrigger>
-               <DialogContent>
-                 <DialogHeader>
-                   <DialogTitle>Create New List</DialogTitle>
-                   <DialogDescription>
-                     Create a list to organize your contacts for campaigns.
-                   </DialogDescription>
-                 </DialogHeader>
-                 <div className="space-y-4 py-4">
-                   <div className="space-y-2">
-                     <Label htmlFor="list-name">List Name</Label>
-                     <Input
-                       id="list-name"
-                       placeholder="e.g. VIP Customers"
-                       value={newListName}
-                       onChange={(e) => setNewListName(e.target.value)}
-                     />
-                   </div>
-                   <div className="space-y-2">
-                     <Label htmlFor="list-description">Description (optional)</Label>
-                     <Input
-                       id="list-description"
-                       placeholder="e.g. High-value customers for special offers"
-                       value={newListDescription}
-                       onChange={(e) => setNewListDescription(e.target.value)}
-                     />
-                   </div>
-                 </div>
-                 <DialogFooter>
-                   <Button variant="outline" onClick={() => setCreateListOpen(false)}>
-                     Cancel
-                   </Button>
-                   <Button onClick={handleCreateList} disabled={createListMutation.isPending}>
-                     {createListMutation.isPending ? <LoaderQuater className="mr-2" /> : null}
-                     Create List
-                   </Button>
-                 </DialogFooter>
-               </DialogContent>
-             </Dialog>
-           </div>
-           
-           <div className="flex flex-col gap-1">
-             <Button 
-                variant={selectedList === null ? "secondary" : "ghost"} 
-                className="justify-start font-normal"
-                onClick={() => setSelectedList(null)}
-             >
-               <Users className="mr-2 size-4" />
-               All Contacts
-             </Button>
-             
-             {listsLoading && <LoaderQuater className="mx-auto my-2" />}
-             
-             {lists?.map((list: any) => (
-               <div key={list.id} className="group flex items-center gap-1">
-                 <Button 
-                    variant={selectedList === list.id ? "secondary" : "ghost"} 
-                    className="justify-start font-normal flex-1 truncate"
-                    onClick={() => setSelectedList(list.id)}
-                 >
-                   <span className="truncate">{list.name}</span>
-                   <span className="ml-auto text-xs text-muted-foreground">{list.member_count || 0}</span>
-                 </Button>
-                 <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="size-7 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <MoreHorizontal className="size-3" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem className="text-destructive" onClick={() => deleteListMutation.mutate(list.id)}>
-                        Delete List
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                 </DropdownMenu>
-               </div>
-             ))}
-           </div>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+              Lists
+            </h3>
+            <Dialog open={createListOpen} onOpenChange={setCreateListOpen}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="size-6">
+                  <Plus className="size-3" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create New List</DialogTitle>
+                  <DialogDescription>
+                    Create a list to organize your contacts for campaigns.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="list-name">List Name</Label>
+                    <Input
+                      id="list-name"
+                      placeholder="e.g. VIP Customers"
+                      value={newListName}
+                      onChange={(e) => setNewListName(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="list-description">
+                      Description (optional)
+                    </Label>
+                    <Input
+                      id="list-description"
+                      placeholder="e.g. High-value customers for special offers"
+                      value={newListDescription}
+                      onChange={(e) => setNewListDescription(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => setCreateListOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleCreateList}
+                    disabled={createListMutation.isPending}
+                  >
+                    {createListMutation.isPending ? (
+                      <LoaderQuater className="mr-2" />
+                    ) : null}
+                    Create List
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <Button
+              variant={selectedList === null ? "secondary" : "ghost"}
+              className="justify-start font-normal"
+              onClick={() => setSelectedList(null)}
+            >
+              <Users className="mr-2 size-4" />
+              All Contacts
+            </Button>
+
+            {listsLoading && <LoaderQuater className="mx-auto my-2" />}
+
+            {lists?.map((list: any) => (
+              <div key={list.id} className="group flex items-center gap-1">
+                <Button
+                  variant={selectedList === list.id ? "secondary" : "ghost"}
+                  className="justify-start font-normal flex-1 truncate"
+                  onClick={() => setSelectedList(list.id)}
+                >
+                  <span className="truncate">{list.name}</span>
+                  <span className="ml-auto text-xs text-muted-foreground">
+                    {list.member_count || 0}
+                  </span>
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <MoreHorizontal className="size-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem
+                      className="text-destructive"
+                      onClick={() => deleteListMutation.mutate(list.id)}
+                    >
+                      Delete List
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Main Table */}
         <div className="flex-1 flex flex-col p-6 overflow-hidden">
-           <div className="flex items-center gap-4 mb-4">
-             <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
-                <Input 
-                  placeholder="Search contacts..." 
-                  className="pl-9" 
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-             </div>
-           </div>
+          <div className="flex items-center gap-4 mb-4">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" />
+              <Input
+                placeholder="Search contacts..."
+                className="pl-9"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+          </div>
 
-           <div className="flex-1 border rounded-md overflow-hidden flex flex-col">
-              <div className="overflow-auto flex-1">
-                <Table>
-                  <TableHeader className="sticky top-0 bg-background z-10">
+          <div className="flex-1 border rounded-md overflow-hidden flex flex-col">
+            <div className="overflow-auto flex-1">
+              <Table>
+                <TableHeader className="sticky top-0 bg-background z-10">
+                  <TableRow>
+                    <TableHead className="w-[50px]">
+                      <Square className="size-4" />
+                    </TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Tags</TableHead>
+                    <TableHead>Added</TableHead>
+                    <TableHead className="w-[50px]"></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {contactsLoading ? (
                     <TableRow>
-                      <TableHead className="w-[50px]">
-                        <Square className="size-4" />
-                      </TableHead>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Tags</TableHead>
-                      <TableHead>Added</TableHead>
-                      <TableHead className="w-[50px]"></TableHead>
+                      <TableCell colSpan={7} className="h-24 text-center">
+                        <LoaderQuater className="mx-auto" />
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {contactsLoading ? (
-                      <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center">
-                          <LoaderQuater className="mx-auto" />
+                  ) : filteredContacts.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={7}
+                        className="h-24 text-center text-muted-foreground"
+                      >
+                        No contacts found.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredContacts.map((contact: any) => (
+                      <TableRow key={contact.id}>
+                        <TableCell>
+                          <Square className="size-4 text-muted-foreground" />
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {contact.first_name} {contact.last_name}
+                        </TableCell>
+                        <TableCell>{contact.phone_number}</TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {contact.email || "-"}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {contact.tags?.map((tag: any) => (
+                              <Badge
+                                key={tag}
+                                variant="outline"
+                                className="text-[10px] px-1 py-0 h-5"
+                              >
+                                {tag}
+                              </Badge>
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {format(new Date(contact.created_at), "MMM d, yyyy")}
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="size-8"
+                              >
+                                <MoreHorizontal className="size-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => handleEditContact(contact)}
+                              >
+                                <Edit className="mr-2 size-4" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                className="text-destructive"
+                                onClick={() => setContactToDelete(contact)}
+                              >
+                                <Trash2 className="mr-2 size-4" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
-                    ) : filteredContacts.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                          No contacts found.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredContacts.map((contact: any) => (
-                        <TableRow key={contact.id}>
-                          <TableCell>
-                            <Square className="size-4 text-muted-foreground" />
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            {contact.first_name} {contact.last_name}
-                          </TableCell>
-                          <TableCell>{contact.phone_number}</TableCell>
-                          <TableCell className="text-muted-foreground">{contact.email || "-"}</TableCell>
-                          <TableCell>
-                            <div className="flex flex-wrap gap-1">
-                              {contact.tags?.map((tag: any) => (
-                                <Badge key={tag} variant="outline" className="text-[10px] px-1 py-0 h-5">
-                                  {tag}
-                                </Badge>
-                              ))}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-xs text-muted-foreground">
-                             {format(new Date(contact.created_at), "MMM d, yyyy")}
-                          </TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="size-8">
-                                  <MoreHorizontal className="size-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleEditContact(contact)}>
-                                  <Edit className="mr-2 size-4" />
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  className="text-destructive" 
-                                  onClick={() => setContactToDelete(contact)}
-                                >
-                                  <Trash2 className="mr-2 size-4" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-           </div>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!contactToDelete} onOpenChange={() => setContactToDelete(null)}>
+      <AlertDialog
+        open={!!contactToDelete}
+        onOpenChange={() => setContactToDelete(null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Contact</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete {contactToDelete?.first_name} {contactToDelete?.last_name}? 
-              This action cannot be undone.
+              Are you sure you want to delete {contactToDelete?.first_name}{" "}
+              {contactToDelete?.last_name}? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -425,12 +484,16 @@ export default function ContactsPage() {
       </AlertDialog>
 
       {/* Edit Contact Dialog */}
-      <Dialog open={!!editingContact} onOpenChange={() => setEditingContact(null)}>
+      <Dialog
+        open={!!editingContact}
+        onOpenChange={() => setEditingContact(null)}
+      >
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Edit Contact</DialogTitle>
             <DialogDescription>
-              Update contact information for {editingContact?.first_name} {editingContact?.last_name}.
+              Update contact information for {editingContact?.first_name}{" "}
+              {editingContact?.last_name}.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -487,11 +550,13 @@ export default function ContactsPage() {
             <Button variant="outline" onClick={() => setEditingContact(null)}>
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={handleUpdateContact}
               disabled={updateContactMutation.isPending}
             >
-              {updateContactMutation.isPending && <LoaderQuater className="mr-2" />}
+              {updateContactMutation.isPending && (
+                <LoaderQuater className="mr-2" />
+              )}
               Save Changes
             </Button>
           </DialogFooter>

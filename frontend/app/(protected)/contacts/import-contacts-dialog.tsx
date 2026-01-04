@@ -28,15 +28,20 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { importContacts, listLists } from "@/lib/api/contacts";
 import LoaderQuater from "@/components/loader";
-import { IconFileDownload, IconInfoSquareRounded, IconUpload } from "@tabler/icons-react";
+import {
+  IconFileDownload,
+  IconInfoSquareRounded,
+  IconUpload,
+} from "@tabler/icons-react";
+import { getErrorMessage } from "@/lib/utils";
 
 const schema = z.object({
   file: z.any().refine((files) => files?.length > 0, "File is required"),
@@ -50,8 +55,8 @@ export function ImportContactsDialog() {
   const queryClient = useQueryClient();
 
   const { data: lists } = useQuery({
-      queryKey: ["contact-lists"],
-      queryFn: listLists
+    queryKey: ["contact-lists"],
+    queryFn: listLists,
   });
 
   const form = useForm<FormData>({
@@ -62,7 +67,8 @@ export function ImportContactsDialog() {
   });
 
   const mutation = useMutation({
-    mutationFn: (data: { file: File; listId?: number }) => importContacts(data.file, data.listId),
+    mutationFn: (data: { file: File; listId?: number }) =>
+      importContacts(data.file, data.listId),
     onSuccess: (res) => {
       queryClient.invalidateQueries({ queryKey: ["contacts"] });
       queryClient.invalidateQueries({ queryKey: ["contact-lists"] });
@@ -71,7 +77,7 @@ export function ImportContactsDialog() {
       form.reset();
     },
     onError: (error: any) => {
-      toast.error(error.response?.data || "Failed to import contacts");
+      toast.error(getErrorMessage(error));
       console.error(error);
     },
   });
@@ -99,17 +105,26 @@ export function ImportContactsDialog() {
             Upload a CSV file to bulk import contacts.
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="bg-muted/30 p-4 rounded-lg border border-dashed flex flex-col gap-2 mb-4">
-            <h4 className="text-xs font-semibold flex items-center gap-2">
-                <IconInfoSquareRounded className="size-3" />
-                CSV Format Requirements
-            </h4>
-            <ul className="text-[11px] text-muted-foreground list-disc pl-4 space-y-1">
-                <li>Must contain a <span className="text-foreground font-medium">phone</span> column.</li>
-                <li>Optional columns: <span className="text-foreground font-medium">first_name, last_name, email, tags</span>.</li>
-                <li>Multiple tags should be comma-separated.</li>
-            </ul>
+          <h4 className="text-xs font-semibold flex items-center gap-2">
+            <IconInfoSquareRounded className="size-3" />
+            CSV Format Requirements
+          </h4>
+          <ul className="text-[11px] text-muted-foreground list-disc pl-4 space-y-1">
+            <li>
+              Must contain a{" "}
+              <span className="text-foreground font-medium">phone</span> column.
+            </li>
+            <li>
+              Optional columns:{" "}
+              <span className="text-foreground font-medium">
+                first_name, last_name, email, tags
+              </span>
+              .
+            </li>
+            <li>Multiple tags should be comma-separated.</li>
+          </ul>
         </div>
 
         <Form {...form}>
@@ -122,13 +137,13 @@ export function ImportContactsDialog() {
                   <FormLabel>CSV File</FormLabel>
                   <FormControl>
                     <div className="grid w-full items-center gap-1.5">
-                        <Input 
-                            type="file" 
-                            accept=".csv"
-                            className="cursor-pointer"
-                            onChange={(e) => onChange(e.target.files)}
-                            {...field}
-                         />
+                      <Input
+                        type="file"
+                        accept=".csv"
+                        className="cursor-pointer"
+                        onChange={(e) => onChange(e.target.files)}
+                        {...field}
+                      />
                     </div>
                   </FormControl>
                   <FormMessage />
@@ -142,19 +157,22 @@ export function ImportContactsDialog() {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Add to List (Optional)</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a list" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                        <SelectItem value="0">None</SelectItem>
-                        {lists?.map((list) => (
-                            <SelectItem key={list.id} value={list.id.toString()}>
-                                {list.name}
-                            </SelectItem>
-                        ))}
+                      <SelectItem value="0">None</SelectItem>
+                      {lists?.map((list) => (
+                        <SelectItem key={list.id} value={list.id.toString()}>
+                          {list.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormDescription>
@@ -166,20 +184,24 @@ export function ImportContactsDialog() {
             />
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOpen(false)}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={mutation.isPending}>
                 {mutation.isPending ? (
-                    <>
-                        <LoaderQuater className="mr-2" />
-                        Importing...
-                    </>
+                  <>
+                    <LoaderQuater className="mr-2" />
+                    Importing...
+                  </>
                 ) : (
-                    <>
-                        <IconUpload className="mr-2 size-4" />
-                        Import CSV
-                    </>
+                  <>
+                    <IconUpload className="mr-2 size-4" />
+                    Import CSV
+                  </>
                 )}
               </Button>
             </DialogFooter>

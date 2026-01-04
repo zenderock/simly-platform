@@ -13,8 +13,11 @@ export function getErrorMessage(error: any): string {
     console.log("Error Object:", error);
   }
   // Direct access to axios response data message
-  if (error?.response?.data?.message && typeof error.response.data.message === "string") {
-    return error.response.data.message;
+  if (error?.response?.data?.message) {
+    // If message is just a string, return it
+    if (typeof error.response.data.message === "string") {
+       return error.response.data.message;
+    }
   }
 
   let message = error.response?.data || error.message || "An unexpected error occurred";
@@ -34,7 +37,11 @@ export function getErrorMessage(error: any): string {
 
   // Handle object response
   if (typeof message === "object" && message !== null) {
-    message = message.message || JSON.stringify(message);
+    if (message.message) {
+        return message.message;
+    }
+    // Deep fallback: stringify the object so at least we see something
+    message = JSON.stringify(message);
   }
 
   // Trim whitespace

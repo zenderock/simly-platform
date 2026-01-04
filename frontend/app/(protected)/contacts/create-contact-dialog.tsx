@@ -104,7 +104,7 @@ export function CreateContactDialog({
           toast.success(`Contact created and added to list successfully`);
         } catch (error) {
           toast.success("Contact created successfully");
-          toast.error("Failed to add contact to list");
+          toast.error(getErrorMessage(error));
         }
       } else {
         toast.success("Contact created successfully");
