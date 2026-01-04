@@ -368,7 +368,7 @@ const ServiceCard: React.FC<ServiceCardProps> = ({
   icon,
 }) => {
   return (
-    <div className="p-8 group hover:bg-white/[0.02] transition-colors relative overflow-hidden">
+    <div className="p-8 group hover:bg-white/2 transition-colors relative overflow-hidden">
       <div className="mb-6 relative h-24 w-full bg-slate-900/50 rounded border border-white/5 flex flex-col p-3 overflow-hidden">
         {icon ? (
           <div className="relative w-full h-full flex items-center justify-center">

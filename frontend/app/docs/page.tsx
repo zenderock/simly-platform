@@ -21,6 +21,7 @@ import {
   IconAlertTriangle,
   IconServer,
   IconLock,
+  IconRocket,
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -64,10 +65,26 @@ const API_ENDPOINTS: APIEndpoint[] = [
         description: "Message content (max 1600 characters)",
         example: "Hello from Simly!",
       },
+      {
+        name: "device_id",
+        type: "integer",
+        required: false,
+        description: "Force sending via a specific device ID",
+        example: "123",
+      },
+      {
+        name: "sim_slot",
+        type: "integer",
+        required: false,
+        description: "Sim slot to use (0 or 1)",
+        example: "0",
+      },
     ],
     requestExample: {
       to: "+33612345678",
       body: "Hello from Simly!",
+      device_id: 123,
+      sim_slot: 0,
     },
     responseExample: {
       id: "msg_abc123xyz",
@@ -156,6 +173,60 @@ const API_ENDPOINTS: APIEndpoint[] = [
   },
 ];
 
+const CAMPAIGN_ENDPOINTS: APIEndpoint[] = [
+  {
+    method: "POST",
+    path: "/v1/campaigns/{id}/launch",
+    summary: "Launch a campaign",
+    description:
+      "Triggers the sending process for a previously created campaign draft. The campaign must be in 'draft' status.",
+    headers: [
+      {
+        name: "Authorization",
+        required: true,
+        description: "Bearer token with your API key",
+        example: "Bearer sk_live_...",
+      },
+    ],
+    pathParams: [
+      {
+        name: "id",
+        type: "string",
+        required: true,
+        description: "The unique campaign ID (e.g., 123)",
+        example: "123",
+      },
+    ],
+    responseExample: {
+      status: "success",
+      message: "Campaign launched successfully",
+      campaign_id: 123,
+    },
+    errorResponses: [
+      {
+        status: 400,
+        code: "invalid_request",
+        description: "Campaign is not in draft status or already processing",
+      },
+      {
+        status: 404,
+        code: "resource_not_found",
+        description: "Campaign not found",
+      },
+      {
+        status: 401,
+        code: "invalid_api_key",
+        description: "API key is invalid",
+      },
+      {
+        status: 500,
+        code: "internal_error",
+        description: "Server error",
+      },
+    ],
+  },
+];
+
 // Message statuses
 const MESSAGE_STATUSES = [
   {
@@ -225,6 +296,14 @@ export default function DocsPage() {
                     className="block text-sm text-white/60 hover:text-[#6e3ff3] transition-colors py-1"
                   >
                     Messages
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#campaigns"
+                    className="block text-sm text-white/60 hover:text-[#6e3ff3] transition-colors py-1"
+                  >
+                    Campaigns
                   </a>
                 </li>
               </ul>
@@ -398,6 +477,40 @@ export default function DocsPage() {
                         endpoint={endpoint}
                         apiKey="sk_live_your_api_key"
                         defaultExpanded={index === 0}
+                      />
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            {/* Campaigns Section */}
+            <section id="campaigns" className="scroll-mt-24">
+              <div className="space-y-8">
+                <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+                  <div className="size-8 rounded-lg bg-pink-500/10 flex items-center justify-center border border-pink-500/20">
+                    <IconRocket className="size-4 text-pink-500" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-white">Campaigns</h2>
+                    <p className="text-sm text-white/60">
+                      Manage and trigger SMS campaigns
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-6">
+                  {CAMPAIGN_ENDPOINTS.map((endpoint, index) => (
+                    <motion.div
+                      key={`${endpoint.method}-${endpoint.path}`}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 + index * 0.05 }}
+                    >
+                      <APIEndpointDoc
+                        endpoint={endpoint}
+                        apiKey="sk_live_your_api_key"
+                        defaultExpanded={false}
                       />
                     </motion.div>
                   ))}
