@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -21,8 +21,6 @@ import {
   Settings2,
 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Sector } from "recharts";
-import api from "@/lib/api";
-import { DashboardStats } from "@/types";
 import { useDashboardStore } from "@/store/dashboard-store";
 import { useApplicationStore } from "@/store/application-store";
 import { useDashboardStats } from "@/hooks/use-dashboard-stats";

@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -10,30 +9,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { NewMessageDialog } from "@/components/dashboard/new-message-dialog";
 import api from "@/lib/api";
-import { DashboardStats } from "@/types";
 import { useAuth } from "@/lib/auth";
-import { useDashboardStore } from "@/store/dashboard-store";
 import { useToast } from "@/components/ui/use-toast";
 import { Message } from "@/types";
 import { IconDownload, IconChevronDown } from "@tabler/icons-react";
+import { useApplicationStore } from "@/store/application-store";
+import { useDashboardStats } from "@/hooks/use-dashboard-stats";
 
 export function WelcomeSection() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const refreshKey = useDashboardStore((state) => state.refreshKey);
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const res = await api.get<DashboardStats>("/dashboard/stats");
-        setStats(res.data);
-      } catch (error) {
-        console.error("Failed to fetch dashboard stats", error);
-      }
-    };
-    fetchStats();
-  }, [refreshKey]);
+  const activeAppId = useApplicationStore((state) => state.activeAppId);
+  const { data: stats } = useDashboardStats(activeAppId);
 
   const handleExportCSV = async () => {
     try {
@@ -42,7 +29,8 @@ export function WelcomeSection() {
         description: "Fetching activity logs...",
       });
 
-      const res = await api.get<Message[]>("/messages");
+      const params = activeAppId ? { application_id: activeAppId } : {};
+      const res = await api.get<Message[]>("/messages", { params });
       const messages = res.data || [];
 
       if (messages.length === 0) {
