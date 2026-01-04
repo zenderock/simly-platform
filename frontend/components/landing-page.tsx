@@ -1088,6 +1088,8 @@ const ContactSection: React.FC = () => {
       buttonText: "Download .APK",
       features: ["Android 8.0+", "Background Service"],
       link: "/releases/simly-gateway-v1.apk",
+      footerText:
+        "Not on Play Store (Google restrictions) - Safe and signed file",
     },
     {
       label: "Web",
@@ -1129,6 +1131,7 @@ interface ContactCardProps {
   buttonText: string;
   features: string[];
   link: string;
+  footerText?: string;
 }
 
 const ContactCard: React.FC<ContactCardProps> = ({
@@ -1138,6 +1141,7 @@ const ContactCard: React.FC<ContactCardProps> = ({
   buttonText,
   features,
   link,
+  footerText,
 }) => {
   return (
     <div className="flex flex-col group hover:bg-white/[0.04] transition-colors duration-300 h-full border-white/10 border rounded-none p-10 relative">
@@ -1159,10 +1163,15 @@ const ContactCard: React.FC<ContactCardProps> = ({
       <p className="text-white/70 text-sm mb-8 font-light">{description}</p>
       <Link
         href={link}
-        className="w-full block text-center items-center gap-2 py-4 mb-10 rounded-lg border border-white/10 bg-transparent text-white group-hover:bg-[#8c52ff] group-hover:text-white group-hover:border-[#8c52ff] transition-all duration-300 text-sm font-medium"
+        className="w-full block text-center items-center gap-2 py-4 mb-2 rounded-lg border border-white/10 bg-transparent text-white group-hover:bg-[#8c52ff] group-hover:text-white group-hover:border-[#8c52ff] transition-all duration-300 text-sm font-medium"
       >
         {buttonText}
       </Link>
+      {footerText && (
+        <p className="text-[10px] text-white/40 mb-10 text-center italic">
+          {footerText}
+        </p>
+      )}
       <div className="mt-auto">
         <ul className="space-y-4">
           {features.map((feature, i) => (
