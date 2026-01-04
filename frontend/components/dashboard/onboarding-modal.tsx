@@ -79,7 +79,7 @@ export function OnboardingModal() {
         setOpen(val);
       }}
     >
-      <DialogContent className="max-w-[98vw] h-[95vh] w-[98vw] p-0 gap-0 overflow-hidden border-none shadow-2xl bg-background/95 backdrop-blur-md">
+      <DialogContent className="max-w-[98vw] h-[95vh] w-[98vw] p-0 gap-0 overflow-hidden border-none font-sans shadow-2xl bg-background/95 backdrop-blur-md">
         <div className="flex flex-col h-full w-full relative">
           {/* Header / Progress */}
           <div className="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-10 pointer-events-none">
