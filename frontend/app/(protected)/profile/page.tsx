@@ -9,14 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  User,
-  Shield,
-  Key,
-  Loader2,
-  Save,
-  Lock,
-} from "lucide-react";
+import { User, Shield, Key, Loader2, Save, Lock } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import api from "@/lib/api";
 import LoaderQuater from "@/components/loader";
@@ -31,6 +24,7 @@ export default function ProfilePage() {
   const [profileData, setProfileData] = useState({
     name: user?.name || "",
     email: user?.email || "",
+    avatar_url: user?.avatar_url || "",
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -51,6 +45,7 @@ export default function ProfilePage() {
       const response = await api.put("/user/profile", {
         name: profileData.name,
         email: profileData.email,
+        avatar_url: profileData.avatar_url,
       });
 
       // Update auth state with new user data
@@ -151,19 +146,73 @@ export default function ProfilePage() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   {/* Avatar Section */}
-                  <div className="flex items-center gap-4">
-                    <Avatar className="size-20">
-                      <AvatarImage
-                        src={`https://api.dicebear.com/9.x/initials/svg?seed=${user?.name || "U"}`}
+
+                  <div className="flex items-center gap-6">
+                    <div className="relative group">
+                      <Avatar className="size-24 border-4 border-white shadow-lg">
+                        <AvatarImage
+                          src={
+                            profileData.avatar_url ||
+                            `https://api.dicebear.com/9.x/initials/svg?seed=${
+                              profileData.name || "U"
+                            }`
+                          }
+                          className="object-cover"
+                        />
+                        <AvatarFallback className="text-2xl">
+                          {profileData.name?.charAt(0)?.toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                        <Label
+                          htmlFor="avatar-upload"
+                          className="cursor-pointer text-white text-xs font-medium"
+                        >
+                          Change
+                        </Label>
+                      </div>
+                      <Input
+                        id="avatar-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+
+                          if (file.size > 1 * 1024 * 1024) {
+                            setError("Image size must be less than 1MB");
+                            return;
+                          }
+
+                          try {
+                            const formData = new FormData();
+                            formData.append("file", file);
+                            formData.append("folder", "avatars");
+
+                            const res = await api.post("/upload", formData, {
+                              headers: {
+                                "Content-Type": "multipart/form-data",
+                              },
+                            });
+
+                            handleProfileInputChange(
+                              "avatar_url",
+                              res.data.url
+                            );
+                          } catch (err) {
+                            setError("Failed to upload image");
+                          }
+                        }}
                       />
-                      <AvatarFallback className="text-lg">
-                        {user?.name?.charAt(0)?.toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="space-y-2">
-                      <h3 className="font-semibold">{user?.name}</h3>
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="font-semibold text-lg">{user?.name}</h3>
                       <p className="text-sm text-muted-foreground">
-                        Avatar generated from your initials
+                        Click on the avatar to upload a custom image.
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Max size 1MB.
                       </p>
                     </div>
                   </div>
@@ -237,7 +286,10 @@ export default function ProfilePage() {
                         type="password"
                         value={passwordData.currentPassword}
                         onChange={(e) =>
-                          handlePasswordInputChange("currentPassword", e.target.value)
+                          handlePasswordInputChange(
+                            "currentPassword",
+                            e.target.value
+                          )
                         }
                         placeholder="Enter your current password"
                         required
@@ -252,20 +304,28 @@ export default function ProfilePage() {
                           type="password"
                           value={passwordData.newPassword}
                           onChange={(e) =>
-                            handlePasswordInputChange("newPassword", e.target.value)
+                            handlePasswordInputChange(
+                              "newPassword",
+                              e.target.value
+                            )
                           }
                           placeholder="Enter new password"
                           required
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="confirmPassword">Confirm Password</Label>
+                        <Label htmlFor="confirmPassword">
+                          Confirm Password
+                        </Label>
                         <Input
                           id="confirmPassword"
                           type="password"
                           value={passwordData.confirmPassword}
                           onChange={(e) =>
-                            handlePasswordInputChange("confirmPassword", e.target.value)
+                            handlePasswordInputChange(
+                              "confirmPassword",
+                              e.target.value
+                            )
                           }
                           placeholder="Confirm new password"
                           required
@@ -308,7 +368,10 @@ export default function ProfilePage() {
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Status</span>
-                <Badge variant="secondary" className="bg-green-100 text-green-800">
+                <Badge
+                  variant="secondary"
+                  className="bg-green-100 text-green-800"
+                >
                   Active
                 </Badge>
               </div>
@@ -317,7 +380,9 @@ export default function ProfilePage() {
                 <Badge variant="outline">Owner</Badge>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Member since</span>
+                <span className="text-sm text-muted-foreground">
+                  Member since
+                </span>
                 <span className="text-sm">
                   {new Date().toLocaleDateString()}
                 </span>
@@ -347,7 +412,7 @@ export default function ProfilePage() {
                     {currentOrg.plan}
                   </Badge>
                 </div>
-                  <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Devices</span>
                   <span className="text-xs font-medium bg-muted px-2 py-0.5 rounded">
                     {currentOrg.max_devices === -1
@@ -355,10 +420,13 @@ export default function ProfilePage() {
                       : currentOrg.max_devices}
                   </span>
                 </div>
-                  <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">SMS/month</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    SMS/month
+                  </span>
                   <span className="text-xs font-medium bg-muted px-2 py-0.5 rounded">
-                    {currentOrg.sms_monthly_limit && currentOrg.sms_monthly_limit > 0
+                    {currentOrg.sms_monthly_limit &&
+                    currentOrg.sms_monthly_limit > 0
                       ? currentOrg.sms_monthly_limit.toLocaleString()
                       : "Pay-per-use"}
                   </span>

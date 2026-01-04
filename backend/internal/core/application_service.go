@@ -55,6 +55,7 @@ func (s *ApplicationService) CreateApplication(ctx context.Context, orgID int, r
 	app := &model.Application{
 		OrganizationID:  orgID,
 		Name:            req.Name,
+		LogoURL:         req.LogoURL,
 		IsSandbox:       req.IsSandbox,
 		SlackWebhookURL: req.SlackWebhookURL,
 		NtfyTopic:       req.NtfyTopic,
@@ -113,7 +114,7 @@ func (s *ApplicationService) UpdateApplication(ctx context.Context, appID, orgID
 		}
 	}
 
-	if err := s.store.UpdateApplication(ctx, appID, orgID, req.Name, req.SlackWebhookURL, req.NtfyTopic, req.AlertSettings); err != nil {
+	if err := s.store.UpdateApplication(ctx, appID, orgID, req.Name, req.LogoURL, req.SlackWebhookURL, req.NtfyTopic, req.AlertSettings); err != nil {
 		return nil, err
 	}
 	return s.store.GetApplicationByID(ctx, appID)

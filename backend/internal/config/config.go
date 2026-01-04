@@ -24,6 +24,11 @@ type Config struct {
 	FrontendURL            string
 	TurnstileSecret        string
 	RedisAddr              string
+	R2AccountID            string
+	R2AccessKeyID          string
+	R2SecretAccessKey      string
+	R2BucketName           string
+	R2PublicURL            string
 }
 
 func Load() *Config {
@@ -49,6 +54,11 @@ func Load() *Config {
 		FrontendURL:            getEnv("FRONTEND_URL", "http://localhost:3000"),
 		TurnstileSecret:        getEnv("TURNSTILE_SECRET_KEY", "1x0000000000000000000000000000000AA"),
 		RedisAddr:              getEnv("REDIS_ADDR", "localhost:6379"),
+		R2AccountID:            getEnv("R2_ACCOUNT_ID", ""),
+		R2AccessKeyID:          getEnv("R2_ACCESS_KEY_ID", ""),
+		R2SecretAccessKey:      getEnv("R2_SECRET_ACCESS_KEY", ""),
+		R2BucketName:           getEnv("R2_BUCKET_NAME", ""),
+		R2PublicURL:            getEnv("R2_PUBLIC_URL", ""),
 	}
 }
 

@@ -34,6 +34,7 @@ export function CreateApplicationDialog({
 
   const [formData, setFormData] = useState({
     name: "",
+    logo_url: "",
     is_sandbox: false,
     slack_webhook_url: "",
     ntfy_topic: "",
@@ -69,6 +70,7 @@ export function CreateApplicationDialog({
       setOpen(false);
       setFormData({
         name: "",
+        logo_url: "",
         is_sandbox: false,
         slack_webhook_url: "",
         ntfy_topic: "",
@@ -121,6 +123,64 @@ export function CreateApplicationDialog({
                 required
                 className="h-10"
               />
+            </div>
+
+            <div className="grid gap-2">
+              <Label
+                htmlFor="logo"
+                className="font-bold text-xs uppercase text-muted-foreground tracking-widest"
+              >
+                Application Logo (Optional)
+              </Label>
+              <div className="flex items-center gap-4">
+                {formData.logo_url && (
+                  <img
+                    src={formData.logo_url}
+                    alt="Logo"
+                    className="size-10 rounded-md object-cover"
+                  />
+                )}
+                <Input
+                  id="logo"
+                  type="file"
+                  accept="image/*"
+                  className="h-10 text-xs"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+
+                    if (file.size > 1 * 1024 * 1024) {
+                      toast({
+                        title: "File too large",
+                        description: "Logo size must be less than 1MB",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+
+                    try {
+                      const uploadData = new FormData();
+                      uploadData.append("file", file);
+                      uploadData.append("folder", "logos");
+
+                      const res = await api.post("/upload", uploadData, {
+                        headers: { "Content-Type": "multipart/form-data" },
+                      });
+
+                      setFormData((prev) => ({
+                        ...prev,
+                        logo_url: res.data.url,
+                      }));
+                    } catch (err) {
+                      toast({
+                        title: "Upload Failed",
+                        description: "Could not upload logo",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                />
+              </div>
             </div>
 
             <div className="grid gap-2">

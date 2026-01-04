@@ -6,6 +6,7 @@ type Application struct {
 	ID              int                    `json:"id"`
 	OrganizationID  int                    `json:"organization_id"`
 	Name            string                 `json:"name"`
+	LogoURL         *string                `json:"logo_url"`
 	IsSandbox       bool                   `json:"is_sandbox"`
 	SlackWebhookURL *string                `json:"slack_webhook_url"`
 	NtfyTopic       *string                `json:"ntfy_topic"`
@@ -16,6 +17,7 @@ type Application struct {
 
 type CreateApplicationRequest struct {
 	Name            string                 `json:"name"`
+	LogoURL         *string                `json:"logo_url,omitempty"`
 	IsSandbox       bool                   `json:"is_sandbox"`
 	SlackWebhookURL *string                `json:"slack_webhook_url,omitempty"`
 	NtfyTopic       *string                `json:"ntfy_topic,omitempty"`
@@ -24,6 +26,7 @@ type CreateApplicationRequest struct {
 
 type UpdateApplicationRequest struct {
 	Name            string                 `json:"name"`
+	LogoURL         *string                `json:"logo_url,omitempty"`
 	SlackWebhookURL *string                `json:"slack_webhook_url,omitempty"`
 	NtfyTopic       *string                `json:"ntfy_topic,omitempty"`
 	AlertSettings   map[string]interface{} `json:"alert_settings,omitempty"`

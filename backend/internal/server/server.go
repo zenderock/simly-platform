@@ -165,6 +165,21 @@ func (s *Server) setupRoutes() {
 	// Request Log Handler (for dashboard)
 	requestLogHandler := api.NewRequestLogHandler(requestLogService, orgService)
 
+	// Storage Service
+	var storageService core.StorageService
+	var err error
+	if s.Config.R2AccountID != "" {
+		storageService, err = core.NewR2StorageService(s.Config)
+		if err != nil {
+			log.Printf("Failed to initialize R2 Storage Service: %v", err)
+		} else {
+			log.Println("R2 Storage Service initialized")
+		}
+	} else {
+		log.Println("R2 Storage Service disabled (R2_ACCOUNT_ID is missing)")
+	}
+	uploadHandler := api.NewUploadHandler(storageService)
+
 	// Billing Handler
 	billingHandler := api.NewBillingHandler(billingService, orgService)
 
@@ -302,6 +317,9 @@ func (s *Server) setupRoutes() {
 			r.Put("/profile", userHandler.UpdateProfile)
 			r.Put("/password", userHandler.ChangePassword)
 		})
+
+		// File Upload
+		r.Post("/api/upload", uploadHandler.HandleUpload)
 
 		// Alerts
 		r.Route("/api/alerts", func(r chi.Router) {
