@@ -22,6 +22,7 @@ export interface SimCard {
   phone_number: string;
   operator: string;
   is_active: boolean;
+  supported_prefixes?: string;
 }
 
 export interface User {

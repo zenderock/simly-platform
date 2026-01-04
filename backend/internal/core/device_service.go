@@ -160,7 +160,48 @@ func (s *DeviceService) UpdateDevice(ctx context.Context, deviceID, orgID int, r
 	device.Name = req.Name
 	device.Tags = req.Tags
 
-	return s.store.UpdateDevice(ctx, device)
+	if err := s.store.UpdateDevice(ctx, device); err != nil {
+		return err
+	}
+
+	// Update SIM configs if provided
+	if len(req.SimConfigs) > 0 {
+		existingSims, err := s.store.GetSimCardsByDeviceID(ctx, deviceID)
+		if err != nil {
+			return fmt.Errorf("failed to get existing sims: %w", err)
+		}
+
+		// Prepare update request
+		// We re-construct the full list of SIMs to update, preserving existing data (phone, operator)
+		// and updating only SupportedPrefixes for matching slots.
+		// Note: UpdateDeviceSimCards replace all SIMs, so we must encompass all existing ones.
+
+		var simsToUpdate []model.UpdateSimCardRequest
+		for _, sim := range existingSims {
+			updateReq := model.UpdateSimCardRequest{
+				SlotIndex:         sim.SlotIndex,
+				PhoneNumber:       sim.PhoneNumber,
+				Operator:          sim.Operator,
+				IsActive:          sim.IsActive,
+				SupportedPrefixes: sim.SupportedPrefixes, // Default to existing
+			}
+
+			// Check if new config overrides this slot
+			for _, conf := range req.SimConfigs {
+				if conf.SlotIndex == sim.SlotIndex {
+					updateReq.SupportedPrefixes = conf.SupportedPrefixes
+					break
+				}
+			}
+			simsToUpdate = append(simsToUpdate, updateReq)
+		}
+
+		if err := s.store.UpdateDeviceSimCards(ctx, deviceID, simsToUpdate); err != nil {
+			return fmt.Errorf("failed to update sim configs: %w", err)
+		}
+	}
+
+	return nil
 }
 
 // GenerateLinkToken creates a new device link token for QR code

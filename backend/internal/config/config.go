@@ -29,6 +29,7 @@ type Config struct {
 	R2SecretAccessKey      string
 	R2BucketName           string
 	R2PublicURL            string
+	OpenRouterAPIKey       string
 }
 
 func Load() *Config {
@@ -59,6 +60,7 @@ func Load() *Config {
 		R2SecretAccessKey:      getEnv("R2_SECRET_ACCESS_KEY", ""),
 		R2BucketName:           getEnv("R2_BUCKET_NAME", ""),
 		R2PublicURL:            getEnv("R2_PUBLIC_URL", ""),
+		OpenRouterAPIKey:       getEnv("OPENROUTER_API_KEY", ""),
 	}
 }
 

@@ -137,6 +137,71 @@ func (s *CampaignService) LaunchCampaign(ctx context.Context, id, orgID int) err
 		return errors.New("missing device: either specify a device or enable use_all_devices")
 	}
 
+	// 1. Resolve Eligible Devices & Build Routing Table
+	type SimCandidate struct {
+		DeviceID int
+		SimSlot  int
+	}
+	prefixMap := make(map[string][]SimCandidate)
+	defaultPool := []SimCandidate{}
+
+	var eligibleDevices []model.Device
+	if c.UseAllDevices {
+		devices, err := s.store.GetDevicesByOrganizationID(ctx, orgID)
+		if err != nil {
+			return err
+		}
+		for _, d := range devices {
+			if d.Status == "online" {
+				eligibleDevices = append(eligibleDevices, d)
+			}
+		}
+	} else if c.DeviceID != nil {
+		d, err := s.store.GetDeviceByID(ctx, *c.DeviceID)
+		if err != nil {
+			return err
+		}
+		// For specific device, we use it even if offline (it will just queue)
+		// unless we want to enforce online? Let's check organization ownership.
+		if d.OrganizationID == orgID {
+			eligibleDevices = append(eligibleDevices, *d)
+		}
+	}
+
+	if len(eligibleDevices) == 0 {
+		return errors.New("no eligible devices found (check if devices are online)")
+	}
+
+	for _, d := range eligibleDevices {
+		for _, sim := range d.SimCards {
+			if !sim.IsActive {
+				continue
+			}
+
+			// If manual device selection AND specific SimSlot is requested, filter
+			if !c.UseAllDevices && c.SimSlot != nil && *c.SimSlot != sim.SlotIndex {
+				continue
+			}
+
+			cand := SimCandidate{d.ID, sim.SlotIndex}
+			defaultPool = append(defaultPool, cand)
+
+			if sim.SupportedPrefixes != "" {
+				parts := strings.Split(sim.SupportedPrefixes, ",")
+				for _, p := range parts {
+					clean := strings.TrimSpace(p)
+					if clean != "" {
+						prefixMap[clean] = append(prefixMap[clean], cand)
+					}
+				}
+			}
+		}
+	}
+
+	if len(defaultPool) == 0 {
+		return errors.New("no active SIM cards found on eligible devices")
+	}
+
 	// Fetch Contacts - either from specific list or all contacts
 	var contacts []model.Contact
 	if c.ListID != nil {
@@ -172,23 +237,60 @@ func (s *CampaignService) LaunchCampaign(ctx context.Context, id, orgID int) err
 		return err
 	}
 
-	// Prepare Messages
+	// Prepare Messages with Smart Routing
 	var messages []model.Message
+	rrCounter := 0
+
 	for _, contact := range contacts {
+		// Clean phone number for matching
+		cleanPhone := strings.ReplaceAll(contact.PhoneNumber, "+", "")
+		cleanPhone = strings.ReplaceAll(cleanPhone, " ", "")
+		cleanPhone = strings.ReplaceAll(cleanPhone, "-", "")
+
+		// Find best matching SIMs
+		var candidates []SimCandidate
+		bestMatchLen := 0
+
+		for prefix, cands := range prefixMap {
+			cleanPrefix := strings.ReplaceAll(prefix, "+", "")
+			cleanPrefix = strings.TrimSpace(cleanPrefix)
+
+			if strings.HasPrefix(cleanPhone, cleanPrefix) {
+				if len(cleanPrefix) > bestMatchLen {
+					bestMatchLen = len(cleanPrefix)
+					candidates = cands
+				}
+			}
+		}
+
+		// Select a candidate
+		var selected SimCandidate
+		if len(candidates) > 0 {
+			// Found specific rule
+			selected = candidates[rrCounter%len(candidates)]
+		} else {
+			// Fallback to default pool
+			selected = defaultPool[rrCounter%len(defaultPool)]
+		}
+		rrCounter++
+
+		// Explicitly copy values to avoid pointer to loop variable issues if using &selected directly (though struct is by value here)
+		simSlot := selected.SimSlot
+		devID := selected.DeviceID
+
 		body := replaceVariables(c.TemplateBody, &contact)
 		messages = append(messages, model.Message{
 			ToNumber: contact.PhoneNumber,
 			Body:     body,
-			SimSlot:  c.SimSlot,
+			SimSlot:  &simSlot,
+			DeviceID: &devID,
 		})
 	}
 
-	// Determine device ID for message creation
-	// If use_all_devices is true, pass 0 (NULL) to let dispatcher assign devices
-	// Otherwise use the specified device
+	// Determine device ID for message creation (fallback/default for bulk insert signature)
 	var deviceIDForMessages int
 	if c.UseAllDevices {
-		deviceIDForMessages = 0 // Will be stored as NULL in database
+		deviceIDForMessages = 0
 	} else {
 		deviceIDForMessages = *c.DeviceID
 	}

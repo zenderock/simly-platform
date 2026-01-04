@@ -38,11 +38,11 @@ func (s *Store) CreateDevice(ctx context.Context, d *model.Device) error {
 
 func (s *Store) CreateSimCard(ctx context.Context, sim *model.SimCard) error {
 	query := `
-		INSERT INTO device_sims (device_id, slot_index, phone_number, operator, is_active, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+		INSERT INTO device_sims (device_id, slot_index, phone_number, operator, is_active, supported_prefixes, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
 		RETURNING id
 	`
-	return s.db.QueryRow(ctx, query, sim.DeviceID, sim.SlotIndex, sim.PhoneNumber, sim.Operator, sim.IsActive).Scan(&sim.ID)
+	return s.db.QueryRow(ctx, query, sim.DeviceID, sim.SlotIndex, sim.PhoneNumber, sim.Operator, sim.IsActive, sim.SupportedPrefixes).Scan(&sim.ID)
 }
 
 func (s *Store) GetDevicesByOrganizationID(ctx context.Context, orgID int) ([]model.Device, error) {
@@ -81,7 +81,7 @@ func (s *Store) GetDevicesByOrganizationID(ctx context.Context, orgID int) ([]mo
 
 func (s *Store) GetSimCardsByDeviceID(ctx context.Context, deviceID int) ([]model.SimCard, error) {
 	query := `
-		SELECT id, device_id, slot_index, phone_number, operator, is_active
+		SELECT id, device_id, slot_index, phone_number, operator, is_active, COALESCE(supported_prefixes, '')
 		FROM device_sims
 		WHERE device_id = $1
 		ORDER BY slot_index ASC
@@ -95,7 +95,7 @@ func (s *Store) GetSimCardsByDeviceID(ctx context.Context, deviceID int) ([]mode
 	var sims []model.SimCard
 	for rows.Next() {
 		var sim model.SimCard
-		if err := rows.Scan(&sim.ID, &sim.DeviceID, &sim.SlotIndex, &sim.PhoneNumber, &sim.Operator, &sim.IsActive); err != nil {
+		if err := rows.Scan(&sim.ID, &sim.DeviceID, &sim.SlotIndex, &sim.PhoneNumber, &sim.Operator, &sim.IsActive, &sim.SupportedPrefixes); err != nil {
 			return nil, fmt.Errorf("failed to scan sim card: %w", err)
 		}
 		sims = append(sims, sim)
@@ -145,6 +145,15 @@ func (s *Store) UpdateDeviceLastBatteryAlert(ctx context.Context, deviceID int) 
 func (s *Store) UpdateDeviceSimCards(ctx context.Context, deviceID int, simCards []model.UpdateSimCardRequest) error {
 	log.Printf("UpdateDeviceSimCards called for device %d with %d SIM cards", deviceID, len(simCards))
 
+	// Fetch existing SIMs to preserve supported_prefixes
+	existingSims, err := s.GetSimCardsByDeviceID(ctx, deviceID)
+	prefixMap := make(map[int]string)
+	if err == nil {
+		for _, sim := range existingSims {
+			prefixMap[sim.SlotIndex] = sim.SupportedPrefixes
+		}
+	}
+
 	return s.ExecTx(ctx, func(tx *Store) error {
 		// Delete existing SIM cards for this device
 		_, err := tx.db.Exec(ctx, "DELETE FROM device_sims WHERE device_id = $1", deviceID)
@@ -154,12 +163,20 @@ func (s *Store) UpdateDeviceSimCards(ctx context.Context, deviceID int, simCards
 
 		// Insert new SIM cards
 		for _, sim := range simCards {
-			log.Printf("Inserting SIM: slot=%d, number=%s, operator=%s", sim.SlotIndex, sim.PhoneNumber, sim.Operator)
+			// Restore prefixes if available and not overwritten by request (assuming request sends empty if from mobile)
+			prefixes := sim.SupportedPrefixes
+			if prefixes == "" {
+				if existing, ok := prefixMap[sim.SlotIndex]; ok {
+					prefixes = existing
+				}
+			}
+
+			log.Printf("Inserting SIM: slot=%d, number=%s, operator=%s, prefixes=%s", sim.SlotIndex, sim.PhoneNumber, sim.Operator, prefixes)
 			query := `
-				INSERT INTO device_sims (device_id, slot_index, phone_number, operator, is_active, created_at, updated_at)
-				VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+				INSERT INTO device_sims (device_id, slot_index, phone_number, operator, is_active, supported_prefixes, created_at, updated_at)
+				VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
 			`
-			_, err = tx.db.Exec(ctx, query, deviceID, sim.SlotIndex, sim.PhoneNumber, sim.Operator, sim.IsActive)
+			_, err = tx.db.Exec(ctx, query, deviceID, sim.SlotIndex, sim.PhoneNumber, sim.Operator, sim.IsActive, prefixes)
 			if err != nil {
 				return err
 			}

@@ -21,7 +21,8 @@ export interface CreateCampaignRequest {
   name: string;
   template_body: string;
   list_id: number | null;
-  device_id: number;
+  device_id?: number | null;
+  use_all_devices?: boolean;
   sim_slot?: number | null;
   scheduled_at?: string;
   auto_launch?: boolean;

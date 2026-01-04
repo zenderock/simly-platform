@@ -115,6 +115,9 @@ func (s *Server) setupRoutes() {
 	// Initialize AppDIDService for DID/Virtual Number resolution
 	appDIDService := core.NewAppDIDService(s.DB)
 
+	// AI Service
+	aiService := core.NewAIService(s.Config.OpenRouterAPIKey)
+
 	// Message Service with Asynq Client
 	messageService := core.NewMessageService(s.DB, webhookService, notificationProvider, rateLimitService, appService, s.Config.SandboxSuccessNumber, s.Config.SandboxFailureNumber, alertService, devicePoolManager, appDIDService, taskClient)
 	campaignService := core.NewCampaignService(s.DB, messageService, featureLimitManager)
@@ -155,6 +158,7 @@ func (s *Server) setupRoutes() {
 	orgHandler := api.NewOrganizationHandler(orgService, auditService, s.Config.StripePricePro, s.Config.StripePriceAgency)
 	alertHandler := api.NewAlertHandler(alertService, orgService)
 	appDIDHandler := api.NewAppDIDHandler(appDIDService, orgService)
+	aiHandler := api.NewAIHandler(aiService, orgService)
 
 	// Public API Handlers
 	requestLogService := core.NewRequestLogService(s.DB)
@@ -372,6 +376,11 @@ func (s *Server) setupRoutes() {
 		// Billing
 		r.Route("/api/billing", func(r chi.Router) {
 			billingHandler.RegisterRoutes(r)
+		})
+
+		// AI
+		r.Route("/api/ai", func(r chi.Router) {
+			r.Post("/generate-prefixes", aiHandler.GeneratePrefixes)
 		})
 	})
 }

@@ -52,6 +52,7 @@ import {
   IconCalendarTime,
   IconRocket,
   IconArrowRight,
+  IconRotateClockwise2,
 } from "@tabler/icons-react";
 
 const steps = [
@@ -64,12 +65,17 @@ const schema = z.object({
   name: z.string().min(1, "Campaign name is required"),
   template_body: z.string().min(1, "Message template is required"),
   list_id: z.string().min(1, "Contact list is required"), // Select is string usually
-  device_id: z.string().min(1, "Device is required"),
+  device_id: z.union([z.string(), z.number()]).transform((val) => {
+    if (typeof val === "string") {
+      return val === "auto" ? 0 : parseInt(val);
+    }
+    return val;
+  }),
   sim_slot: z.string().optional(),
   scheduled_at: z.string().optional(),
 });
 
-type FormData = z.infer<typeof schema>;
+type FormData = z.input<typeof schema>;
 
 export default function CreateCampaignPage() {
   const router = useRouter();
@@ -86,7 +92,7 @@ export default function CreateCampaignPage() {
       name: "",
       template_body: "",
       list_id: "",
-      device_id: "",
+      device_id: 0, // 0 for "auto"
       sim_slot: "auto",
       scheduled_at: "",
     },
@@ -172,11 +178,14 @@ export default function CreateCampaignPage() {
       formattedScheduledAt = date.toISOString();
     }
 
+    const isAutoDevice = data.device_id === 0;
+
     createMutation.mutate({
       name: data.name,
       template_body: data.template_body,
       list_id: listId === -1 ? null : listId, // null means all contacts
-      device_id: parseInt(data.device_id),
+      device_id: isAutoDevice ? null : (data.device_id as number),
+      use_all_devices: isAutoDevice,
       sim_slot:
         data.sim_slot === "auto" ? null : parseInt(data.sim_slot || "0"),
       scheduled_at: formattedScheduledAt,
@@ -187,9 +196,7 @@ export default function CreateCampaignPage() {
   const selectedList = listsWithAll.find(
     (l) => l.id.toString() === form.watch("list_id")
   );
-  const selectedDevice = devices?.find(
-    (d) => d.id.toString() === form.watch("device_id")
-  );
+  const selectedDevice = devices?.find((d) => d.id === form.watch("device_id"));
 
   return (
     <div className="flex flex-col h-full bg-muted/10">
@@ -371,8 +378,18 @@ export default function CreateCampaignPage() {
                           <FormItem>
                             <FormLabel>Sending Device</FormLabel>
                             <Select
-                              onValueChange={field.onChange}
-                              defaultValue={field.value}
+                              onValueChange={(val) => {
+                                if (val === "auto") {
+                                  form.setValue("device_id", 0); // 0 for Auto
+                                } else {
+                                  form.setValue("device_id", parseInt(val));
+                                }
+                              }}
+                              value={
+                                form.watch("device_id") === 0
+                                  ? "auto"
+                                  : form.watch("device_id")?.toString()
+                              }
                             >
                               <FormControl>
                                 <SelectTrigger>
@@ -380,6 +397,9 @@ export default function CreateCampaignPage() {
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
+                                <SelectItem value="auto">
+                                  Automatic (Smart Dispatch)
+                                </SelectItem>
                                 {devices?.map((device) => {
                                   const phoneNumbers = device.sim_cards
                                     ?.map((s: any) => s.phone_number)
@@ -514,15 +534,65 @@ export default function CreateCampaignPage() {
                           </span>
                         </div>
                         <div className="font-semibold">
-                          {selectedDevice?.name}
+                          {form.getValues("device_id") === 0
+                            ? "Automatic (Smart Dispatch)"
+                            : selectedDevice?.name}
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          {selectedDevice?.sim_cards
-                            ?.map((s: any) => s.phone_number)
-                            .filter(Boolean)
-                            .join(", ")}
+                          {form.getValues("device_id") === 0
+                            ? `${
+                                devices?.filter((d) => d.status === "online")
+                                  .length
+                              } device(s) available`
+                            : selectedDevice?.sim_cards
+                                ?.map((s: any) => s.phone_number)
+                                .filter(Boolean)
+                                .join(", ")}
                         </div>
                       </div>
+                    </div>
+
+                    {/* Estimation Card */}
+                    <div className="p-4 rounded-md border border-indigo-100 bg-indigo-50/50 dark:border-indigo-900/50 dark:bg-indigo-950/20">
+                      <div className="flex items-center gap-2 text-indigo-700 dark:text-indigo-400 mb-2">
+                        <IconRotateClockwise2 className="size-4" />
+                        <span className="text-sm font-bold">
+                          Estimated Duration
+                        </span>
+                      </div>
+                      <div className="flex items-end gap-2">
+                        <span className="text-2xl font-black tabular-nums">
+                          {(() => {
+                            const totalMessages =
+                              selectedList?.member_count || 0;
+                            // Typical Android limit or safe throughput per min
+                            const msgsPerMinPerDevice = 20;
+                            const activeDeviceCount =
+                              form.getValues("device_id") === 0
+                                ? devices?.filter((d) => d.status === "online")
+                                    .length || 1
+                                : 1;
+
+                            const totalMsgsPerMin =
+                              msgsPerMinPerDevice * activeDeviceCount;
+                            const minutes = Math.ceil(
+                              totalMessages / (totalMsgsPerMin || 1)
+                            );
+
+                            if (minutes < 60) return `≈ ${minutes} mins`;
+                            const hours = Math.floor(minutes / 60);
+                            const mins = minutes % 60;
+                            return `≈ ${hours}h ${mins}m`;
+                          })()}
+                        </span>
+                        <span className="text-x text-muted-foreground mb-1">
+                          at max speed
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-1 opacity-80">
+                        Based on available devices and safe sending limits.
+                        Actual time may vary depending on network conditions.
+                      </p>
                     </div>
 
                     {scheduledAt && (

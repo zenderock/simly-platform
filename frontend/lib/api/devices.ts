@@ -19,3 +19,17 @@ export const linkDevice = async (token: string): Promise<Device> => {
     const { data } = await api.post<Device>("/devices/link", { token });
     return data;
 };
+
+export interface UpdateDeviceRequest {
+  name?: string;
+  tags?: string[];
+  sim_configs?: {
+    slot_index: number;
+    supported_prefixes: string;
+  }[];
+}
+
+export const updateDevice = async (id: number, data: UpdateDeviceRequest): Promise<Device> => {
+  const { data: res } = await api.put<Device>(`/devices/${id}`, data);
+  return res;
+};

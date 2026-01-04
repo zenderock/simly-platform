@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "@/lib/api";
 import { Device } from "@/types";
+import { UpdateDeviceRequest, updateDevice } from "@/lib/api/devices";
 
 export const deviceKeys = {
   all: ["devices"] as const,
@@ -51,17 +52,19 @@ export function useDeleteDevice() {
   });
 }
 
+
+// ... existing code ...
+
 export function useUpdateDevice() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: { name: string; tags: string[] } }) => {
-      await api.put(`/devices/${id}`, data);
-      return { id, ...data };
+    mutationFn: async ({ id, data }: { id: number; data: UpdateDeviceRequest }) => {
+      return updateDevice(id, data);
     },
     onSuccess: (updatedDevice) => {
       queryClient.setQueryData<Device[]>(deviceKeys.list(), (old) =>
-        old?.map((d) => (d.id === updatedDevice.id ? { ...d, ...updatedDevice } : d))
+        old?.map((d) => (d.id === updatedDevice.id ? updatedDevice : d))
       );
       queryClient.invalidateQueries({ queryKey: deviceKeys.list() });
     },

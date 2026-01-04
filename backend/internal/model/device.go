@@ -22,12 +22,13 @@ type Device struct {
 }
 
 type SimCard struct {
-	ID          int    `json:"id"`
-	DeviceID    int    `json:"device_id"`
-	SlotIndex   int    `json:"slot_index"` // 0 or 1
-	PhoneNumber string `json:"phone_number"`
-	Operator    string `json:"operator"`
-	IsActive    bool   `json:"is_active"`
+	ID                int    `json:"id"`
+	DeviceID          int    `json:"device_id"`
+	SlotIndex         int    `json:"slot_index"` // 0 or 1
+	PhoneNumber       string `json:"phone_number"`
+	Operator          string `json:"operator"`
+	IsActive          bool   `json:"is_active"`
+	SupportedPrefixes string `json:"supported_prefixes"`
 }
 
 type RegisterDeviceRequest struct {
@@ -38,8 +39,9 @@ type RegisterDeviceRequest struct {
 }
 
 type UpdateDeviceRequest struct {
-	Name string   `json:"name"`
-	Tags []string `json:"tags"`
+	Name       string                 `json:"name"`
+	Tags       []string               `json:"tags"`
+	SimConfigs []UpdateSimCardRequest `json:"sim_configs"`
 }
 
 type UpdateDeviceStatusRequest struct {
@@ -50,10 +52,11 @@ type UpdateDeviceStatusRequest struct {
 }
 
 type UpdateSimCardRequest struct {
-	SlotIndex   int    `json:"slot_index"`
-	PhoneNumber string `json:"phone_number"`
-	Operator    string `json:"operator"`
-	IsActive    bool   `json:"is_active"`
+	SlotIndex         int    `json:"slot_index"`
+	PhoneNumber       string `json:"phone_number"`
+	Operator          string `json:"operator"`
+	IsActive          bool   `json:"is_active"`
+	SupportedPrefixes string `json:"supported_prefixes"`
 }
 
 // Token used for QR Code linking flow (optional, but good practice)
