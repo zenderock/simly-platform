@@ -134,3 +134,27 @@ func (h *CampaignHandler) GetCampaignAnalytics(w http.ResponseWriter, r *http.Re
 	}
 	json.NewEncoder(w).Encode(analytics)
 }
+
+func (h *CampaignHandler) ListCampaignMessages(w http.ResponseWriter, r *http.Request) {
+	orgID, err := GetActiveOrgID(r, h.orgService)
+	if err != nil {
+		http.Error(w, "Organization required", http.StatusForbidden)
+		return
+	}
+
+	idStr := chi.URLParam(r, "id")
+	id, _ := strconv.Atoi(idStr)
+
+	limitStr := r.URL.Query().Get("limit")
+	limit, _ := strconv.Atoi(limitStr)
+	if limit == 0 {
+		limit = 50
+	}
+
+	messages, err := h.service.ListCampaignMessages(r.Context(), id, orgID, limit)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(messages)
+}

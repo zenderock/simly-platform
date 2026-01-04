@@ -218,3 +218,12 @@ func (s *CampaignService) GetCampaignAnalytics(ctx context.Context, id, orgID in
 	}
 	return s.store.GetCampaignAnalytics(ctx, id)
 }
+
+func (s *CampaignService) ListCampaignMessages(ctx context.Context, id, orgID int, limit int) ([]model.Message, error) {
+	// Verify ownership
+	_, err := s.GetCampaign(ctx, id, orgID)
+	if err != nil {
+		return nil, err
+	}
+	return s.store.GetMessagesByCampaignID(ctx, id, limit)
+}

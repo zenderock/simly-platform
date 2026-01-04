@@ -1,6 +1,8 @@
 import api from "../api";
+import { Message } from "@/types";
 
 export interface Campaign {
+// ... (omitting for brevity as I'm using targetContent)
   id: number;
   name: string;
   template_body: string;
@@ -60,4 +62,12 @@ export const deleteCampaign = async (id: number): Promise<void> => {
 
 export const launchCampaign = async (id: number): Promise<void> => {
   await api.post(`/campaigns/${id}/launch`);
+};
+
+export const getCampaignMessages = async (
+  id: number,
+  limit: number = 50
+): Promise<Message[]> => {
+  const { data } = await api.get(`/campaigns/${id}/messages?limit=${limit}`);
+  return data;
 };

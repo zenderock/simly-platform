@@ -375,3 +375,37 @@ func (s *Store) UpdateMessageFromNumber(ctx context.Context, msgID int, fromNumb
 	_, err := s.db.Exec(ctx, query, fromNumber, msgID)
 	return err
 }
+
+// GetMessagesByCampaignID fetches messages associated with a specific campaign
+func (s *Store) GetMessagesByCampaignID(ctx context.Context, campaignID int, limit int) ([]model.Message, error) {
+	query := `
+		SELECT 
+			m.id, m.organization_id, m.application_id, m.campaign_id, m.device_id, m.to_number, m.from_number, m.body, m.status, m.direction, m.priority, m.required_tags, m.created_at, m.updated_at, m.scheduled_at, m.processed_at, m.retry_count, m.max_retries, m.last_error, m.metadata, m.sim_slot,
+			d.name as device_name
+		FROM messages m
+		LEFT JOIN devices d ON m.device_id = d.id
+		WHERE m.campaign_id = $1
+		ORDER BY m.created_at DESC
+		LIMIT $2
+	`
+	rows, err := s.db.Query(ctx, query, campaignID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query campaign messages: %w", err)
+	}
+	defer rows.Close()
+
+	var messages []model.Message
+	for rows.Next() {
+		var m model.Message
+		var reqTags []string
+		if err := rows.Scan(
+			&m.ID, &m.OrganizationID, &m.ApplicationID, &m.CampaignID, &m.DeviceID, &m.ToNumber, &m.FromNumber, &m.Body, &m.Status, &m.Direction, &m.Priority, &reqTags, &m.CreatedAt, &m.UpdatedAt, &m.ScheduledAt, &m.ProcessedAt, &m.RetryCount, &m.MaxRetries, &m.LastError, &m.Metadata, &m.SimSlot,
+			&m.DeviceName,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan campaign message: %w", err)
+		}
+		m.RequiredTags = reqTags
+		messages = append(messages, m)
+	}
+	return messages, nil
+}

@@ -348,6 +348,7 @@ func (s *Server) setupRoutes() {
 			r.Delete("/{id}", campaignHandler.DeleteCampaign)
 			r.Post("/{id}/launch", campaignHandler.LaunchCampaign)
 			r.Get("/{id}/analytics", campaignHandler.GetCampaignAnalytics)
+			r.Get("/{id}/messages", campaignHandler.ListCampaignMessages)
 		})
 
 		// Billing

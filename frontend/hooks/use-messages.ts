@@ -9,11 +9,13 @@ export const messageKeys = {
   list: (appId?: number | null) => [...messageKeys.all, "list", appId] as const,
 };
 
-export function useMessages(applicationId?: number | null) {
+export function useMessages(applicationId?: number | null, campaignId?: number | null) {
   return useQuery({
-    queryKey: messageKeys.list(applicationId),
+    queryKey: [...messageKeys.list(applicationId), campaignId],
     queryFn: async () => {
-      const params = applicationId ? { application_id: applicationId } : {};
+      const params: any = {};
+      if (applicationId) params.application_id = applicationId;
+      if (campaignId) params.campaign_id = campaignId;
       const res = await api.get<Message[]>("/messages", { params });
       return res.data || [];
     },

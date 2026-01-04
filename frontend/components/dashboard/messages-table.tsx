@@ -75,11 +75,15 @@ export function MessagesTable() {
   const setDeviceFilter = useDashboardStore((state) => state.setDeviceFilter);
   const clearFilters = useDashboardStore((state) => state.clearFilters);
 
-  const { data: messages = [], isLoading: loading } = useMessages(activeAppId);
+  const searchParams = useSearchParams();
+  const campaignId = searchParams.get("campaign");
+  const { data: messages = [], isLoading: loading } = useMessages(
+    activeAppId,
+    campaignId ? parseInt(campaignId) : null
+  );
   const [currentPage, setCurrentPage] = React.useState(1);
   const [pageSize, setPageSize] = React.useState(10);
   const [selectedMessage, setSelectedMessage] = React.useState<any>(null); // Uses any for now as message type is inferred
-  const searchParams = useSearchParams();
 
   const handleCopyId = (id: number) => {
     navigator.clipboard.writeText(id.toString());
@@ -266,6 +270,18 @@ export function MessagesTable() {
           >
             {filteredMessages.length}
           </Badge>
+          {campaignId && (
+            <Badge
+              variant="outline"
+              className="ml-1 text-[10px] sm:text-xs font-bold bg-primary/10 text-primary border-primary/20"
+            >
+              Campaign #{campaignId}
+              <X
+                className="ml-1 size-3 cursor-pointer"
+                onClick={() => window.history.pushState({}, "", "/messages")}
+              />
+            </Badge>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
