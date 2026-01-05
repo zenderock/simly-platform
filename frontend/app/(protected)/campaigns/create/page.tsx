@@ -327,17 +327,19 @@ export default function CreateCampaignPage() {
                   </CardContent>
                 </Card>
               )}
-
-              {/* Step 2: Target */}
-              {currentStep === 2 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Target, Device & Schedule</CardTitle>
-                    <CardDescription>
-                      Who to send to, which device to use, and when to send.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Configuration</CardTitle>
+                  <CardDescription>
+                    Define who receives the message and how it should be sent.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-8">
+                  {/* Section 1: Targeting */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                      Targeting
+                    </h3>
                     <FormField
                       control={form.control}
                       name="list_id"
@@ -373,8 +375,16 @@ export default function CreateCampaignPage() {
                         </FormItem>
                       )}
                     />
+                  </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Separator />
+
+                  {/* Section 2: Device Strategy */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                      Sending Strategy
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <FormField
                         control={form.control}
                         name="device_id"
@@ -448,7 +458,7 @@ export default function CreateCampaignPage() {
                               </SelectContent>
                             </Select>
                             <FormDescription>
-                              Only online devices are available.
+                              Best for load balancing multiple SIMs.
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
@@ -460,7 +470,7 @@ export default function CreateCampaignPage() {
                         name="sim_slot"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>SIM Slot (Optional)</FormLabel>
+                            <FormLabel>SIM Preference</FormLabel>
                             <Select
                               onValueChange={field.onChange}
                               defaultValue={field.value}
@@ -472,78 +482,87 @@ export default function CreateCampaignPage() {
                               </FormControl>
                               <SelectContent>
                                 <SelectItem value="auto">
-                                  Automatic (Best SIM)
+                                  Automatic (Best Signal/Quota)
                                 </SelectItem>
                                 <SelectItem value="0">SIM Slot 1</SelectItem>
                                 <SelectItem value="1">SIM Slot 2</SelectItem>
                               </SelectContent>
                             </Select>
                             <FormDescription>
-                              Choose a specific SIM slot if needed.
+                              Leave 'Automatic' to optimize delivery rates.
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
                     </div>
+                  </div>
 
-                    <div className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm bg-white dark:bg-zinc-900">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-base">
-                          Auto-Reschedule on Daily Limit
-                        </FormLabel>
-                        <FormDescription>
-                          If a SIM's daily limit is reached, reschedule messages
-                          to tomorrow instead of failing.
-                        </FormDescription>
-                      </div>
+                  <Separator />
+
+                  {/* Section 3: Schedule & Limits */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                      Timing & Limits
+                    </h3>
+
+                    <div className="grid grid-cols-1 gap-4">
                       <FormField
                         control={form.control}
-                        name="auto_reschedule"
+                        name="scheduled_at"
                         render={({ field }) => (
-                          <FormItem>
+                          <FormItem className="flex flex-col">
+                            <FormLabel>Schedule Start (Optional)</FormLabel>
                             <FormControl>
-                              <Switch
-                                checked={field.value}
-                                onCheckedChange={field.onChange}
-                              />
+                              <div className="relative">
+                                <IconCalendarTime className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
+                                <Input
+                                  type="datetime-local"
+                                  className="pl-9"
+                                  placeholder="Select date and time"
+                                  {...field}
+                                  min={new Date().toISOString().slice(0, 16)}
+                                />
+                              </div>
                             </FormControl>
+                            <FormDescription>
+                              Leave blank to start sending immediately.
+                            </FormDescription>
+                            <FormMessage />
                           </FormItem>
                         )}
                       />
-                    </div>
 
-                    <Separator className="my-2" />
-
-                    <FormField
-                      control={form.control}
-                      name="scheduled_at"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="flex items-center gap-2">
-                            <IconClock2 className="size-3.5" /> Schedule for
-                            Later (Optional)
+                      <div className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm bg-muted/40">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-base">
+                            Smart Reschedule
                           </FormLabel>
-                          <FormControl>
-                            <Input
-                              type="datetime-local"
-                              placeholder="Select date and time"
-                              {...field}
-                              min={new Date().toISOString().slice(0, 16)}
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            Leave empty to launch manually or immediately.
+                          <FormDescription className="text-xs max-w-[300px]">
+                            Automatically pause and resume the campaign tomorrow
+                            if a SIM card reaches its daily operator limit.
                           </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Step 3: Review */}
+                        </div>
+                        <FormField
+                          control={form.control}
+                          name="auto_reschedule"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <Switch
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              ){/* Step 3: Review */}
               {currentStep === 3 && (
                 <Card>
                   <CardHeader>
@@ -687,7 +706,6 @@ export default function CreateCampaignPage() {
                   </CardContent>
                 </Card>
               )}
-
               {/* Footer Buttons */}
               <div className="flex items-center justify-between">
                 {currentStep > 1 ? (

@@ -338,68 +338,84 @@ func (p *DevicePoolManager) GetNextAvailableDevice(ctx context.Context, orgID in
 	// Round-robin: try each device starting from lastIndex + 1
 	n := len(candidates)
 	devicesWithLimitReached := 0
+	devicesThrottled := 0
 
 	for i := 0; i < n; i++ {
 		idx := (lastIndex + 1 + i) % n
 		device := candidates[idx]
 
-		if p.IsDeviceAvailable(device.ID, throttleRate) {
-			// Iterate through SIM cards to find one that has not reached its daily limit
-			validSlot := -1
-			allSimsLimitReached := true
+		if !p.IsDeviceAvailable(device.ID, throttleRate) {
+			devicesThrottled++
+			continue
+		}
 
-			for _, sim := range device.SimCards {
-				if !sim.IsActive {
-					continue
+		// Device is available (not throttled), check SIMs
+		// Iterate through SIM cards to find one that has not reached its daily limit
+		validSlot := -1
+		allSimsLimitReached := true
+		hasActiveSims := false
+
+		for _, sim := range device.SimCards {
+			if !sim.IsActive {
+				continue
+			}
+			hasActiveSims = true
+
+			// Check daily limit for this SIM
+			limitReached := false
+			if sim.DailyLimit > 0 {
+				today := time.Now().UTC().Truncate(24 * time.Hour)
+				lastReset := time.Time{}
+				if sim.LastResetDate != nil {
+					lastReset = sim.LastResetDate.UTC().Truncate(24 * time.Hour)
 				}
 
-				// Check daily limit for this SIM
-				limitReached := false
-				if sim.DailyLimit > 0 {
-					today := time.Now().UTC().Truncate(24 * time.Hour)
-					lastReset := time.Time{}
-					if sim.LastResetDate != nil {
-						lastReset = sim.LastResetDate.UTC().Truncate(24 * time.Hour)
+				if lastReset.Equal(today) {
+					if sim.SentToday >= sim.DailyLimit {
+						limitReached = true
 					}
-
-					if lastReset.Equal(today) {
-						if sim.SentToday >= sim.DailyLimit {
-							limitReached = true
-						}
-					}
-					// If lastReset < today, effectively SentToday is 0, so allowed
 				}
-
-				if !limitReached {
-					allSimsLimitReached = false
-					validSlot = sim.SlotIndex
-					break // Found a usable SIM
-				}
+				// If lastReset < today, effectively SentToday is 0, so allowed
 			}
 
-			if validSlot != -1 {
-				// Update last used index
-				p.mu.Lock()
-				p.lastDeviceIndex[orgID] = idx
-				p.mu.Unlock()
-
-				return &device, validSlot, nil
+			if !limitReached {
+				allSimsLimitReached = false
+				validSlot = sim.SlotIndex
+				break // Found a usable SIM
 			}
+		}
 
-			if allSimsLimitReached && len(device.SimCards) > 0 {
-				devicesWithLimitReached++
-			}
+		if validSlot != -1 {
+			// Update last used index
+			p.mu.Lock()
+			p.lastDeviceIndex[orgID] = idx
+			p.mu.Unlock()
+
+			return &device, validSlot, nil
+		}
+
+		if hasActiveSims && allSimsLimitReached {
+			devicesWithLimitReached++
 		}
 	}
 
 	// No available device found
-	// If we found devices but all matched SIMs were at limit, return specific error
-	if len(candidates) > 0 && devicesWithLimitReached > 0 { // Simplistic check - strict would track if *every* candidate failed due to limit
-		// We should probably verify if *all* viable candidates failed due to limit
-		// But for now, if we found NO valid slot and we saw at least one limit reached, it's a hint.
-		// Let's refine: If we iterate all candidates and find none, but some were skipped due to limit.
-		// Actually, simpler: if we exit the loop without return, check if we saw limits.
-		return nil, -1, ErrDailyQuotaReached
+	// Only return ErrDailyQuotaReached if ALL candidates were blocked by limits
+	// AND none were skipped due to simple throttling.
+	// (If some were throttled, we should retry soon, not reschedule for tomorrow)
+	if len(candidates) > 0 {
+		// If we had candidates, and all of them were either checked (limit reached) or throttled.
+		// We only snooze if LimitReached > 0 AND Throttled == 0.
+		// If Throttled > 0, we imply "wait a few seconds", so return nil (generic retry).
+		if devicesWithLimitReached > 0 && devicesThrottled == 0 {
+			// Double check: ensure devicesWithLimitReached equals total candidates?
+			// Logic: If candidates=5. Throttled=0. LimitReached=5. -> Snooze.
+			// Logic: If candidates=5. Throttled=0. LimitReached=3. (Other 2 had no active SIMs?). -> Snooze?
+			// If the other 2 had no active SIMs, they are effectively dead for sending.
+			// So yes, if we found at least one LimitReached, and NO Throttled devices, it suggests
+			// the only reason we failed (besides dead/inactive SIMs) is Limits.
+			return nil, -1, ErrDailyQuotaReached
+		}
 	}
 
 	return nil, -1, nil
