@@ -327,242 +327,248 @@ export default function CreateCampaignPage() {
                   </CardContent>
                 </Card>
               )}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Configuration</CardTitle>
-                  <CardDescription>
-                    Define who receives the message and how it should be sent.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-8">
-                  {/* Section 1: Targeting */}
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                      Targeting
-                    </h3>
-                    <FormField
-                      control={form.control}
-                      name="list_id"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Contact List</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a contact list" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {listsWithAll.map((list) => (
-                                <SelectItem
-                                  key={list.id}
-                                  value={list.id.toString()}
-                                >
-                                  <div className="flex items-center justify-between w-full min-w-[200px]">
-                                    <span>{list.name}</span>
-                                    <span className="text-xs text-muted-foreground ml-2">
-                                      ({list.member_count} contacts)
-                                    </span>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
 
-                  <Separator />
-
-                  {/* Section 2: Device Strategy */}
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                      Sending Strategy
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Step 2: Target */}
+              {currentStep === 2 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Configuration</CardTitle>
+                    <CardDescription>
+                      Define who receives the message and how it should be sent.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-8">
+                    {/* Section 1: Targeting */}
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                        Targeting
+                      </h3>
                       <FormField
                         control={form.control}
-                        name="device_id"
+                        name="list_id"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Sending Device</FormLabel>
-                            <Select
-                              onValueChange={(val) => {
-                                if (val === "auto") {
-                                  form.setValue("device_id", 0); // 0 for Auto
-                                } else {
-                                  form.setValue("device_id", parseInt(val));
-                                }
-                              }}
-                              value={
-                                form.watch("device_id") === 0
-                                  ? "auto"
-                                  : form.watch("device_id")?.toString()
-                              }
-                            >
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select a device" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="auto">
-                                  Automatic (Smart Dispatch)
-                                </SelectItem>
-                                {devices?.map((device) => {
-                                  const phoneNumbers = device.sim_cards
-                                    ?.map((s: any) => s.phone_number)
-                                    .filter(Boolean)
-                                    .join(", ");
-
-                                  const isDisabled =
-                                    device.status !== "online" ||
-                                    device.requires_setup;
-
-                                  return (
-                                    <SelectItem
-                                      key={device.id}
-                                      value={device.id.toString()}
-                                      disabled={isDisabled}
-                                    >
-                                      <div className="flex items-center">
-                                        <div
-                                          className={`size-2 rounded-full mr-2 ${
-                                            device.status === "online" &&
-                                            !device.requires_setup
-                                              ? "bg-green-500"
-                                              : "bg-gray-300"
-                                          }`}
-                                        />
-                                        <span>{device.name}</span>
-                                        {device.requires_setup && (
-                                          <span className="text-xs text-red-500 ml-2 font-medium">
-                                            (Requires Setup)
-                                          </span>
-                                        )}
-                                        {phoneNumbers &&
-                                          !device.requires_setup && (
-                                            <span className="text-xs text-muted-foreground ml-2">
-                                              ({phoneNumbers})
-                                            </span>
-                                          )}
-                                      </div>
-                                    </SelectItem>
-                                  );
-                                })}
-                              </SelectContent>
-                            </Select>
-                            <FormDescription>
-                              Best for load balancing multiple SIMs.
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="sim_slot"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>SIM Preference</FormLabel>
+                            <FormLabel>Contact List</FormLabel>
                             <Select
                               onValueChange={field.onChange}
                               defaultValue={field.value}
                             >
                               <FormControl>
                                 <SelectTrigger>
-                                  <SelectValue placeholder="Automatic Selection" />
+                                  <SelectValue placeholder="Select a contact list" />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="auto">
-                                  Automatic (Best Signal/Quota)
-                                </SelectItem>
-                                <SelectItem value="0">SIM Slot 1</SelectItem>
-                                <SelectItem value="1">SIM Slot 2</SelectItem>
+                                {listsWithAll.map((list) => (
+                                  <SelectItem
+                                    key={list.id}
+                                    value={list.id.toString()}
+                                  >
+                                    <div className="flex items-center justify-between w-full min-w-[200px]">
+                                      <span>{list.name}</span>
+                                      <span className="text-xs text-muted-foreground ml-2">
+                                        ({list.member_count} contacts)
+                                      </span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
-                            <FormDescription>
-                              Leave 'Automatic' to optimize delivery rates.
-                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
                     </div>
-                  </div>
 
-                  <Separator />
+                    <Separator />
 
-                  {/* Section 3: Schedule & Limits */}
-                  <div className="space-y-4">
-                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                      Timing & Limits
-                    </h3>
-
-                    <div className="grid grid-cols-1 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="scheduled_at"
-                        render={({ field }) => (
-                          <FormItem className="flex flex-col">
-                            <FormLabel>Schedule Start (Optional)</FormLabel>
-                            <FormControl>
-                              <div className="relative">
-                                <IconCalendarTime className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
-                                <Input
-                                  type="datetime-local"
-                                  className="pl-9"
-                                  placeholder="Select date and time"
-                                  {...field}
-                                  min={new Date().toISOString().slice(0, 16)}
-                                />
-                              </div>
-                            </FormControl>
-                            <FormDescription>
-                              Leave blank to start sending immediately.
-                            </FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <div className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm bg-muted/40">
-                        <div className="space-y-0.5">
-                          <FormLabel className="text-base">
-                            Smart Reschedule
-                          </FormLabel>
-                          <FormDescription className="text-xs max-w-[300px]">
-                            Automatically pause and resume the campaign tomorrow
-                            if a SIM card reaches its daily operator limit.
-                          </FormDescription>
-                        </div>
+                    {/* Section 2: Device Strategy */}
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                        Sending Strategy
+                      </h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <FormField
                           control={form.control}
-                          name="auto_reschedule"
+                          name="device_id"
                           render={({ field }) => (
                             <FormItem>
-                              <FormControl>
-                                <Switch
-                                  checked={field.value}
-                                  onCheckedChange={field.onChange}
-                                />
-                              </FormControl>
+                              <FormLabel>Sending Device</FormLabel>
+                              <Select
+                                onValueChange={(val) => {
+                                  if (val === "auto") {
+                                    form.setValue("device_id", 0); // 0 for Auto
+                                  } else {
+                                    form.setValue("device_id", parseInt(val));
+                                  }
+                                }}
+                                value={
+                                  form.watch("device_id") === 0
+                                    ? "auto"
+                                    : form.watch("device_id")?.toString()
+                                }
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select a device" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="auto">
+                                    Automatic (Smart Dispatch)
+                                  </SelectItem>
+                                  {devices?.map((device) => {
+                                    const phoneNumbers = device.sim_cards
+                                      ?.map((s: any) => s.phone_number)
+                                      .filter(Boolean)
+                                      .join(", ");
+
+                                    const isDisabled =
+                                      device.status !== "online" ||
+                                      device.requires_setup;
+
+                                    return (
+                                      <SelectItem
+                                        key={device.id}
+                                        value={device.id.toString()}
+                                        disabled={isDisabled}
+                                      >
+                                        <div className="flex items-center">
+                                          <div
+                                            className={`size-2 rounded-full mr-2 ${
+                                              device.status === "online" &&
+                                              !device.requires_setup
+                                                ? "bg-green-500"
+                                                : "bg-gray-300"
+                                            }`}
+                                          />
+                                          <span>{device.name}</span>
+                                          {device.requires_setup && (
+                                            <span className="text-xs text-red-500 ml-2 font-medium">
+                                              (Requires Setup)
+                                            </span>
+                                          )}
+                                          {phoneNumbers &&
+                                            !device.requires_setup && (
+                                              <span className="text-xs text-muted-foreground ml-2">
+                                                ({phoneNumbers})
+                                              </span>
+                                            )}
+                                        </div>
+                                      </SelectItem>
+                                    );
+                                  })}
+                                </SelectContent>
+                              </Select>
+                              <FormDescription>
+                                Best for load balancing multiple SIMs.
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="sim_slot"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>SIM Preference</FormLabel>
+                              <Select
+                                onValueChange={field.onChange}
+                                defaultValue={field.value}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Automatic Selection" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="auto">
+                                    Automatic (Best Signal/Quota)
+                                  </SelectItem>
+                                  <SelectItem value="0">SIM Slot 1</SelectItem>
+                                  <SelectItem value="1">SIM Slot 2</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormDescription>
+                                Leave 'Automatic' to optimize delivery rates.
+                              </FormDescription>
+                              <FormMessage />
                             </FormItem>
                           )}
                         />
                       </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-              ){/* Step 3: Review */}
+
+                    <Separator />
+
+                    {/* Section 3: Schedule & Limits */}
+                    <div className="space-y-4">
+                      <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                        Timing & Limits
+                      </h3>
+
+                      <div className="grid grid-cols-1 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="scheduled_at"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-col">
+                              <FormLabel>Schedule Start (Optional)</FormLabel>
+                              <FormControl>
+                                <div className="relative">
+                                  <IconCalendarTime className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
+                                  <Input
+                                    type="datetime-local"
+                                    className="pl-9"
+                                    placeholder="Select date and time"
+                                    {...field}
+                                    min={new Date().toISOString().slice(0, 16)}
+                                  />
+                                </div>
+                              </FormControl>
+                              <FormDescription>
+                                Leave blank to start sending immediately.
+                              </FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <div className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm bg-muted/40">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base">
+                              Smart Reschedule
+                            </FormLabel>
+                            <FormDescription className="text-xs max-w-[300px]">
+                              Automatically pause and resume the campaign
+                              tomorrow if a SIM card reaches its daily operator
+                              limit.
+                            </FormDescription>
+                          </div>
+                          <FormField
+                            control={form.control}
+                            name="auto_reschedule"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormControl>
+                                  <Switch
+                                    checked={field.value}
+                                    onCheckedChange={field.onChange}
+                                  />
+                                </FormControl>
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Step 3: Review */}
               {currentStep === 3 && (
                 <Card>
                   <CardHeader>
@@ -706,6 +712,7 @@ export default function CreateCampaignPage() {
                   </CardContent>
                 </Card>
               )}
+
               {/* Footer Buttons */}
               <div className="flex items-center justify-between">
                 {currentStep > 1 ? (
