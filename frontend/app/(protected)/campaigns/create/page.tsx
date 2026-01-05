@@ -155,6 +155,10 @@ export default function CreateCampaignPage() {
     },
   });
 
+  const selectedList = listsWithAll.find(
+    (l) => l.id.toString() === form.watch("list_id")
+  );
+
   const nextStep = async () => {
     // Validate current step fields
     let valid = false;
@@ -162,6 +166,12 @@ export default function CreateCampaignPage() {
       valid = await form.trigger(["name", "template_body"]);
     } else if (currentStep === 2) {
       valid = await form.trigger(["list_id", "device_id", "scheduled_at"]);
+
+      // Check for empty list
+      if (valid && selectedList && selectedList.member_count === 0) {
+        toast.error("The selected contact list is empty.");
+        valid = false;
+      }
     }
 
     if (valid) setCurrentStep((prev) => prev + 1);
@@ -197,9 +207,6 @@ export default function CreateCampaignPage() {
     });
   };
 
-  const selectedList = listsWithAll.find(
-    (l) => l.id.toString() === form.watch("list_id")
-  );
   const selectedDevice = devices?.find((d) => d.id === form.watch("device_id"));
 
   return (
@@ -747,7 +754,7 @@ export default function CreateCampaignPage() {
                       type="submit"
                       disabled={createMutation.isPending}
                       onClick={() => (isLaunchingRef.current = true)}
-                      className="bg-[#8c52ff] hover:bg-[#8c52ff]/80 text-white"
+                      className="dark:bg-[#8c52ff] dark:hover:bg-[#8c52ff]/80 text-white"
                     >
                       {createMutation.isPending && (
                         <LoaderQuater className="mr-2" />
