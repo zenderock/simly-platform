@@ -43,7 +43,7 @@ export default function RootLayout({
               {children}
               <ToasterRadix />
               <ToasterSonner
-                position="top-right"
+                position="bottom-right"
                 richColors
                 closeButton
                 theme="light"
