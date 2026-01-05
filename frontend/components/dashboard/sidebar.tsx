@@ -509,16 +509,16 @@ export function DashboardSidebar({
           {currentOrg && currentOrg.plan !== "enterprise" && (
             <div className="mb-4 p-3 rounded-lg bg-linear-to-r from-purple-50 to-gray-50 border border-purple-200 dark:from-purple-950/50 dark:to-gray-950/50 dark:border-purple-800">
               <div className="flex items-center gap-2 mb-2">
-                <IconConfetti className="size-4 text-purple-600 dark:text-purple-400" />
-                <span className="text-sm font-semibold text-purple-900 dark:text-purple-100">
+                <IconConfetti className="size-4 text-[#8c52ff] dark:text-[#8c52ff]/80" />
+                <span className="text-sm font-semibold text-[#8c52ff] dark:text-[#8c52ff]/80">
                   Upgrade Plan
                 </span>
               </div>
-              <p className="text-xs text-purple-700 dark:text-purple-300 mb-3">
+              <p className="text-xs text-[#8c52ff] dark:text-[#8c52ff]/80 mb-3">
                 Get more SMS, devices, and premium features
               </p>
               <Link href="/organization/plans">
-                <button className="w-full bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium py-2 px-3 rounded-md transition-colors flex items-center justify-center gap-1">
+                <button className="w-full bg-[#8c52ff] hover:bg-[#8c52ff]/80 text-white text-xs font-medium py-2 px-3 rounded-md transition-colors flex items-center justify-center gap-1">
                   <IconEye className="size-3" />
                   View Plans
                 </button>

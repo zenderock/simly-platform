@@ -3,7 +3,8 @@ import { Poppins } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import Providers from "@/components/providers";
-import { Toaster } from "@/components/ui/toaster";
+import { Toaster as ToasterRadix } from "@/components/ui/toaster";
+import { Toaster as ToasterSonner } from "sonner";
 import { Analytics } from "@vercel/analytics/next";
 import { PostHogProvider } from "@/components/providers/posthog-provider";
 import SuspendedPostHogPageView from "@/components/providers/posthog-pageview";
@@ -40,7 +41,22 @@ export default function RootLayout({
               disableTransitionOnChange
             >
               {children}
-              <Toaster />
+              <ToasterRadix />
+              <ToasterSonner
+                position="top-right"
+                richColors
+                closeButton
+                theme="light"
+                toastOptions={{
+                  style: {
+                    borderRadius: "8px",
+                    border: "1px solid var(--border)",
+                    fontSize: "14px",
+                    fontFamily: "var(--font-sans)",
+                  },
+                  className: "font-sans",
+                }}
+              />
             </ThemeProvider>
             <Analytics />
           </PostHogProvider>

@@ -136,3 +136,52 @@
 .PhoneInputCountrySelect {
   margin-right: 0.35rem;
 }
+
+/* Sonner Toast Customization */
+[data-sonner-toast] {
+  --success-color: #22c55e;
+  --error-color: #ef4444;
+  --info-color: #3b82f6;
+  --warning-color: #f59e0b;
+  border-radius: 8px !important;
+  font-family: var(--font-sans) !important;
+}
+
+[data-sonner-toast][data-type="success"] {
+  border: 1px solid transparent !important;
+  background: linear-gradient(white, white) padding-box,
+              linear-gradient(to right, var(--success-color), transparent) border-box !important;
+}
+
+[data-sonner-toast][data-type="error"] {
+  border: 1px solid transparent !important;
+  background: linear-gradient(white, white) padding-box,
+              linear-gradient(to right, var(--error-color), transparent) border-box !important;
+}
+
+[data-sonner-toast][data-type="info"] {
+  border: 1px solid transparent !important;
+  background: linear-gradient(white, white) padding-box,
+              linear-gradient(to right, var(--info-color), transparent) border-box !important;
+}
+
+[data-sonner-toast][data-type="warning"] {
+  border: 1px solid transparent !important;
+  background: linear-gradient(white, white) padding-box,
+              linear-gradient(to right, var(--warning-color), transparent) border-box !important;
+}
+
+.dark [data-sonner-toast] {
+  background: linear-gradient(#121212, #121212) padding-box,
+              linear-gradient(to right, var(--border), transparent) border-box !important;
+}
+
+.dark [data-sonner-toast][data-type="success"] {
+  background: linear-gradient(#121212, #121212) padding-box,
+              linear-gradient(to right, var(--success-color), transparent) border-box !important;
+}
+
+.dark [data-sonner-toast][data-type="error"] {
+  background: linear-gradient(#121212, #121212) padding-box,
+              linear-gradient(to right, var(--error-color), transparent) border-box !important;
+}
