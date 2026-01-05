@@ -141,6 +141,25 @@ func (w *RedisWorker) HandleSMSDeliveryTask(ctx context.Context, t *asynq.Task) 
 	// Get available device
 	device, slotIndex, err := w.devicePool.GetNextAvailableDevice(ctx, msg.OrganizationID, msg.RequiredTags)
 	if err != nil {
+		if err == core.ErrDailyQuotaReached {
+			// Check if campaign supports auto-reschedule
+			if msg.CampaignID != nil {
+				campaign, logErr := w.store.GetCampaignByID(ctx, *msg.CampaignID)
+				if logErr == nil && campaign.AutoReschedule {
+					// Reschedule for tomorrow 00:05 UTC
+					now := time.Now().UTC()
+					nextWindow := now.Add(24 * time.Hour).Truncate(24 * time.Hour).Add(5 * time.Minute)
+					delay := time.Until(nextWindow)
+
+					log.Printf("[Worker] Daily limit reached for Message %d. Auto-Rescheduling for %v (in %v)", msgID, nextWindow, delay)
+					return &RateLimitError{
+						RetryIn: delay,
+						Msg:     fmt.Sprintf("daily quota reached, rescheduling for %v", nextWindow),
+					}
+				}
+			}
+			return fmt.Errorf("daily quota reached for all suitable devices")
+		}
 		return fmt.Errorf("failed to get device: %w", err)
 	}
 

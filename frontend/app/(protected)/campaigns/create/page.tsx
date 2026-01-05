@@ -9,6 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Form,
@@ -73,6 +74,7 @@ const schema = z.object({
   }),
   sim_slot: z.string().optional(),
   scheduled_at: z.string().optional(),
+  auto_reschedule: z.boolean().optional(),
 });
 
 type FormData = z.input<typeof schema>;
@@ -95,6 +97,7 @@ export default function CreateCampaignPage() {
       device_id: 0, // 0 for "auto"
       sim_slot: "auto",
       scheduled_at: "",
+      auto_reschedule: false,
     },
     mode: "onChange",
   });
@@ -190,6 +193,7 @@ export default function CreateCampaignPage() {
         data.sim_slot === "auto" ? null : parseInt(data.sim_slot || "0"),
       scheduled_at: formattedScheduledAt,
       auto_launch: isLaunchingRef.current && !formattedScheduledAt,
+      auto_reschedule: data.auto_reschedule,
     });
   };
 
@@ -478,6 +482,32 @@ export default function CreateCampaignPage() {
                               Choose a specific SIM slot if needed.
                             </FormDescription>
                             <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm bg-white dark:bg-zinc-900">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">
+                          Auto-Reschedule on Daily Limit
+                        </FormLabel>
+                        <FormDescription>
+                          If a SIM's daily limit is reached, reschedule messages
+                          to tomorrow instead of failing.
+                        </FormDescription>
+                      </div>
+                      <FormField
+                        control={form.control}
+                        name="auto_reschedule"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormControl>
+                              <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                              />
+                            </FormControl>
                           </FormItem>
                         )}
                       />

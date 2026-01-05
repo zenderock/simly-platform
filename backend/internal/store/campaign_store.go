@@ -10,8 +10,8 @@ import (
 
 func (s *Store) CreateCampaign(ctx context.Context, c *model.Campaign) error {
 	query := `
-		INSERT INTO campaigns (organization_id, application_id, name, template_body, list_id, device_id, sim_slot, status, scheduled_at, send_window_start, send_window_end, use_all_devices, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW(), NOW())
+		INSERT INTO campaigns (organization_id, application_id, name, template_body, list_id, device_id, sim_slot, status, scheduled_at, send_window_start, send_window_end, use_all_devices, auto_reschedule, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())
 		RETURNING id, created_at, updated_at
 	`
 	err := s.db.QueryRow(ctx, query,
@@ -27,6 +27,7 @@ func (s *Store) CreateCampaign(ctx context.Context, c *model.Campaign) error {
 		c.SendWindowStart,
 		c.SendWindowEnd,
 		c.UseAllDevices,
+		c.AutoReschedule,
 	).Scan(&c.ID, &c.CreatedAt, &c.UpdatedAt)
 
 	if err != nil {
@@ -66,7 +67,7 @@ func (s *Store) UpdateCampaign(ctx context.Context, c *model.Campaign) error {
 
 func (s *Store) GetCampaignByID(ctx context.Context, id int) (*model.Campaign, error) {
 	query := `
-		SELECT id, organization_id, application_id, name, template_body, list_id, device_id, sim_slot, status, scheduled_at, total_messages, sent_messages, failed_messages, send_window_start, send_window_end, pause_reason, estimated_completion_at, use_all_devices, created_at, updated_at
+		SELECT id, organization_id, application_id, name, template_body, list_id, device_id, sim_slot, status, scheduled_at, total_messages, sent_messages, failed_messages, send_window_start, send_window_end, pause_reason, estimated_completion_at, use_all_devices, auto_reschedule, created_at, updated_at
 		FROM campaigns
 		WHERE id = $1
 	`
@@ -90,6 +91,7 @@ func (s *Store) GetCampaignByID(ctx context.Context, id int) (*model.Campaign, e
 		&c.PauseReason,
 		&c.EstimatedCompletionAt,
 		&c.UseAllDevices,
+		&c.AutoReschedule,
 		&c.CreatedAt,
 		&c.UpdatedAt,
 	)

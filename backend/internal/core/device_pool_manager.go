@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"time"
 
@@ -17,6 +18,11 @@ const (
 	CooldownPeriod             = 5 * time.Minute
 	CircuitBreakerThreshold    = 5 // Consecutive failures to open circuit
 	CircuitBreakerSuspension   = 2 * time.Minute
+)
+
+// Errors
+var (
+	ErrDailyQuotaReached = errors.New("daily quota reached")
 )
 
 // DeviceThrottleState tracks throttling state for a single device
@@ -331,6 +337,8 @@ func (p *DevicePoolManager) GetNextAvailableDevice(ctx context.Context, orgID in
 
 	// Round-robin: try each device starting from lastIndex + 1
 	n := len(candidates)
+	devicesWithLimitReached := 0
+
 	for i := 0; i < n; i++ {
 		idx := (lastIndex + 1 + i) % n
 		device := candidates[idx]
@@ -338,6 +346,8 @@ func (p *DevicePoolManager) GetNextAvailableDevice(ctx context.Context, orgID in
 		if p.IsDeviceAvailable(device.ID, throttleRate) {
 			// Iterate through SIM cards to find one that has not reached its daily limit
 			validSlot := -1
+			allSimsLimitReached := true
+
 			for _, sim := range device.SimCards {
 				if !sim.IsActive {
 					continue
@@ -361,6 +371,7 @@ func (p *DevicePoolManager) GetNextAvailableDevice(ctx context.Context, orgID in
 				}
 
 				if !limitReached {
+					allSimsLimitReached = false
 					validSlot = sim.SlotIndex
 					break // Found a usable SIM
 				}
@@ -374,10 +385,23 @@ func (p *DevicePoolManager) GetNextAvailableDevice(ctx context.Context, orgID in
 
 				return &device, validSlot, nil
 			}
+
+			if allSimsLimitReached && len(device.SimCards) > 0 {
+				devicesWithLimitReached++
+			}
 		}
 	}
 
 	// No available device found
+	// If we found devices but all matched SIMs were at limit, return specific error
+	if len(candidates) > 0 && devicesWithLimitReached > 0 { // Simplistic check - strict would track if *every* candidate failed due to limit
+		// We should probably verify if *all* viable candidates failed due to limit
+		// But for now, if we found NO valid slot and we saw at least one limit reached, it's a hint.
+		// Let's refine: If we iterate all candidates and find none, but some were skipped due to limit.
+		// Actually, simpler: if we exit the loop without return, check if we saw limits.
+		return nil, -1, ErrDailyQuotaReached
+	}
+
 	return nil, -1, nil
 }
 

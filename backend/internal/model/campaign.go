@@ -33,6 +33,7 @@ type Campaign struct {
 	PauseReason           *string    `json:"pause_reason,omitempty"`
 	EstimatedCompletionAt *time.Time `json:"estimated_completion_at,omitempty"`
 	UseAllDevices         bool       `json:"use_all_devices"`
+	AutoReschedule        bool       `json:"auto_reschedule"`
 	CreatedAt             time.Time  `json:"created_at"`
 	UpdatedAt             time.Time  `json:"updated_at"`
 }
@@ -47,6 +48,7 @@ type CreateCampaignRequest struct {
 	SendWindowStart *int       `json:"send_window_start,omitempty"`
 	SendWindowEnd   *int       `json:"send_window_end,omitempty"`
 	UseAllDevices   bool       `json:"use_all_devices"`
+	AutoReschedule  bool       `json:"auto_reschedule"`
 	AutoLaunch      bool       `json:"auto_launch,omitempty"`
 	ApplicationID   int        `json:"application_id"`
 }

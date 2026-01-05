@@ -14,6 +14,7 @@ export interface Campaign {
   total_messages: number;
   sent_messages: number;
   failed_messages: number;
+  auto_reschedule: boolean;
   created_at: string;
 }
 
@@ -26,6 +27,7 @@ export interface CreateCampaignRequest {
   sim_slot?: number | null;
   scheduled_at?: string;
   auto_launch?: boolean;
+  auto_reschedule?: boolean;
 }
 
 export interface CampaignAnalytics {
