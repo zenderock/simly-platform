@@ -19,10 +19,12 @@ import {
   IconCategory2,
 } from "@tabler/icons-react";
 import LoaderQuater from "@/components/loader";
+import { usePostHog } from "posthog-js/react";
 
 export default function PlansPage() {
   const { organizations, organizationId, refreshOrganizations } = useAuth();
   const { toast } = useToast();
+  const posthog = usePostHog();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [upgrading, setUpgrading] = useState<string | null>(null);
@@ -57,8 +59,8 @@ export default function PlansPage() {
       return;
     }
     setUpgrading(priceId);
-    if (typeof window !== "undefined" && (window as any).posthog) {
-      (window as any).posthog.capture("initiate_checkout", {
+    if (posthog) {
+      posthog.capture("initiate_checkout", {
         price_id: priceId,
       });
     }
