@@ -13,8 +13,10 @@ import { DashboardStats, Device } from "@/types";
 import confetti from "canvas-confetti";
 import { SimPrefixConfig } from "@/components/devices/sim-prefix-config";
 import { Loader2 } from "lucide-react";
+import { usePostHog } from "posthog-js/react";
 
 export function OnboardingModal() {
+  const posthog = usePostHog();
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<
     "welcome" | "connect" | "configure" | "message" | "complete"
@@ -54,10 +56,10 @@ export function OnboardingModal() {
   }, [refreshKey]);
 
   useEffect(() => {
-    if (open && (window as any).posthog) {
-      (window as any).posthog.capture("onboarding_started");
+    if (open && posthog) {
+      posthog.capture("onboarding_started");
     }
-  }, [open]);
+  }, [open, posthog]);
 
   // If user closes modal but hasn't finished, what happens?
   // We force it open if devices == 0 ?
@@ -98,8 +100,8 @@ export function OnboardingModal() {
   };
 
   const handleComplete = () => {
-    if ((window as any).posthog) {
-      (window as any).posthog.capture("onboarding_completed");
+    if (posthog) {
+      posthog.capture("onboarding_completed");
     }
     setOpen(false);
   };
@@ -155,8 +157,8 @@ export function OnboardingModal() {
               variant="ghost"
               className="pointer-events-auto opacity-50 hover:opacity-100"
               onClick={() => {
-                if ((window as any).posthog) {
-                  (window as any).posthog.capture("onboarding_skipped");
+                if (posthog) {
+                  posthog.capture("onboarding_skipped");
                 }
                 setOpen(false);
               }}

@@ -8,12 +8,14 @@ import { Input } from "@/components/ui/input";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import LoaderQuater from "@/components/loader";
+import { usePostHog } from "posthog-js/react";
 
 import { Turnstile } from "@marsidev/react-turnstile";
 
 export default function RegisterPage() {
   const router = useRouter();
   const setAuth = useAuth((state) => state.setAuth);
+  const posthog = usePostHog();
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState("");
   const [turnstileToken, setTurnstileToken] = React.useState<string | null>(
@@ -48,12 +50,12 @@ export default function RegisterPage() {
       setAuth(token, user, organizations);
 
       // Track registration event
-      if (typeof window !== "undefined" && (window as any).posthog) {
-        (window as any).posthog.identify(user.id, {
+      if (posthog) {
+        posthog.identify(user.id, {
           email: user.email,
           name: user.name,
         });
-        (window as any).posthog.capture("user_registered", {
+        posthog.capture("user_registered", {
           method: "email",
         });
       }
@@ -62,7 +64,7 @@ export default function RegisterPage() {
     } catch (err: any) {
       setError(
         err.response?.data?.error ||
-          "Failed to create account. Please try again."
+        "Failed to create account. Please try again."
       );
     } finally {
       setIsLoading(false);
