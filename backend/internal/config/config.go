@@ -62,7 +62,7 @@ func Load() *Config {
 		R2BucketName:           getEnv("R2_BUCKET_NAME", ""),
 		R2PublicURL:            getEnv("R2_PUBLIC_URL", ""),
 		OpenRouterAPIKey:       getEnv("OPENROUTER_API_KEY", ""),
-		OpenRouterModel:        getEnv("OPENROUTER_MODEL", "google/gemini-2.0-flash-exp:free"),
+		OpenRouterModel:        getEnv("OPENROUTER_MODEL", "openrouter/free"),
 	}
 }
 
