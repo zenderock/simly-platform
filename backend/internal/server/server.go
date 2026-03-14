@@ -60,7 +60,10 @@ func (s *Server) setupRoutes() {
 	jwtSecret := []byte(s.Config.JWTSecret)
 
 	// Redis Config
-	redisOpt := asynq.RedisClientOpt{Addr: s.Config.RedisAddr}
+	redisOpt := asynq.RedisClientOpt{
+		Addr:     s.Config.RedisAddr,
+		Password: s.Config.RedisPassword,
+	}
 	// Initialize Asynq Client
 	taskClient := asynq.NewClient(redisOpt)
 
