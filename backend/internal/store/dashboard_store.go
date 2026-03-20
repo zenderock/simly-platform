@@ -10,9 +10,15 @@ type DashboardStats struct {
 	SentMessages      int `json:"sent_messages"`
 	DeliveredMessages int `json:"delivered_messages"`
 	FailedMessages    int `json:"failed_messages"`
-	PendingMessages   int `json:"pending_messages"`
-	ActiveDevices     int `json:"active_devices"`
-	TotalDevices      int `json:"total_devices"`
+	PendingMessages       int `json:"pending_messages"`
+	ActiveDevices         int `json:"active_devices"`
+	TotalDevices          int `json:"total_devices"`
+	
+	// Previous Month Stats
+	PrevTotalMessages     int `json:"prev_total_messages"`
+	PrevSentMessages      int `json:"prev_sent_messages"`
+	PrevDeliveredMessages int `json:"prev_delivered_messages"`
+	PrevFailedMessages    int `json:"prev_failed_messages"`
 }
 
 func (s *Store) GetDashboardStats(ctx context.Context, orgID int64, appID *int) (*DashboardStats, error) {
@@ -21,11 +27,17 @@ func (s *Store) GetDashboardStats(ctx context.Context, orgID int64, appID *int) 
 	// Messages Stats
 	queryMessages := `
 		SELECT 
-			COUNT(*) as total,
-			COUNT(CASE WHEN status = 'sent' THEN 1 END) as sent,
-			COUNT(CASE WHEN status = 'delivered' THEN 1 END) as delivered,
-			COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed,
-			COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending
+			COUNT(CASE WHEN created_at >= date_trunc('month', CURRENT_DATE) THEN 1 END) as total,
+			COUNT(CASE WHEN status = 'sent' AND created_at >= date_trunc('month', CURRENT_DATE) THEN 1 END) as sent,
+			COUNT(CASE WHEN status = 'delivered' AND created_at >= date_trunc('month', CURRENT_DATE) THEN 1 END) as delivered,
+			COUNT(CASE WHEN status = 'failed' AND created_at >= date_trunc('month', CURRENT_DATE) THEN 1 END) as failed,
+			COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
+
+			COUNT(CASE WHEN created_at >= date_trunc('month', CURRENT_DATE - interval '1 month') AND created_at < date_trunc('month', CURRENT_DATE) THEN 1 END) as prev_total,
+			COUNT(CASE WHEN status = 'sent' AND created_at >= date_trunc('month', CURRENT_DATE - interval '1 month') AND created_at < date_trunc('month', CURRENT_DATE) THEN 1 END) as prev_sent,
+			COUNT(CASE WHEN status = 'delivered' AND created_at >= date_trunc('month', CURRENT_DATE - interval '1 month') AND created_at < date_trunc('month', CURRENT_DATE) THEN 1 END) as prev_delivered,
+			COUNT(CASE WHEN status = 'failed' AND created_at >= date_trunc('month', CURRENT_DATE - interval '1 month') AND created_at < date_trunc('month', CURRENT_DATE) THEN 1 END) as prev_failed
+
 		FROM messages
 		WHERE organization_id = $1
 	`
@@ -41,6 +53,10 @@ func (s *Store) GetDashboardStats(ctx context.Context, orgID int64, appID *int) 
 		&stats.DeliveredMessages,
 		&stats.FailedMessages,
 		&stats.PendingMessages,
+		&stats.PrevTotalMessages,
+		&stats.PrevSentMessages,
+		&stats.PrevDeliveredMessages,
+		&stats.PrevFailedMessages,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get message stats: %w", err)

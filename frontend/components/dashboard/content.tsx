@@ -1,6 +1,7 @@
 "use client";
 
 import { WelcomeSection } from "./welcome-section";
+import { DashboardAlerts } from "./dashboard-alerts";
 import { StatsCards } from "./stats-cards";
 import { LeadSourcesChart as MessageStatusChart } from "./lead-sources-chart";
 import { MessageTrafficChart } from "@/components/dashboard/message-traffic-chart";
@@ -13,6 +14,7 @@ export function DashboardContent() {
       <OnboardingModal />
       <WelcomeSection />
 
+      <DashboardAlerts />
       <StatsCards />
 
       <div className="grid gap-6 lg:grid-cols-3">

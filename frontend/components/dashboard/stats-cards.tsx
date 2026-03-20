@@ -9,7 +9,16 @@ import {
   IconDeviceMobile,
   IconCreditCard,
   IconListTree,
+  IconChecks,
+  IconExclamationCircle,
 } from "@tabler/icons-react";
+
+function calculateTrend(current: number, previous: number) {
+  if (previous === 0) return current > 0 ? "+100%" : "0%";
+  const diff = current - previous;
+  const percent = (diff / previous) * 100;
+  return `${percent > 0 ? "+" : ""}${percent.toFixed(1)}%`;
+}
 
 export function StatsCards() {
   const activeAppId = useApplicationStore((state) => state.activeAppId);
@@ -22,25 +31,35 @@ export function StatsCards() {
   const totalDevices = stats?.total_devices || 0;
   const queue = stats?.pending_messages || 0;
 
+  const prevTotalMessages = stats?.prev_total_messages || 0;
+  const prevDelivered = stats?.prev_delivered_messages || 0;
+  const prevFailed = stats?.prev_failed_messages || 0;
+
   // Success Rate based on finalized messages (delivered vs failed)
   const finalized = delivered + failed;
   const successRate = finalized > 0 ? (delivered / finalized) * 100 : 100;
+
+  const prevFinalized = prevDelivered + prevFailed;
+  const prevSuccessRate = prevFinalized > 0 ? (prevDelivered / prevFinalized) * 100 : 100;
+  const successRateDiff = successRate - prevSuccessRate;
 
   const statsData = [
     {
       title: "Sent Messages",
       value: totalMessages.toLocaleString(),
-      change: "+0%", // Dynamic trend calculation would go here
+      change: calculateTrend(totalMessages, prevTotalMessages),
       changeValue: "",
-      isPositive: true,
+      suffix: "vs Last Month",
+      isPositive: totalMessages >= prevTotalMessages,
       icon: IconMessageUser,
     },
     {
       title: "Success Rate",
       value: `${successRate.toFixed(1)}%`,
-      change: "stable",
+      change: `${successRateDiff > 0 ? "+" : ""}${successRateDiff.toFixed(1)}%`,
       changeValue: "",
-      isPositive: successRate >= 98,
+      suffix: "vs Last Month",
+      isPositive: successRate >= prevSuccessRate,
       icon: IconSquareRoundedCheck,
     },
     {
@@ -48,6 +67,7 @@ export function StatsCards() {
       value: `${activeDevices}`,
       change: `${totalDevices} total`,
       changeValue: "",
+      suffix: "",
       isPositive: activeDevices > 0,
       icon: IconDeviceMobile,
     },
@@ -56,15 +76,35 @@ export function StatsCards() {
       value: `$${(stats?.current_month_cost || 0).toFixed(2)}`,
       change: "estimated",
       changeValue: "",
+      suffix: "",
       isPositive: true,
       icon: IconCreditCard,
     },
     {
+      title: "Delivered Messages",
+      value: delivered.toLocaleString(),
+      change: calculateTrend(delivered, prevDelivered),
+      changeValue: "",
+      suffix: "vs Last Month",
+      isPositive: delivered >= prevDelivered,
+      icon: IconChecks,
+    },
+    {
+      title: "Failed Messages",
+      value: failed.toLocaleString(),
+      change: calculateTrend(failed, prevFailed),
+      changeValue: "",
+      suffix: "vs Last Month",
+      isPositive: failed <= prevFailed,
+      icon: IconExclamationCircle,
+    },
+    {
       title: "Message Queue",
       value: queue.toLocaleString(),
-      change: "pending",
+      change: queue > 50 ? "high" : "normal",
       changeValue: "",
-      isPositive: true,
+      suffix: "",
+      isPositive: queue <= 50,
       icon: IconListTree,
     },
   ];
@@ -92,9 +132,11 @@ export function StatsCards() {
                 {stat.change}
                 <span className="hidden sm:inline">{stat.changeValue}</span>
               </span>
-              <span className="text-muted-foreground hidden sm:inline">
-                vs Last Month
-              </span>
+              {stat.suffix && (
+                <span className="text-muted-foreground hidden sm:inline">
+                  {stat.suffix}
+                </span>
+              )}
             </div>
           </div>
           {index < statsData.length - 1 && (

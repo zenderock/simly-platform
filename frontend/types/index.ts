@@ -103,6 +103,10 @@ export interface DashboardStats {
   active_devices: number;
   total_devices: number;
   current_month_cost: number;
+  prev_total_messages: number;
+  prev_sent_messages: number;
+  prev_delivered_messages: number;
+  prev_failed_messages: number;
 }
 
 export interface TrafficStat {
