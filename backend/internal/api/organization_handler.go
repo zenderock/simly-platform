@@ -170,7 +170,8 @@ func (h *OrganizationHandler) UpdateOrganization(w http.ResponseWriter, r *http.
 	}
 
 	type UpdateOrgRequest struct {
-		Name string `json:"name"`
+		Name             string `json:"name"`
+		AutoSaveContacts *bool  `json:"auto_save_contacts"`
 	}
 	var req UpdateOrgRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -190,7 +191,7 @@ func (h *OrganizationHandler) UpdateOrganization(w http.ResponseWriter, r *http.
 		return
 	}
 
-	if err := h.service.UpdateOrganization(r.Context(), orgID, req.Name); err != nil {
+	if err := h.service.UpdateOrganization(r.Context(), orgID, req.Name, req.AutoSaveContacts); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

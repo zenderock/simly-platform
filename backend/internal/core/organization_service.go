@@ -89,8 +89,8 @@ func (s *OrganizationService) GetOrganizationByID(ctx context.Context, orgID int
 	return s.store.GetOrganizationByID(ctx, orgID)
 }
 
-func (s *OrganizationService) UpdateOrganization(ctx context.Context, orgID int, name string) error {
-	return s.store.UpdateOrganization(ctx, orgID, name)
+func (s *OrganizationService) UpdateOrganization(ctx context.Context, orgID int, name string, autoSaveContacts *bool) error {
+	return s.store.UpdateOrganization(ctx, orgID, name, autoSaveContacts)
 }
 
 func (s *OrganizationService) GetOrganizationStats(ctx context.Context, orgID int) (*model.OrganizationStats, error) {

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 
 import {
   Building2,
@@ -61,6 +62,7 @@ export default function OrganizationPage() {
 
   const [formData, setFormData] = useState({
     name: "",
+    auto_save_contacts: false,
   });
 
   const fetchOrganizationData = async () => {
@@ -72,7 +74,10 @@ export default function OrganizationPage() {
         .get("/organizations/current")
         .then((res) => {
           setOrganization(res.data);
-          setFormData({ name: res.data.name });
+          setFormData({ 
+            name: res.data.name,
+            auto_save_contacts: res.data.auto_save_contacts || false
+          });
         })
         .catch((err) => {
           console.error("Failed to fetch organization", err);
@@ -81,7 +86,10 @@ export default function OrganizationPage() {
           );
           if (activeOrg) {
             setOrganization(activeOrg);
-            setFormData({ name: activeOrg.name });
+            setFormData({ 
+              name: activeOrg.name,
+              auto_save_contacts: activeOrg.auto_save_contacts || false
+            });
           }
         });
 
@@ -215,7 +223,7 @@ export default function OrganizationPage() {
       <div className="p-6 md:p-12 max-w-[1600px] mx-auto space-y-16">
 
         {/* Massive Typographic Header */}
-        <header className="flex flex-col md:flex-row md:items-end justify-between gap-8 border-b border-border pb-12">
+        <header className="flex flex-col md:flex-row md:items-end justify-between gap-8 pb-12">
           <div className="space-y-4">
             <h1 className="text-5xl md:text-7xl lg:text-8xl font-light tracking-tighter uppercase leading-[0.9] text-foreground">
               {organization.name}
@@ -274,6 +282,22 @@ export default function OrganizationPage() {
                 >
                   {saving ? "Processing..." : "Commit Update"}
                 </Button>
+              </div>
+
+              <div className="mt-8 flex items-center justify-between border border-border p-6 bg-muted/5">
+                <div className="space-y-1">
+                  <Label className="text-base uppercase tracking-widest font-light text-foreground">Auto-save SMS Contacts</Label>
+                  <p className="text-sm font-mono text-muted-foreground mr-6">
+                    Automatically create a contact record for every new number you send an SMS to.
+                  </p>
+                </div>
+                <Switch
+                  checked={formData.auto_save_contacts}
+                  onCheckedChange={(checked) =>
+                    setFormData((prev) => ({ ...prev, auto_save_contacts: checked }))
+                  }
+                  className="rounded-full"
+                />
               </div>
             </section>
 

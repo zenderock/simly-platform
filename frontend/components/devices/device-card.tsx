@@ -138,8 +138,8 @@ export function DeviceCard({
             <div className="flex items-center gap-2 p-2 rounded-lg bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800">
               <div
                 className={`p-1.5 rounded-full ${device.battery_level < 20
-                    ? "bg-red-100 text-red-600"
-                    : "bg-emerald-100 text-emerald-600"
+                  ? "bg-red-100 text-red-600"
+                  : "bg-emerald-100 text-emerald-600"
                   } dark:bg-opacity-10`}
               >
                 {getBatteryIcon(device.battery_level)}
@@ -168,8 +168,8 @@ export function DeviceCard({
                     <div
                       key={i}
                       className={`w-1.5 rounded-sm ${i < device.signal_strength
-                          ? "bg-indigo-500"
-                          : "bg-zinc-200 dark:bg-zinc-700"
+                        ? "bg-indigo-500"
+                        : "bg-zinc-200 dark:bg-zinc-700"
                         }`}
                       style={{ height: `${(i + 1) * 25}%` }}
                     />
@@ -248,8 +248,8 @@ export function DeviceCard({
                   </div>
                   <div
                     className={`px-2 py-0.5 rounded-full text-[10px] font-medium border ${sim.is_active
-                        ? "bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20"
-                        : "bg-zinc-100 text-zinc-500 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700"
+                      ? "bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20"
+                      : "bg-zinc-100 text-zinc-500 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700"
                       }`}
                   >
                     {sim.is_active ? "Active" : "Idle"}

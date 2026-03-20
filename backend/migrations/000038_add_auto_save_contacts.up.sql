@@ -1,0 +1,1 @@
+ALTER TABLE organizations ADD COLUMN auto_save_contacts BOOLEAN NOT NULL DEFAULT FALSE;

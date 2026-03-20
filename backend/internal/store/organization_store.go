@@ -45,7 +45,7 @@ func (s *Store) GetOrganizationByID(ctx context.Context, id int) (*model.Organiz
 		       max_applications, max_contacts, max_campaigns, max_recipients_per_campaign,
 		       stripe_customer_id, stripe_subscription_id, stripe_price_id, stripe_current_period_end, 
 		       sms_throttle_rate_seconds, send_window_start, send_window_end, send_window_timezone, 
-		       created_at, updated_at
+		       auto_save_contacts, created_at, updated_at
 		FROM organizations
 		WHERE id = $1
 	`
@@ -71,6 +71,7 @@ func (s *Store) GetOrganizationByID(ctx context.Context, id int) (*model.Organiz
 		&org.SendWindowStart,
 		&org.SendWindowEnd,
 		&org.SendWindowTimezone,
+		&org.AutoSaveContacts,
 		&org.CreatedAt,
 		&org.UpdatedAt,
 	)
@@ -98,7 +99,7 @@ func (s *Store) GetUserOrganizations(ctx context.Context, userID int) ([]model.O
 		SELECT o.id, o.name, o.slug, o.plan, o.sms_monthly_limit, o.sms_burst_limit, o.max_devices, o.max_sims_per_device,
 		       o.max_applications, o.max_contacts, o.max_campaigns, o.max_recipients_per_campaign,
 		       o.sms_throttle_rate_seconds, o.send_window_start, o.send_window_end, o.send_window_timezone, 
-		       o.created_at, o.updated_at
+		       o.auto_save_contacts, o.created_at, o.updated_at
 		FROM organizations o
 		JOIN organization_members om ON o.id = om.organization_id
 		WHERE om.user_id = $1
@@ -112,7 +113,7 @@ func (s *Store) GetUserOrganizations(ctx context.Context, userID int) ([]model.O
 	var orgs []model.Organization
 	for rows.Next() {
 		var o model.Organization
-		if err := rows.Scan(&o.ID, &o.Name, &o.Slug, &o.Plan, &o.SMSMonthlyLimit, &o.SMSBurstLimit, &o.MaxDevices, &o.MaxSimsPerDevice, &o.MaxApplications, &o.MaxContacts, &o.MaxCampaigns, &o.MaxRecipientsPerCampaign, &o.SMSThrottleRateSeconds, &o.SendWindowStart, &o.SendWindowEnd, &o.SendWindowTimezone, &o.CreatedAt, &o.UpdatedAt); err != nil {
+		if err := rows.Scan(&o.ID, &o.Name, &o.Slug, &o.Plan, &o.SMSMonthlyLimit, &o.SMSBurstLimit, &o.MaxDevices, &o.MaxSimsPerDevice, &o.MaxApplications, &o.MaxContacts, &o.MaxCampaigns, &o.MaxRecipientsPerCampaign, &o.SMSThrottleRateSeconds, &o.SendWindowStart, &o.SendWindowEnd, &o.SendWindowTimezone, &o.AutoSaveContacts, &o.CreatedAt, &o.UpdatedAt); err != nil {
 			return nil, err
 		}
 		orgs = append(orgs, o)
@@ -143,9 +144,9 @@ func (s *Store) RemoveOrganizationMember(ctx context.Context, orgID, userID int)
 	return nil
 }
 
-func (s *Store) UpdateOrganization(ctx context.Context, orgID int, name string) error {
-	query := `UPDATE organizations SET name = $1, updated_at = NOW() WHERE id = $2`
-	result, err := s.db.Exec(ctx, query, name, orgID)
+func (s *Store) UpdateOrganization(ctx context.Context, orgID int, name string, autoSaveContacts *bool) error {
+	query := `UPDATE organizations SET name = $1, auto_save_contacts = COALESCE($2, auto_save_contacts), updated_at = NOW() WHERE id = $3`
+	result, err := s.db.Exec(ctx, query, name, autoSaveContacts, orgID)
 	if err != nil {
 		return fmt.Errorf("failed to update organization: %w", err)
 	}
