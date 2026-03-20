@@ -146,7 +146,7 @@ export default function OrganizationPage() {
         name: formData.name,
         auto_save_contacts: checked,
       });
-      toast.success("Paramètre mis à jour");
+      toast.success("Setting updated");
       // Optionally fetch again, but optimistic is enough
     } catch (error) {
       console.error("Failed to update setting", error);

@@ -7,7 +7,6 @@ import {
   IconMessageUser,
   IconSquareRoundedCheck,
   IconDeviceMobile,
-  IconCreditCard,
   IconListTree,
   IconChecks,
   IconExclamationCircle,
@@ -71,15 +70,7 @@ export function StatsCards() {
       isPositive: activeDevices > 0,
       icon: IconDeviceMobile,
     },
-    {
-      title: "Current Bill",
-      value: `$${(stats?.current_month_cost || 0).toFixed(2)}`,
-      change: "estimated",
-      changeValue: "",
-      suffix: "",
-      isPositive: true,
-      icon: IconCreditCard,
-    },
+
     {
       title: "Delivered Messages",
       value: delivered.toLocaleString(),
