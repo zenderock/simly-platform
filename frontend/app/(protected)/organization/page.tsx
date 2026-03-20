@@ -135,6 +135,27 @@ export default function OrganizationPage() {
     }
   };
 
+  const handleAutoSaveToggle = async (checked: boolean) => {
+    if (!organizationId) return;
+
+    // Optimistic update
+    setFormData((prev) => ({ ...prev, auto_save_contacts: checked }));
+
+    try {
+      await api.put("/organizations/current", {
+        name: formData.name,
+        auto_save_contacts: checked,
+      });
+      toast.success("Paramètre mis à jour");
+      // Optionally fetch again, but optimistic is enough
+    } catch (error) {
+      console.error("Failed to update setting", error);
+      toast.error(getErrorMessage(error));
+      // Revert on failure
+      setFormData((prev) => ({ ...prev, auto_save_contacts: !checked }));
+    }
+  };
+
   const handleSaveDispatch = async () => {
     if (!organizationId) return;
 
@@ -291,9 +312,7 @@ export default function OrganizationPage() {
                 </div>
                 <Switch
                   checked={formData.auto_save_contacts}
-                  onCheckedChange={(checked) =>
-                    setFormData((prev) => ({ ...prev, auto_save_contacts: checked }))
-                  }
+                  onCheckedChange={handleAutoSaveToggle}
                   className="rounded-full"
                 />
               </div>
