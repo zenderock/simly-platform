@@ -3,6 +3,8 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { IconMail, IconArrowLeft, IconCheck } from "@tabler/icons-react";
+import api from "@/lib/api";
+import { getErrorMessage } from "@/lib/utils";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -16,20 +18,10 @@ export default function ForgotPasswordPage() {
     setError(null);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/auth/forgot-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Something went wrong");
-      }
-
+      await api.post("/auth/forgot-password", { email });
       setSuccess(true);
     } catch (err: any) {
-      setError(err.message);
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -101,7 +93,7 @@ export default function ForgotPasswordPage() {
           <button
             type="submit"
             disabled={loading}
-            className="inline-flex items-center justify-center rounded-xl text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 disabled:pointer-events-none disabled:opacity-50 bg-violet-600 text-white hover:bg-violet-700 h-11 px-8 w-full shadow-lg shadow-violet-500/20"
+            className="inline-flex items-center justify-center rounded-xl text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500 disabled:pointer-events-none disabled:opacity-50 bg-violet-600 text-white hover:bg-violet-700 h-11 px-8 w-full hover:shadow-lg shadow-violet-500/20"
           >
             {loading ? (
               <div className="h-5 w-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
