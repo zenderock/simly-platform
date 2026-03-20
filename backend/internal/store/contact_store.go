@@ -29,6 +29,27 @@ func (s *Store) CreateContact(ctx context.Context, c *model.Contact) error {
 	return nil
 }
 
+func (s *Store) AutoSaveContact(ctx context.Context, c *model.Contact) error {
+	query := `
+		INSERT INTO contacts (organization_id, application_id, first_name, last_name, phone_number, email, tags, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, NOW(), NOW())
+		ON CONFLICT (organization_id, phone_number) DO NOTHING
+	`
+	_, err := s.db.Exec(ctx, query,
+		c.OrganizationID,
+		c.ApplicationID,
+		c.FirstName,
+		c.LastName,
+		c.PhoneNumber,
+		c.Email,
+		c.Tags,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to auto-save contact: %w", err)
+	}
+	return nil
+}
+
 func (s *Store) GetContactsByOrganizationID(ctx context.Context, orgID int) ([]model.Contact, error) {
 	query := `
 		SELECT id, organization_id, application_id, first_name, last_name, phone_number, email, tags, created_at, updated_at

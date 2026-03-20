@@ -74,7 +74,7 @@ export default function OrganizationPage() {
         .get("/organizations/current")
         .then((res) => {
           setOrganization(res.data);
-          setFormData({ 
+          setFormData({
             name: res.data.name,
             auto_save_contacts: res.data.auto_save_contacts || false
           });
@@ -86,7 +86,7 @@ export default function OrganizationPage() {
           );
           if (activeOrg) {
             setOrganization(activeOrg);
-            setFormData({ 
+            setFormData({
               name: activeOrg.name,
               auto_save_contacts: activeOrg.auto_save_contacts || false
             });
@@ -217,8 +217,6 @@ export default function OrganizationPage() {
 
   return (
     <div className="min-h-screen pb-24">
-      {/* Structural Top Border */}
-      <div className="h-[2px] w-full bg-foreground" />
 
       <div className="p-6 md:p-12 max-w-[1600px] mx-auto space-y-16">
 

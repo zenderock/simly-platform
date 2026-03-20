@@ -320,23 +320,23 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 	// 3.5. Auto Save Contacts if enabled
 	if org.AutoSaveContacts {
 		contact := model.Contact{
-			FirstName:   "New",
-			LastName:    "Contact",
-			PhoneNumber: req.To,
-			Email:       "",
-			Tags:        []string{"auto-saved"},
+			OrganizationID: orgID,
+			FirstName:      "New",
+			LastName:       "Contact",
+			PhoneNumber:    req.To,
+			Email:          "",
+			Tags:           []string{"auto-saved"},
 		}
-		appID := 0
 		if req.ApplicationID != nil {
-			appID = *req.ApplicationID
+			contact.ApplicationID = req.ApplicationID
 		}
 
-		go func(oID, aID int, c model.Contact) {
-			_, err := s.store.BulkCreateContacts(context.Background(), oID, aID, []model.Contact{c})
+		go func(c model.Contact) {
+			err := s.store.AutoSaveContact(context.Background(), &c)
 			if err != nil {
 				log.Printf("Warning: failed to auto-save contact %s: %v", c.PhoneNumber, err)
 			}
-		}(orgID, appID, contact)
+		}(contact)
 	}
 
 	// 4. Enqueue to Asynq (Redis)
