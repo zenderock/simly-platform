@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { IconLock, IconArrowLeft, IconCheck, IconEye, IconEyeOff } from "@tabler/icons-react";
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get("token");
@@ -195,7 +195,18 @@ export default function ResetPasswordPage() {
           </div>
         </form>
       )}
-
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <React.Suspense fallback={
+      <div className="flex items-center justify-center p-8">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-slate-300 border-t-violet-600" />
+      </div>
+    }>
+      <ResetPasswordContent />
+    </React.Suspense>
   );
 }

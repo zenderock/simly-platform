@@ -12,7 +12,7 @@ import { getErrorMessage } from "@/lib/utils";
 
 import { Turnstile } from "@marsidev/react-turnstile";
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const resetSuccess = searchParams.get("reset") === "success";
@@ -75,7 +75,6 @@ export default function LoginPage() {
           </div>
         )}
         {error && (
-
           <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-4 text-sm text-destructive">
             {error}
           </div>
@@ -165,3 +164,16 @@ export default function LoginPage() {
     </div>
   );
 }
+
+export default function LoginPage() {
+  return (
+    <React.Suspense fallback={
+      <div className="flex items-center justify-center p-8">
+        <LoaderQuater className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    }>
+      <LoginContent />
+    </React.Suspense>
+  );
+}
+
