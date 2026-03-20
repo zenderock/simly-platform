@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { IconLock, IconArrowLeft, IconCheck, IconEye, IconEyeOff } from "@tabler/icons-react";
+import api from "@/lib/api";
+import { getErrorMessage } from "@/lib/utils";
 
 function ResetPasswordContent() {
   const searchParams = useSearchParams();
@@ -39,23 +41,14 @@ function ResetPasswordContent() {
     setError(null);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ""}/api/auth/reset-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, password }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Something went wrong");
-      }
+      await api.post("/auth/reset-password", { token, password });
 
       setSuccess(true);
       setTimeout(() => {
         router.push("/login?reset=success");
       }, 3000);
     } catch (err: any) {
-      setError(err.message);
+      setError(getErrorMessage(err));
     } finally {
       setLoading(false);
     }
