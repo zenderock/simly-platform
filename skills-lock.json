@@ -1,6 +1,11 @@
 {
   "version": 1,
   "skills": {
+    "flutter-interoperating-with-native-apis": {
+      "source": "flutter/skills",
+      "sourceType": "github",
+      "computedHash": "ca59ba313f0e0dffa5ab7622cf308af641e9450ebb6adf26ce91569d42315bf5"
+    },
     "frontend-design": {
       "source": "anthropics/skills",
       "sourceType": "github",

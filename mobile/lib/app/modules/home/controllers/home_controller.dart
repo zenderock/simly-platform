@@ -5,14 +5,14 @@ import 'package:get/get.dart';
 import 'package:mobile/app/data/providers/api_provider.dart';
 import 'package:mobile/app/data/services/auth_service.dart';
 import 'package:mobile/app/data/services/settings_service.dart';
+import 'package:mobile/app/data/pigeon/sms_gateway.g.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_signal_strength/flutter_signal_strength.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
 
 class HomeController extends GetxController {
-  static const _channel = MethodChannel('com.simly.gateway/sms');
+  final _smsApi = SmsGatewayHostApi();
 
   final _apiProvider = ApiClient();
   final _authService = Get.find<AuthService>();
@@ -70,90 +70,6 @@ class HomeController extends GetxController {
       lastPushReceivedAt.value = DateTime.now();
       notificationMode.value = "Push (FCM)";
     });
-
-    // Listen for SMS send requests from background service
-    FlutterBackgroundService().on('sendSms').listen((event) async {
-      if (event != null) {
-        await _handleSendSms(event);
-      }
-    });
-  }
-
-  Future<void> _handleSendSms(Map<String, dynamic> event) async {
-    final String to = event['to'];
-    final String body = event['body'];
-    final int msgId = event['msgId'];
-    final int? simSlot = event['simSlot'];
-
-    debugPrint("=== SENDING SMS ===");
-    debugPrint("To: $to, MsgId: $msgId, SimSlot: $simSlot");
-
-    try {
-      await _channel.invokeMethod('sendSms', {
-        'phoneNumber': to,
-        'message': body,
-        'simSlot': simSlot,
-      });
-
-      debugPrint("SMS sent successfully to $to");
-
-      logs.insert(0, {
-        'to': to,
-        'status': 'sent',
-        'time': DateTime.now().toIso8601String(),
-      });
-      if (logs.length > 50) logs.removeLast();
-
-      // Update status on backend
-      try {
-        debugPrint("Updating message $msgId status to 'sent'");
-        await _apiProvider.post('messages/$msgId/status', {'status': 'sent'});
-        debugPrint("Message $msgId status updated successfully");
-      } catch (e) {
-        debugPrint("Failed to update message status: $e");
-      }
-    } on PlatformException catch (e) {
-      debugPrint("SMS failed with PlatformException: ${e.code} - ${e.message}");
-
-      logs.insert(0, {
-        'to': to,
-        'status': 'failed (${e.code})',
-        'time': DateTime.now().toIso8601String(),
-      });
-      if (logs.length > 50) logs.removeLast();
-
-      try {
-        debugPrint("Updating message $msgId status to 'failed'");
-        await _apiProvider.post('messages/$msgId/status', {
-          'status': 'failed',
-          'error_code': e.code,
-          'error_message': e.message,
-        });
-        debugPrint("Message $msgId failure status updated");
-      } catch (e) {
-        debugPrint("Failed to update message status: $e");
-      }
-    } catch (e) {
-      debugPrint("SMS failed with error: $e");
-
-      logs.insert(0, {
-        'to': to,
-        'status': 'error',
-        'time': DateTime.now().toIso8601String(),
-      });
-      if (logs.length > 50) logs.removeLast();
-
-      try {
-        debugPrint("Updating message $msgId status to 'failed'");
-        await _apiProvider.post('messages/$msgId/status', {
-          'status': 'failed',
-          'error_message': e.toString(),
-        });
-        debugPrint("Message $msgId failure status updated");
-      } catch (e) {
-        debugPrint("Failed to update message status: $e");
-      }
-    }
   }
 
   Future<void> _checkServiceStatus() async {
@@ -212,7 +128,7 @@ class HomeController extends GetxController {
       debugPrint("Error getting initial signal strength: $e");
     }
 
-    // Get SIM cards info
+    // Get SIM cards info via Pigeon
     await _updateSimCards();
 
     // Start heartbeats AFTER initial data is loaded
@@ -238,13 +154,18 @@ class HomeController extends GetxController {
 
   Future<void> _updateSimCards() async {
     try {
-      final result = await _channel.invokeMethod('getSimCards');
-      if (result is List) {
-        simCards.value = List<Map<String, dynamic>>.from(
-          result.map((e) => Map<String, dynamic>.from(e as Map)),
-        );
-        debugPrint("Updated SIM cards: ${simCards.length} found");
-      }
+      final result = await _smsApi.getSimCards();
+      simCards.value = result
+          .map(
+            (sim) => {
+              'slot_index': sim.slotIndex,
+              'phone_number': sim.phoneNumber,
+              'operator': sim.operator_,
+              'is_active': sim.isActive,
+            },
+          )
+          .toList();
+      debugPrint("Updated SIM cards: ${simCards.length} found");
     } catch (e) {
       debugPrint("Failed to get SIM cards: $e");
     }
