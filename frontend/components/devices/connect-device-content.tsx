@@ -42,7 +42,7 @@ export function ConnectDeviceContent({
   const [downloadUrl, setDownloadUrl] = useState("");
 
   useEffect(() => {
-    setDownloadUrl(`${window.location.origin}/releases/simly-gateway-v1.apk`);
+    setDownloadUrl(`${window.location.origin}/download`);
   }, []);
 
   // Poll for token status
@@ -104,7 +104,7 @@ export function ConnectDeviceContent({
 
   const handleDownload = () => {
     localStorage.setItem("simly_app_downloaded", "true");
-    window.location.href = "/releases/simly-gateway-v1.apk";
+    window.location.href = "/download";
     setStep(2);
   };
 

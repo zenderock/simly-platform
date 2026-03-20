@@ -3,6 +3,14 @@
 import Link from "next/link";
 import { ArrowRight, Download, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Header } from "@/components/landing/header";
 import { Footer } from "@/components/landing/footer";
 
@@ -83,18 +91,36 @@ export default function DownloadPage() {
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <a
-              href="/releases/simly-gateway-v1.apk"
-              className="w-full sm:w-auto"
-            >
-              <Button
-                size="lg"
-                className="w-full sm:min-w-[200px] bg-[#8c52ff] hover:bg-[#5b32d1] text-white gap-2 h-14 text-sm uppercase tracking-wide font-medium rounded-sm"
-              >
-                <Download className="w-4 h-4" />
-                Download APK (v1.0)
-              </Button>
-            </a>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="lg"
+                  className="w-full sm:min-w-[200px] bg-[#8c52ff] hover:bg-[#5b32d1] text-white gap-2 h-14 text-sm uppercase tracking-wide font-medium rounded-sm"
+                >
+                  <Download className="w-4 h-4" />
+                  Download APK
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56 bg-[#15191E] border-white/10 text-white">
+                <DropdownMenuLabel className="text-white/70 font-normal">Version 2.0 (Latest)</DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-white/10" />
+                <DropdownMenuItem asChild className="focus:bg-[#8c52ff]/20 focus:text-white cursor-pointer hover:bg-[#8c52ff]/20">
+                  <a href="/releases/v2/app-arm64-v8a-release.apk">ARM64 (Modern Devices)</a>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="focus:bg-[#8c52ff]/20 focus:text-white cursor-pointer hover:bg-[#8c52ff]/20">
+                  <a href="/releases/v2/app-armeabi-v7a-release.apk">ARMv7 (Older Devices)</a>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="focus:bg-[#8c52ff]/20 focus:text-white cursor-pointer hover:bg-[#8c52ff]/20">
+                  <a href="/releases/v2/app-x86_64-release.apk">x86_64 (Emulators)</a>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-white/10" />
+                <DropdownMenuLabel className="text-white/70 font-normal">Version 1.0 (Stable)</DropdownMenuLabel>
+                <DropdownMenuSeparator className="bg-white/10" />
+                <DropdownMenuItem asChild className="focus:bg-[#8c52ff]/20 focus:text-white cursor-pointer hover:bg-[#8c52ff]/20">
+                  <a href="/releases/simly-gateway-v1.apk">Universal APK</a>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Link href="/register" className="w-full sm:w-auto">
               <Button
                 variant="outline"
