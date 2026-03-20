@@ -84,3 +84,50 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
 }
+
+func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
+	var req model.ForgotPasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		RespondWithError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if req.Email == "" {
+		RespondWithError(w, http.StatusBadRequest, "Email is required")
+		return
+	}
+
+	// We don't verify Turnstile here yet to keep it simple, but we could
+	err := h.service.ForgotPassword(r.Context(), req.Email)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Failed to send reset email")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"message": "If an account exists, a reset link has been sent."})
+}
+
+func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
+	var req model.ResetPasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		RespondWithError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	if req.Token == "" || req.Password == "" {
+		RespondWithError(w, http.StatusBadRequest, "Token and password are required")
+		return
+	}
+
+	err := h.service.ResetPassword(r.Context(), req.Token, req.Password)
+	if err != nil {
+		RespondWithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"message": "Your password has been reset successfully."})
+}
+
+

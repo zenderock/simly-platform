@@ -104,7 +104,7 @@ func (s *Server) setupRoutes() {
 	apiKeyService := core.NewAPIKeyService(s.DB)
 	apiKeyService.SetApplicationService(appService) // Enable sandbox detection for API key creation
 	webhookService := core.NewWebhookService(s.DB)
-	authUserService := core.NewUserService(s.DB, orgService, appService, string(jwtSecret))
+	authUserService := core.NewUserService(s.DB, orgService, appService, emailProvider, string(jwtSecret), s.Config.FrontendURL)
 	userProfileService := core.NewUserProfileService(s.DB)
 	deviceService := core.NewDeviceService(s.DB, alertService, s.Config.JWTSecret)
 	rateLimitService := core.NewRateLimitService(s.DB)
@@ -230,6 +230,8 @@ func (s *Server) setupRoutes() {
 	r.Route("/api/auth", func(r chi.Router) {
 		r.Post("/register", authHandler.Register)
 		r.Post("/login", authHandler.Login)
+		r.Post("/forgot-password", authHandler.ForgotPassword)
+		r.Post("/reset-password", authHandler.ResetPassword)
 	})
 
 	// Public device linking endpoint (for mobile app)

@@ -125,3 +125,51 @@ func (s *Store) UpdateUserPassword(ctx context.Context, userID int, passwordHash
 	}
 	return nil
 }
+
+func (s *Store) SetUserResetToken(ctx context.Context, userID int, token string, expiresAt interface{}) error {
+	query := `
+		UPDATE users 
+		SET password_reset_token = $1, password_reset_expires_at = $2, updated_at = NOW()
+		WHERE id = $3
+	`
+	_, err := s.db.Exec(ctx, query, token, expiresAt, userID)
+	return err
+}
+
+func (s *Store) GetUserByResetToken(ctx context.Context, token string) (*model.User, error) {
+	query := `
+		SELECT id, email, password_hash, name, avatar_url, password_reset_token, password_reset_expires_at, created_at, updated_at
+		FROM users
+		WHERE password_reset_token = $1
+	`
+	user := &model.User{}
+	err := s.db.QueryRow(ctx, query, token).Scan(
+		&user.ID,
+		&user.Email,
+		&user.PasswordHash,
+		&user.Name,
+		&user.AvatarURL,
+		&user.PasswordResetToken,
+		&user.PasswordResetExpiresAt,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("invalid or expired token")
+		}
+		return nil, err
+	}
+	return user, nil
+}
+
+func (s *Store) ClearUserResetToken(ctx context.Context, userID int) error {
+	query := `
+		UPDATE users 
+		SET password_reset_token = NULL, password_reset_expires_at = NULL, updated_at = NOW()
+		WHERE id = $1
+	`
+	_, err := s.db.Exec(ctx, query, userID)
+	return err
+}
+

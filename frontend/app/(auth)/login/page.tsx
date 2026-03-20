@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import api from "@/lib/api";
@@ -14,6 +14,8 @@ import { Turnstile } from "@marsidev/react-turnstile";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const resetSuccess = searchParams.get("reset") === "success";
   const setAuth = useAuth((state) => state.setAuth);
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState("");
@@ -67,7 +69,13 @@ export default function LoginPage() {
         </p>
       </div>
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
+        {resetSuccess && (
+          <div className="rounded-lg bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/50 p-4 text-sm text-emerald-600 dark:text-emerald-400">
+            Your password has been reset successfully. Please sign in with your new password.
+          </div>
+        )}
         {error && (
+
           <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-4 text-sm text-destructive">
             {error}
           </div>
@@ -98,7 +106,7 @@ export default function LoginPage() {
               Password
             </label>
             <Link
-              href="#"
+              href="/forgot-password"
               className="text-sm text-muted-foreground hover:text-primary transition-colors"
             >
               Forgot password?
