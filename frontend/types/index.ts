@@ -12,6 +12,7 @@ export interface Organization {
   max_contacts: number;
   max_campaigns: number;
   max_recipients_per_campaign: number;
+  auto_save_contacts?: boolean;
   created_at: string;
 }
 

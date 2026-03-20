@@ -9,6 +9,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { PostHogProvider } from "@/components/providers/posthog-provider";
 import SuspendedPostHogPageView from "@/components/providers/posthog-pageview";
 
+
 const poppinsSans = Poppins({
   variable: "--font-sans",
   subsets: ["latin"],

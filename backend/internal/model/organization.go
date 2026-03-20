@@ -16,6 +16,7 @@ type Organization struct {
 	MaxContacts              int `json:"max_contacts"`
 	MaxCampaigns             int `json:"max_campaigns"`
 	MaxRecipientsPerCampaign int `json:"max_recipients_per_campaign"`
+	AutoSaveContacts         bool `json:"auto_save_contacts"`
 	// Billing fields
 	StripeCustomerID       *string    `json:"stripe_customer_id,omitempty"`
 	StripeSubscriptionID   *string    `json:"stripe_subscription_id,omitempty"`

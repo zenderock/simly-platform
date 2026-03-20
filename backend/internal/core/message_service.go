@@ -317,6 +317,28 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 		return nil, err
 	}
 
+	// 3.5. Auto Save Contacts if enabled
+	if org.AutoSaveContacts {
+		contact := model.Contact{
+			FirstName:   "New",
+			LastName:    "Contact",
+			PhoneNumber: req.To,
+			Email:       "",
+			Tags:        []string{"auto-saved"},
+		}
+		appID := 0
+		if req.ApplicationID != nil {
+			appID = *req.ApplicationID
+		}
+
+		go func(oID, aID int, c model.Contact) {
+			_, err := s.store.BulkCreateContacts(context.Background(), oID, aID, []model.Contact{c})
+			if err != nil {
+				log.Printf("Warning: failed to auto-save contact %s: %v", c.PhoneNumber, err)
+			}
+		}(orgID, appID, contact)
+	}
+
 	// 4. Enqueue to Asynq (Redis)
 	if s.taskClient != nil {
 		if err := s.EnqueueSMSDelivery(ctx, msg); err != nil {
