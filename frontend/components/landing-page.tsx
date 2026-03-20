@@ -1085,9 +1085,9 @@ const ContactSection: React.FC = () => {
       title: "Download App",
       description:
         "Start by installing our gateway on your Android phone. 2-minute setup via QR Code.",
-      buttonText: "Download .APK",
+      buttonText: "Download app",
       features: ["Android 8.0+", "Background Service"],
-      link: "/releases/simly-gateway-v1.apk",
+      link: "/download",
       footerText:
         "Not on Play Store (Google restrictions) - Safe and signed file",
     },
