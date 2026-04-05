@@ -1,10 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import dynamic from "next/dynamic";
-
-const Prism = dynamic(() => import("@/components/Prism"), {
-  ssr: false,
-});
+import Prism from "@/components/Prism";
 
 export default function AuthLayout({
   children,
