@@ -50,7 +50,7 @@ export default function DevelopersPage() {
         );
         return {
           appId: app.id,
-          keys: res.data || [],
+          keys: Array.isArray(res.data) ? res.data : [],
           isSandbox: app.is_sandbox,
         };
       },
@@ -64,7 +64,7 @@ export default function DevelopersPage() {
   // Flatten all keys with their sandbox status
   const allKeys: (APIKey & { isSandbox: boolean })[] = [];
   keysQueries.forEach((q) => {
-    if (q.data) {
+    if (q.data && Array.isArray(q.data.keys)) {
       q.data.keys.forEach((key) => {
         allKeys.push({ ...key, isSandbox: q.data.isSandbox });
       });

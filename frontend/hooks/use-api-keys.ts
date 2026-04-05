@@ -9,12 +9,16 @@ export const apiKeyKeys = {
   byApp: (appId: number) => [...apiKeyKeys.all, "app", appId] as const,
 };
 
+function normalizeApiKeysResponse(data: unknown): APIKey[] {
+  return Array.isArray(data) ? data : [];
+}
+
 export function useApiKeysByApp(appId: number) {
   return useQuery({
     queryKey: apiKeyKeys.byApp(appId),
     queryFn: async () => {
       const res = await api.get<APIKey[]>(`/api-keys?application_id=${appId}`);
-      return res.data || [];
+      return normalizeApiKeysResponse(res.data);
     },
     enabled: !!appId,
     staleTime: 60000, 

@@ -41,7 +41,7 @@ export function APIKeysContent() {
       const res = await api.get<APIKey[]>(
         `/api-keys?application_id=${activeAppId}`
       );
-      return res.data || [];
+      return Array.isArray(res.data) ? res.data : [];
     },
     enabled: !!activeAppId,
     staleTime: 60000,
