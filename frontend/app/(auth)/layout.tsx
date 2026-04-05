@@ -1,6 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
-import Prism from "@/components/Prism";
+import dynamic from "next/dynamic";
+
+const Prism = dynamic(() => import("@/components/Prism"), {
+  ssr: false,
+});
 
 export default function AuthLayout({
   children,
@@ -32,7 +36,8 @@ export default function AuthLayout({
           <div className="w-full max-w-sm">{children}</div>
         </div>
       </div>
-      <div className="relative hidden bg-black lg:block">
+      <div className="relative hidden overflow-hidden bg-black lg:block">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.12),_transparent_38%),linear-gradient(160deg,_#050816_0%,_#090f25_45%,_#000000_100%)]" />
         <div style={{ width: "100%", height: "100dvh", position: "relative" }}>
           <Prism
             animationType="3drotate"

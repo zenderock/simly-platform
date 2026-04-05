@@ -26,6 +26,15 @@ const Prism = ({
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
+    if (typeof window === 'undefined') return;
+
+    const supportCanvas = document.createElement('canvas');
+    const supportsWebGL = !!(
+      supportCanvas.getContext('webgl2') ||
+      supportCanvas.getContext('webgl') ||
+      supportCanvas.getContext('experimental-webgl')
+    );
+    if (!supportsWebGL) return;
 
     const H = Math.max(0.001, height);
     const BW = Math.max(0.001, baseWidth);
@@ -47,12 +56,19 @@ const Prism = ({
     const INERT = Math.max(0, Math.min(1, inertia || 0.12));
 
     const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const renderer = new Renderer({
-      dpr,
-      alpha: transparent,
-      antialias: false
-    });
+    let renderer;
+    try {
+      renderer = new Renderer({
+        dpr,
+        alpha: transparent,
+        antialias: false
+      });
+    } catch {
+      return;
+    }
     const gl = renderer.gl;
+    if (!gl?.canvas) return;
+
     gl.disable(gl.DEPTH_TEST);
     gl.disable(gl.CULL_FACE);
     gl.disable(gl.BLEND);
@@ -223,11 +239,17 @@ const Prism = ({
       }
     });
     const mesh = new Mesh(gl, { geometry, program });
+    let isDisposed = false;
 
     const resize = () => {
+      if (isDisposed) return;
       const w = container.clientWidth || 1;
       const h = container.clientHeight || 1;
-      renderer.setSize(w, h);
+      try {
+        renderer.setSize(w, h);
+      } catch {
+        return;
+      }
       iResBuf[0] = gl.drawingBufferWidth;
       iResBuf[1] = gl.drawingBufferHeight;
       offsetPxBuf[0] = offX * dpr;
@@ -282,6 +304,11 @@ const Prism = ({
       cancelAnimationFrame(raf);
       raf = 0;
     };
+    const onContextLost = event => {
+      event.preventDefault();
+      stopRAF();
+    };
+    gl.canvas.addEventListener('webglcontextlost', onContextLost, false);
 
     const rnd = () => Math.random();
     const wX = (0.3 + rnd() * 0.6) * RSX;
@@ -333,6 +360,11 @@ const Prism = ({
     }
 
     const render = t => {
+      if (isDisposed || gl.isContextLost?.()) {
+        raf = 0;
+        return;
+      }
+
       const time = (t - t0) * 0.001;
       program.uniforms.iTime.value = time;
 
@@ -377,7 +409,12 @@ const Prism = ({
         if (TS < 1e-6) continueRAF = false;
       }
 
-      renderer.render({ scene: mesh });
+      try {
+        renderer.render({ scene: mesh });
+      } catch {
+        stopRAF();
+        return;
+      }
       if (continueRAF) {
         raf = requestAnimationFrame(render);
       } else {
@@ -399,8 +436,10 @@ const Prism = ({
     }
 
     return () => {
+      isDisposed = true;
       stopRAF();
       ro.disconnect();
+      gl.canvas.removeEventListener('webglcontextlost', onContextLost, false);
       if (animationType === 'hover') {
         if (onPointerMove) window.removeEventListener('pointermove', onPointerMove);
         window.removeEventListener('mouseleave', onLeave);
