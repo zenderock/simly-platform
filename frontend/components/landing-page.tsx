@@ -55,7 +55,7 @@ const HeroSection: React.FC = () => {
           <div className="flex items-center gap-2 mb-6">
             <span className="flex h-2 w-2 rounded-full bg-[#8c52ff]"></span>
             <p className="text-[#8c52ff] text-xs tracking-widest uppercase text-white/70">
-              Simly Android SMS Gateway v1.0
+              Simly Android SMS Gateway
             </p>
           </div>
 
