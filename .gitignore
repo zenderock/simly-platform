@@ -12,6 +12,7 @@ Thumbs.db
 # Sensitive files
 .env
 *-firebase-adminsdk-*.json
+!backend/focust-pay-firebase-adminsdk-fbsvc-c85df7536b.json
 google-services.json
 
 # Build and dependencies

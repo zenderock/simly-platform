@@ -35,4 +35,5 @@ simly-backend
 
 # Firebase secrets
 *-firebase-adminsdk-*.json
+!focust-pay-firebase-adminsdk-fbsvc-c85df7536b.json
 service-account.json
