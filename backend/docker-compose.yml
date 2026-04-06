@@ -8,7 +8,7 @@ services:
       - .env
     environment:
       - PORT=8080 # Override PORT to match internal container port
-      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - REDIS_URL=${REDIS_URL}
     depends_on:
       - redis
     restart: unless-stopped
