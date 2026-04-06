@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"time"
 
@@ -122,6 +121,13 @@ func (s *SchedulerService) monitorProcessingCampaigns(ctx context.Context) {
 	}
 }
 
-func scheduledLaunchFailureReason(at time.Time, err error) string {
-	return fmt.Sprintf("Scheduled launch attempt failed at %s: %s", at.Format(time.RFC3339), err.Error())
+func scheduledLaunchFailureReason(_ time.Time, err error) string {
+	switch err.Error() {
+	case "no eligible devices found (check if devices are online)":
+		return "No eligible devices online"
+	case "missing device: either specify a device or enable use_all_devices":
+		return "Select a device or enable all devices"
+	default:
+		return err.Error()
+	}
 }

@@ -8,6 +8,8 @@ import (
 	"github.com/zenderock/simly-backend/internal/model"
 )
 
+const maxCampaignPauseReasonLength = 50
+
 func (s *Store) CreateCampaign(ctx context.Context, c *model.Campaign) error {
 	query := `
 		INSERT INTO campaigns (organization_id, application_id, name, template_body, list_id, device_id, sim_slot, status, scheduled_at, send_window_start, send_window_end, use_all_devices, auto_reschedule, created_at, updated_at)
@@ -443,11 +445,25 @@ func (s *Store) GetCampaignAnalytics(ctx context.Context, campaignID int) (*mode
 func (s *Store) UpdateCampaignPauseReason(ctx context.Context, campaignID int, reason string) error {
 	var pauseReason *string
 	if reason != "" {
-		pauseReason = &reason
+		trimmed := truncateRunes(reason, maxCampaignPauseReasonLength)
+		pauseReason = &trimmed
 	}
 	query := `UPDATE campaigns SET pause_reason = $1, updated_at = NOW() WHERE id = $2`
 	_, err := s.db.Exec(ctx, query, pauseReason, campaignID)
 	return err
+}
+
+func truncateRunes(value string, max int) string {
+	if max <= 0 {
+		return ""
+	}
+
+	runes := []rune(value)
+	if len(runes) <= max {
+		return value
+	}
+
+	return string(runes[:max])
 }
 
 // UpdateCampaignEstimatedCompletion updates the estimated completion time for a campaign
