@@ -180,7 +180,6 @@ func (s *Server) setupRoutes() {
 
 	// Storage Service
 	var storageService core.StorageService
-	var err error
 	if s.Config.R2AccountID != "" {
 		storageService, err = core.NewR2StorageService(s.Config)
 		if err != nil {
