@@ -47,6 +47,7 @@ import {
   IconAlertCircle,
   IconSend,
   IconRocket,
+  IconSunHigh,
 } from "@tabler/icons-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -589,6 +590,16 @@ export default function CampaignDetailsPage() {
                         : "Instant Blast"
                     }
                     icon={<IconClock className="size-4" />}
+                  />
+                  <MetaItem
+                    label="Send Window (UTC)"
+                    value={
+                      campaign.send_window_start != null &&
+                      campaign.send_window_end != null
+                        ? `${String(campaign.send_window_start).padStart(2, "0")}:00 → ${String(campaign.send_window_end).padStart(2, "0")}:00`
+                        : "Organization default"
+                    }
+                    icon={<IconSunHigh className="size-4" />}
                   />
                 </div>
               </CardContent>

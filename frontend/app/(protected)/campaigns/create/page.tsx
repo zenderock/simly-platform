@@ -75,6 +75,8 @@ const schema = z.object({
   sim_slot: z.string().optional(),
   scheduled_at: z.string().optional(),
   auto_reschedule: z.boolean().optional(),
+  send_window_start: z.string().optional(),
+  send_window_end: z.string().optional(),
 });
 
 type FormData = z.input<typeof schema>;
@@ -98,6 +100,8 @@ export default function CreateCampaignPage() {
       sim_slot: "auto",
       scheduled_at: "",
       auto_reschedule: false,
+      send_window_start: "org",
+      send_window_end: "org",
     },
     mode: "onChange",
   });
@@ -193,6 +197,15 @@ export default function CreateCampaignPage() {
 
     const isAutoDevice = data.device_id === 0;
 
+    const sendWindowStart =
+      data.send_window_start && data.send_window_start !== "org"
+        ? parseInt(data.send_window_start)
+        : null;
+    const sendWindowEnd =
+      data.send_window_end && data.send_window_end !== "org"
+        ? parseInt(data.send_window_end)
+        : null;
+
     createMutation.mutate({
       name: data.name,
       template_body: data.template_body,
@@ -204,6 +217,8 @@ export default function CreateCampaignPage() {
       scheduled_at: formattedScheduledAt,
       auto_launch: isLaunchingRef.current && !formattedScheduledAt,
       auto_reschedule: data.auto_reschedule,
+      send_window_start: sendWindowStart,
+      send_window_end: sendWindowEnd,
     });
   };
 
@@ -569,6 +584,73 @@ export default function CreateCampaignPage() {
                             )}
                           />
                         </div>
+
+                        {/* Send Window */}
+                        <div className="rounded-lg border p-4 shadow-sm space-y-3">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base">Send Window</FormLabel>
+                            <FormDescription className="text-xs max-w-[360px]">
+                              Restrict sending to specific hours (UTC). Leave on
+                              "Organization default" to use your global settings.
+                            </FormDescription>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <FormField
+                              control={form.control}
+                              name="send_window_start"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="text-xs text-muted-foreground">From (hour)</FormLabel>
+                                  <Select
+                                    onValueChange={field.onChange}
+                                    value={field.value}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Org default" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="org">Organization default</SelectItem>
+                                      {Array.from({ length: 24 }, (_, i) => (
+                                        <SelectItem key={i} value={String(i)}>
+                                          {String(i).padStart(2, "0")}:00
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={form.control}
+                              name="send_window_end"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel className="text-xs text-muted-foreground">To (hour)</FormLabel>
+                                  <Select
+                                    onValueChange={field.onChange}
+                                    value={field.value}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Org default" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="org">Organization default</SelectItem>
+                                      {Array.from({ length: 24 }, (_, i) => (
+                                        <SelectItem key={i} value={String(i)}>
+                                          {String(i).padStart(2, "0")}:00
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </CardContent>
@@ -668,6 +750,25 @@ export default function CreateCampaignPage() {
                         Actual time may vary depending on network conditions.
                       </p>
                     </div>
+
+                    {/* Send window summary */}
+                    {(form.getValues("send_window_start") !== "org" || form.getValues("send_window_end") !== "org") && (
+                      <div className="p-4 border rounded-md bg-muted/50 flex items-center gap-3">
+                        <IconClock2 className="size-4 text-muted-foreground shrink-0" />
+                        <div>
+                          <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-0.5">Send Window (UTC)</p>
+                          <p className="text-sm font-semibold">
+                            {form.getValues("send_window_start") !== "org"
+                              ? `${String(form.getValues("send_window_start")).padStart(2, "0")}:00`
+                              : "Org default"}{" "}
+                            →{" "}
+                            {form.getValues("send_window_end") !== "org"
+                              ? `${String(form.getValues("send_window_end")).padStart(2, "0")}:00`
+                              : "Org default"}
+                          </p>
+                        </div>
+                      </div>
+                    )}
 
                     {scheduledAt && (
                       <div className="p-4 border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/10 rounded-md">
