@@ -60,7 +60,7 @@ import { useDashboardStore } from "@/store/dashboard-store";
 import { useApplicationStore } from "@/store/application-store";
 import { useMessages } from "@/hooks/use-messages";
 import { useCampaigns } from "@/hooks/use-campaigns";
-import { useRequeueMessages } from "@/hooks/use-requeue-messages";
+import { useRequeueMessages, useRequeueOneMessage } from "@/hooks/use-requeue-messages";
 import { useSearchParams } from "next/navigation";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -104,6 +104,7 @@ export function MessagesTable() {
 
   const { data: campaigns = [] } = useCampaigns(activeAppId);
   const requeue = useRequeueMessages();
+  const requeueOne = useRequeueOneMessage();
 
   const [currentPage, setCurrentPage] = React.useState(1);
   const [pageSize, setPageSize] = React.useState(10);
@@ -939,6 +940,41 @@ export function MessagesTable() {
               )}
             </div>
           </div>
+          {selectedMessage?.status === "queued" && (
+            <DialogFooter>
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5 border-orange-400 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950"
+                disabled={requeueOne.isPending}
+                onClick={() => {
+                  requeueOne.mutate(selectedMessage.id, {
+                    onSuccess: (result) => {
+                      setSelectedMessage(null);
+                      toast({
+                        title: "Message requeued",
+                        description: `Message #${selectedMessage.id} has been re-enqueued.`,
+                      });
+                    },
+                    onError: (err: any) => {
+                      toast({
+                        title: "Requeue failed",
+                        description: err?.response?.data || "An error occurred.",
+                        variant: "destructive",
+                      });
+                    },
+                  });
+                }}
+              >
+                {requeueOne.isPending ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <RotateCcw className="size-3.5" />
+                )}
+                Retry this message
+              </Button>
+            </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
 

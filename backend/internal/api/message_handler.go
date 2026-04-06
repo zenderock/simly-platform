@@ -203,6 +203,32 @@ func (h *MessageHandler) RequeueMessages(w http.ResponseWriter, r *http.Request)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(result)
 }
+// RequeueOne re-enqueues a single message by ID. Only works if status is "queued".
+func (h *MessageHandler) RequeueOne(w http.ResponseWriter, r *http.Request) {
+	msgIDStr := chi.URLParam(r, "id")
+	msgID, err := strconv.Atoi(msgIDStr)
+	if err != nil {
+		http.Error(w, "Invalid message ID", http.StatusBadRequest)
+		return
+	}
+
+	orgID, err := GetActiveOrgID(r, h.orgService)
+	if err != nil {
+		http.Error(w, "Organization required", http.StatusForbidden)
+		return
+	}
+
+	result, err := h.service.RequeueOne(r.Context(), orgID, msgID)
+	if err != nil {
+		log.Printf("[RequeueOne] Error: %v", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result)
+}
+
 func (h *MessageHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 	msgIDStr := chi.URLParam(r, "id")
 	msgID, err := strconv.Atoi(msgIDStr)

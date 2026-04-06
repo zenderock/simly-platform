@@ -670,6 +670,32 @@ func (s *MessageService) GetMessage(ctx context.Context, msgID int) (*model.Mess
 	return s.store.GetMessageByID(ctx, msgID)
 }
 
+// RequeueOne re-enqueues a single message. Returns an error if the message
+// does not belong to orgID or is not in "queued" status.
+func (s *MessageService) RequeueOne(ctx context.Context, orgID int, msgID int) (BulkRequeueResult, error) {
+	msg, err := s.store.GetMessageByID(ctx, msgID)
+	if err != nil {
+		return BulkRequeueResult{}, fmt.Errorf("message not found: %w", err)
+	}
+	if msg.OrganizationID != orgID {
+		return BulkRequeueResult{}, errors.New("message does not belong to your organization")
+	}
+	if msg.Status != model.MessageStatusQueued {
+		return BulkRequeueResult{MatchedCount: 1, RequeuedCount: 0},
+			fmt.Errorf("message status is %q — only \"queued\" messages can be requeued", msg.Status)
+	}
+
+	if err := s.EnqueueSMSDelivery(ctx, msg); err != nil {
+		return BulkRequeueResult{MatchedCount: 1}, fmt.Errorf("failed to enqueue: %w", err)
+	}
+	if err := s.store.TouchMessageUpdatedAt(ctx, msg.ID); err != nil {
+		log.Printf("[RequeueOne] failed to touch message %d: %v", msg.ID, err)
+	}
+
+	log.Printf("[RequeueOne] org=%d message=%d requeued", orgID, msgID)
+	return BulkRequeueResult{MatchedCount: 1, RequeuedCount: 1}, nil
+}
+
 func (s *MessageService) RequeueDeviceMessages(ctx context.Context, deviceID int) error {
 	count, err := s.store.RequeueMessagesByDeviceID(ctx, deviceID)
 	if err != nil {
