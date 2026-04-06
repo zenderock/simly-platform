@@ -24,7 +24,10 @@ type Server struct {
 	DB          *store.Store
 	Router      chi.Router
 	RedisWorker *worker.RedisWorker
-	// Dispatcher is removed in favor of RedisWorker
+	// Dispatcher is a watchdog-only service: it does NOT dispatch messages itself.
+	// It periodically re-enqueues stuck 'queued' messages back into Redis so that
+	// RedisWorker can pick them up. The two services are complementary, not competing.
+	Dispatcher *core.DispatcherService
 }
 
 // PrepareDatabase repairs known-safe dirty migration states and then applies
@@ -63,7 +66,9 @@ func New(cfg *config.Config) (*Server, error) {
 }
 
 func (s *Server) Close() {
-	// Stop worker gracefully
+	if s.Dispatcher != nil {
+		s.Dispatcher.Stop()
+	}
 	if s.RedisWorker != nil {
 		s.RedisWorker.Stop()
 	}
@@ -147,7 +152,7 @@ func (s *Server) setupRoutes() {
 	monitoringService := core.NewMonitoringService(s.DB, alertService, messageService)
 	go monitoringService.Start(context.Background())
 
-	// Initialize Redis Worker (instead of polling DispatcherService)
+	// Initialize Redis Worker — consumes Asynq tasks and drives actual SMS dispatch
 	sendWindowManager := core.NewSendWindowManager(s.DB)
 	redisWorker := worker.NewRedisWorker(
 		redisConnOpt,
@@ -165,6 +170,13 @@ func (s *Server) setupRoutes() {
 			log.Printf("Redis Worker failed to start: %v", err)
 		}
 	}()
+
+	// Start watchdog dispatcher — re-enqueues stuck 'queued' messages every minute
+	watchdogConfig := core.DefaultDispatchConfig()
+	watchdogConfig.TickInterval = 1 * time.Minute
+	dispatcher := core.NewDispatcherService(s.DB, messageService, devicePoolManager, sendWindowManager, alertService, watchdogConfig)
+	s.Dispatcher = dispatcher
+	dispatcher.Start(context.Background())
 
 	// Handlers
 	authHandler := api.NewAuthHandler(authUserService, captchaService, emailValidator)
@@ -301,6 +313,7 @@ func (s *Server) setupRoutes() {
 			r.Get("/", messageHandler.ListMessages)
 			r.Post("/send", messageHandler.SendSMS)
 			r.Post("/inbound", messageHandler.InternalReceiveSMS)
+			r.Post("/requeue", messageHandler.RequeueMessages)
 			r.Post("/{id}/status", messageHandler.UpdateStatus)
 		})
 
