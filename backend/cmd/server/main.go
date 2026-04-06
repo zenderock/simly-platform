@@ -32,6 +32,7 @@ func main() {
 
 	// 1. Configuration
 	cfg := config.Load()
+	log.Printf("Configured server port: %s", cfg.Port)
 
 	// 2. Initialize Server
 	srv, err := server.New(cfg)
@@ -42,7 +43,7 @@ func main() {
 
 	// 3. Start Listener
 	addr := fmt.Sprintf(":%s", cfg.Port)
-	log.Printf("Simly API ready on %s", addr)
+	log.Printf("Simly API listening on %s", addr)
 
 	httpServer := &http.Server{
 		Addr:         addr,

@@ -1,1 +1,1 @@
-ALTER TABLE device_sims ADD COLUMN supported_prefixes TEXT;
+ALTER TABLE device_sims ADD COLUMN IF NOT EXISTS supported_prefixes TEXT;

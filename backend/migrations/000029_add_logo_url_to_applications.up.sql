@@ -1,1 +1,1 @@
-ALTER TABLE applications ADD COLUMN logo_url VARCHAR(255);
+ALTER TABLE applications ADD COLUMN IF NOT EXISTS logo_url VARCHAR(255);

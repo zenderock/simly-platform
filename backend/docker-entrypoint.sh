@@ -8,4 +8,5 @@ else
   echo "DATABASE_URL is not set, skipping migration preflight"
 fi
 
+echo "Starting Simly backend on port ${PORT:-8080}"
 exec ./simly-backend
