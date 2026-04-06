@@ -1,7 +1,7 @@
 package config
 
 import (
-	"fmt"
+	"errors"
 	"log"
 	"os"
 
@@ -26,8 +26,6 @@ type Config struct {
 	FrontendURL            string
 	TurnstileSecret        string
 	RedisURL               string
-	RedisAddr              string
-	RedisPassword          string
 	R2AccountID            string
 	R2AccessKeyID          string
 	R2SecretAccessKey      string
@@ -60,8 +58,6 @@ func Load() *Config {
 		FrontendURL:            getEnv("FRONTEND_URL", "http://localhost:3000"),
 		TurnstileSecret:        getEnv("TURNSTILE_SECRET_KEY", "1x0000000000000000000000000000000AA"),
 		RedisURL:               getEnv("REDIS_URL", ""),
-		RedisAddr:              getEnv("REDIS_ADDR", "localhost:6379"),
-		RedisPassword:          getEnv("REDIS_PASSWORD", ""),
 		R2AccountID:            getEnv("R2_ACCOUNT_ID", ""),
 		R2AccessKeyID:          getEnv("R2_ACCESS_KEY_ID", ""),
 		R2SecretAccessKey:      getEnv("R2_SECRET_ACCESS_KEY", ""),
@@ -80,9 +76,9 @@ func getEnv(key, fallback string) string {
 }
 
 func (c *Config) RedisConnOpt() (asynq.RedisConnOpt, error) {
-	if c.RedisURL != "" {
-		return asynq.ParseRedisURI(c.RedisURL)
+	if c.RedisURL == "" {
+		return nil, errors.New("REDIS_URL is required")
 	}
 
-	return asynq.ParseRedisURI(fmt.Sprintf("redis://:%s@%s/0", c.RedisPassword, c.RedisAddr))
+	return asynq.ParseRedisURI(c.RedisURL)
 }

@@ -63,10 +63,7 @@ func (s *Server) setupRoutes() {
 	redisConnOpt, err := s.Config.RedisConnOpt()
 	if err != nil {
 		log.Printf("Invalid Redis configuration: %v", err)
-		redisConnOpt = asynq.RedisClientOpt{
-			Addr:     s.Config.RedisAddr,
-			Password: s.Config.RedisPassword,
-		}
+		return
 	}
 	// Initialize Asynq Client
 	taskClient := asynq.NewClient(redisConnOpt)
