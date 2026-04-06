@@ -1,10 +1,12 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/zenderock/simly-backend/internal/core"
 )
@@ -27,12 +29,18 @@ func RespondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 // 1. X-Organization-ID Header (Strict check: User must be member)
 // 2. Default: User's first available organization (MVP Fallback)
 func GetActiveOrgID(r *http.Request, orgService *core.OrganizationService) (int, error) {
-	// 0. Check for API Key Context
+	// 0. API Key context — already fully resolved by AuthMiddleware, trust it
 	if id, ok := r.Context().Value(orgIDKey).(int); ok {
 		return id, nil
 	}
 
-	// 1. Check Header
+	userID := GetUserID(r.Context())
+	if userID == 0 {
+		// No authenticated user in context — token invalid or missing
+		return 0, core.ErrNoOrganization
+	}
+
+	// 1. X-Organization-ID header — verify membership with a short timeout
 	orgIDStr := r.Header.Get("X-Organization-ID")
 	if orgIDStr != "" {
 		orgID, err := strconv.Atoi(orgIDStr)
@@ -40,18 +48,18 @@ func GetActiveOrgID(r *http.Request, orgService *core.OrganizationService) (int,
 			return 0, errors.New("invalid organization ID header")
 		}
 
-		// Verify membership
-		userID := GetUserID(r.Context())
-		if _, err := orgService.GetMemberRole(r.Context(), orgID, userID); err != nil {
-			// If error (including not found), deny access
+		dbCtx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+		defer cancel()
+		if _, err := orgService.GetMemberRole(dbCtx, orgID, userID); err != nil {
 			return 0, core.ErrNoOrganization
 		}
 		return orgID, nil
 	}
 
-	// 2. Fallback (MVP behavior)
-	userID := GetUserID(r.Context())
-	orgs, err := orgService.GetUserOrganizations(r.Context(), userID)
+	// 2. Fallback: use the user's first organization
+	dbCtx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+	orgs, err := orgService.GetUserOrganizations(dbCtx, userID)
 	if err != nil || len(orgs) == 0 {
 		return 0, core.ErrNoOrganization
 	}

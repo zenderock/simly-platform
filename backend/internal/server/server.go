@@ -315,6 +315,7 @@ func (s *Server) setupRoutes() {
 			r.Post("/inbound", messageHandler.InternalReceiveSMS)
 			r.Post("/requeue", messageHandler.RequeueMessages)
 			r.Post("/{id}/status", messageHandler.UpdateStatus)
+			r.Post("/{id}/requeue", messageHandler.RequeueOne)
 		})
 
 		// Webhooks

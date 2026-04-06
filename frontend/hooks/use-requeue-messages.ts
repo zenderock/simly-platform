@@ -25,7 +25,21 @@ export function useRequeueMessages() {
       return res.data;
     },
     onSuccess: () => {
-      // Invalidate all message and campaign queries so the table refreshes
+      queryClient.invalidateQueries({ queryKey: messageKeys.all });
+      queryClient.invalidateQueries({ queryKey: campaignKeys.all });
+    },
+  });
+}
+
+export function useRequeueOneMessage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (messageId: number) => {
+      const res = await api.post<RequeueResult>(`/messages/${messageId}/requeue`);
+      return res.data;
+    },
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: messageKeys.all });
       queryClient.invalidateQueries({ queryKey: campaignKeys.all });
     },
