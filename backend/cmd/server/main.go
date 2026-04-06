@@ -15,6 +15,19 @@ import (
 )
 
 func main() {
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "prepare-db":
+			cfg := config.Load()
+			if err := server.PrepareDatabase(cfg); err != nil {
+				log.Fatalf("Database preparation failed: %v", err)
+			}
+			return
+		default:
+			log.Fatalf("unknown command: %s", os.Args[1])
+		}
+	}
+
 	fmt.Println("Simly Backend starting (Production Mode)...")
 
 	// 1. Configuration

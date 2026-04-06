@@ -28,14 +28,19 @@ RUN apk add --no-cache ca-certificates tzdata
 # Copy binary from builder
 COPY --from=builder /app/simly-backend .
 
+# Copy entrypoint
+COPY --from=builder /app/docker-entrypoint.sh .
+
 # Copy migrations for auto-migration startup
 COPY --from=builder /app/migrations ./migrations
 
 # Copy Firebase service account file
 COPY --from=builder /app/*.json ./
 
+RUN chmod +x /app/docker-entrypoint.sh
+
 # Expose port (internal container port)
 EXPOSE 8080
 
-# Run the binary
-CMD ["./simly-backend"]
+# Run database preflight, then start the binary
+ENTRYPOINT ["./docker-entrypoint.sh"]

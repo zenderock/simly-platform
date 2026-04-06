@@ -74,18 +74,9 @@ func (s *Store) ExecTx(ctx context.Context, fn func(*Store) error) error {
 }
 
 func RunMigrations(databaseURL string) error {
-	driver, err := iofs.New(migrations.FS, ".")
+	m, err := newMigrator(databaseURL)
 	if err != nil {
-		return fmt.Errorf("failed to create iofs source: %w", err)
-	}
-
-	m, err := migrate.NewWithSourceInstance(
-		"iofs",
-		driver,
-		databaseURL,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to create migration instance: %w", err)
+		return err
 	}
 	defer m.Close()
 
@@ -98,18 +89,9 @@ func RunMigrations(databaseURL string) error {
 }
 
 func ForceVersion(databaseURL string, version int) error {
-	driver, err := iofs.New(migrations.FS, ".")
+	m, err := newMigrator(databaseURL)
 	if err != nil {
-		return fmt.Errorf("failed to create iofs source: %w", err)
-	}
-
-	m, err := migrate.NewWithSourceInstance(
-		"iofs",
-		driver,
-		databaseURL,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to create migration instance: %w", err)
+		return err
 	}
 	defer m.Close()
 
@@ -118,4 +100,22 @@ func ForceVersion(databaseURL string, version int) error {
 	}
 
 	return nil
+}
+
+func newMigrator(databaseURL string) (*migrate.Migrate, error) {
+	driver, err := iofs.New(migrations.FS, ".")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create iofs source: %w", err)
+	}
+
+	m, err := migrate.NewWithSourceInstance(
+		"iofs",
+		driver,
+		databaseURL,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create migration instance: %w", err)
+	}
+
+	return m, nil
 }

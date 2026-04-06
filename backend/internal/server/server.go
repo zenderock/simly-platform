@@ -27,6 +27,20 @@ type Server struct {
 	// Dispatcher is removed in favor of RedisWorker
 }
 
+// PrepareDatabase repairs known-safe dirty migration states and then applies
+// pending migrations.
+func PrepareDatabase(cfg *config.Config) error {
+	if err := store.PrepareDatabaseForMigrations(cfg.DatabaseURL); err != nil {
+		return err
+	}
+
+	if err := store.RunMigrations(cfg.DatabaseURL); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func New(cfg *config.Config) (*Server, error) {
 	// Database & Migrations
 	db, err := store.New(cfg.DatabaseURL)
@@ -34,7 +48,7 @@ func New(cfg *config.Config) (*Server, error) {
 		return nil, fmt.Errorf("database connection failed: %w", err)
 	}
 
-	if err := store.RunMigrations(cfg.DatabaseURL); err != nil {
+	if err := PrepareDatabase(cfg); err != nil {
 		log.Printf("Migration warning: %v", err)
 	}
 
