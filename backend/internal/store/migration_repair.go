@@ -14,11 +14,17 @@ import (
 type additiveColumnMigration struct {
 	version uint
 	checks  []columnCheck
+	indexes []indexCheck
 }
 
 type columnCheck struct {
 	table   string
 	columns []string
+}
+
+type indexCheck struct {
+	name      string
+	createSQL string
 }
 
 var repairableAdditiveColumnMigrations = map[uint]additiveColumnMigration{
@@ -56,6 +62,30 @@ var repairableAdditiveColumnMigrations = map[uint]additiveColumnMigration{
 		version: 33,
 		checks: []columnCheck{
 			{table: "devices", columns: []string{"daily_limit", "sent_today", "last_reset_date"}},
+		},
+	},
+	35: {
+		version: 35,
+		checks: []columnCheck{
+			{table: "campaigns", columns: []string{"application_id"}},
+			{table: "contacts", columns: []string{"application_id"}},
+			{table: "contact_lists", columns: []string{"application_id"}},
+		},
+		indexes: []indexCheck{
+			{name: "idx_campaigns_application_id", createSQL: "CREATE INDEX IF NOT EXISTS idx_campaigns_application_id ON campaigns(application_id)"},
+			{name: "idx_contacts_application_id", createSQL: "CREATE INDEX IF NOT EXISTS idx_contacts_application_id ON contacts(application_id)"},
+			{name: "idx_contact_lists_application_id", createSQL: "CREATE INDEX IF NOT EXISTS idx_contact_lists_application_id ON contact_lists(application_id)"},
+		},
+	},
+	36: {
+		version: 36,
+		checks: []columnCheck{
+			{table: "devices", columns: []string{"application_id"}},
+			{table: "device_link_tokens", columns: []string{"application_id"}},
+		},
+		indexes: []indexCheck{
+			{name: "idx_devices_application_id", createSQL: "CREATE INDEX IF NOT EXISTS idx_devices_application_id ON devices(application_id)"},
+			{name: "idx_device_link_tokens_application_id", createSQL: "CREATE INDEX IF NOT EXISTS idx_device_link_tokens_application_id ON device_link_tokens(application_id)"},
 		},
 	},
 	37: {
@@ -154,6 +184,20 @@ func repairAdditiveColumnMigration(databaseURL string, spec additiveColumnMigrat
 		}
 	}
 
+	for _, index := range spec.indexes {
+		exists, err := indexExists(context.Background(), pool, index.name)
+		if err != nil {
+			return false, fmt.Errorf("failed to inspect indexes for migration %d: %w", spec.version, err)
+		}
+		if exists {
+			continue
+		}
+
+		if _, err := pool.Exec(context.Background(), index.createSQL); err != nil {
+			return false, fmt.Errorf("failed to create missing index %s for migration %d: %w", index.name, spec.version, err)
+		}
+	}
+
 	if err := ForceVersion(databaseURL, int(spec.version)); err != nil {
 		return false, fmt.Errorf("failed to clear dirty state for migration %d: %w", spec.version, err)
 	}
@@ -178,4 +222,23 @@ func countExistingColumns(ctx context.Context, pool *pgxpool.Pool, table string,
 	}
 
 	return count, nil
+}
+
+func indexExists(ctx context.Context, pool *pgxpool.Pool, indexName string) (bool, error) {
+	var exists bool
+	err := pool.QueryRow(
+		ctx,
+		`SELECT EXISTS (
+			SELECT 1
+			FROM pg_indexes
+			WHERE schemaname = current_schema()
+			  AND indexname = $1
+		)`,
+		indexName,
+	).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
 }

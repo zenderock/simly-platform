@@ -2,7 +2,6 @@ package config
 
 import (
 	"errors"
-	"log"
 	"os"
 
 	"github.com/hibiken/asynq"
@@ -36,10 +35,9 @@ type Config struct {
 }
 
 func Load() *Config {
-	// Attempt to load .env, but don't fail if it doesn't exist (e.g., production)
-	if err := godotenv.Load(); err != nil {
-		log.Println("No .env file found or error reading it")
-	}
+	// Best effort for local development. In production, environment variables
+	// are often injected directly by the platform (e.g. Dokploy).
+	_ = godotenv.Load()
 
 	return &Config{
 		Port:                   getEnv("PORT", "8080"),
