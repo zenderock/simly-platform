@@ -35,7 +35,7 @@ type RedisWorker struct {
 
 // NewRedisWorker creates a new RedisWorker instance
 func NewRedisWorker(
-	redisOpt asynq.RedisClientOpt,
+	redisOpt asynq.RedisConnOpt,
 	store *store.Store,
 	messageService *core.MessageService,
 	devicePool *core.DevicePoolManager,

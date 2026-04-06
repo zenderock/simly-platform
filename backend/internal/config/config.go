@@ -1,9 +1,11 @@
 package config
 
 import (
+	"fmt"
 	"log"
 	"os"
 
+	"github.com/hibiken/asynq"
 	"github.com/joho/godotenv"
 )
 
@@ -23,6 +25,7 @@ type Config struct {
 	FirebaseServiceAccount string
 	FrontendURL            string
 	TurnstileSecret        string
+	RedisURL               string
 	RedisAddr              string
 	RedisPassword          string
 	R2AccountID            string
@@ -56,6 +59,7 @@ func Load() *Config {
 		FirebaseServiceAccount: getEnv("FIREBASE_SERVICE_ACCOUNT", ""),
 		FrontendURL:            getEnv("FRONTEND_URL", "http://localhost:3000"),
 		TurnstileSecret:        getEnv("TURNSTILE_SECRET_KEY", "1x0000000000000000000000000000000AA"),
+		RedisURL:               getEnv("REDIS_URL", ""),
 		RedisAddr:              getEnv("REDIS_ADDR", "localhost:6379"),
 		RedisPassword:          getEnv("REDIS_PASSWORD", ""),
 		R2AccountID:            getEnv("R2_ACCOUNT_ID", ""),
@@ -73,4 +77,12 @@ func getEnv(key, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+func (c *Config) RedisConnOpt() (asynq.RedisConnOpt, error) {
+	if c.RedisURL != "" {
+		return asynq.ParseRedisURI(c.RedisURL)
+	}
+
+	return asynq.ParseRedisURI(fmt.Sprintf("redis://:%s@%s/0", c.RedisPassword, c.RedisAddr))
 }

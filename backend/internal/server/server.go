@@ -60,12 +60,16 @@ func (s *Server) setupRoutes() {
 	jwtSecret := []byte(s.Config.JWTSecret)
 
 	// Redis Config
-	redisOpt := asynq.RedisClientOpt{
-		Addr:     s.Config.RedisAddr,
-		Password: s.Config.RedisPassword,
+	redisConnOpt, err := s.Config.RedisConnOpt()
+	if err != nil {
+		log.Printf("Invalid Redis configuration: %v", err)
+		redisConnOpt = asynq.RedisClientOpt{
+			Addr:     s.Config.RedisAddr,
+			Password: s.Config.RedisPassword,
+		}
 	}
 	// Initialize Asynq Client
-	taskClient := asynq.NewClient(redisOpt)
+	taskClient := asynq.NewClient(redisConnOpt)
 
 	// Dependency Injection
 	var notificationProvider core.NotificationProvider = &core.LogNotificationProvider{}
@@ -135,7 +139,7 @@ func (s *Server) setupRoutes() {
 	// Initialize Redis Worker (instead of polling DispatcherService)
 	sendWindowManager := core.NewSendWindowManager(s.DB)
 	redisWorker := worker.NewRedisWorker(
-		redisOpt,
+		redisConnOpt,
 		s.DB,
 		messageService,
 		devicePoolManager,
