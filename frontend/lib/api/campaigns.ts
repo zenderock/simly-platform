@@ -2,7 +2,6 @@ import api from "../api";
 import { Message } from "@/types";
 
 export interface Campaign {
-// ... (omitting for brevity as I'm using targetContent)
   id: number;
   name: string;
   template_body: string;
@@ -16,6 +15,8 @@ export interface Campaign {
   failed_messages: number;
   pause_reason?: string | null;
   auto_reschedule: boolean;
+  send_window_start?: number | null;
+  send_window_end?: number | null;
   created_at: string;
 }
 
@@ -29,6 +30,8 @@ export interface CreateCampaignRequest {
   scheduled_at?: string;
   auto_launch?: boolean;
   auto_reschedule?: boolean;
+  send_window_start?: number | null;
+  send_window_end?: number | null;
 }
 
 export interface CampaignAnalytics {
