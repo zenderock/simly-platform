@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/zenderock/simly-backend/internal/model"
 )
@@ -59,10 +60,18 @@ func (s *Store) CreateMessage(ctx context.Context, msg *model.Message) error {
 	return nil
 }
 
-func (s *Store) GetMessagesByOrganizationID(ctx context.Context, orgID int, appID *int) ([]model.Message, error) {
+// MessageListFilter holds optional filters for listing messages.
+type MessageListFilter struct {
+	AppID      *int
+	CampaignID *int
+	StartDate  *time.Time
+	EndDate    *time.Time
+}
+
+func (s *Store) GetMessagesByOrganizationID(ctx context.Context, orgID int, filter MessageListFilter) ([]model.Message, error) {
 	query := `
-		SELECT 
-			m.id, m.organization_id, m.application_id, m.device_id, m.to_number, m.from_number, m.body, m.status, m.direction, m.priority, m.required_tags, m.created_at, m.updated_at, m.scheduled_at, m.processed_at, m.retry_count, m.max_retries, m.last_error, m.metadata, m.sim_slot,
+		SELECT
+			m.id, m.organization_id, m.application_id, m.campaign_id, m.device_id, m.to_number, m.from_number, m.body, m.status, m.direction, m.priority, m.required_tags, m.created_at, m.updated_at, m.scheduled_at, m.processed_at, m.retry_count, m.max_retries, m.last_error, m.metadata, m.sim_slot,
 			a.name as application_name,
 			d.name as device_name
 		FROM messages m
@@ -71,9 +80,27 @@ func (s *Store) GetMessagesByOrganizationID(ctx context.Context, orgID int, appI
 		WHERE m.organization_id = $1
 	`
 	args := []interface{}{orgID}
-	if appID != nil {
-		query += " AND m.application_id = $2"
-		args = append(args, *appID)
+	argIdx := 2
+
+	if filter.AppID != nil {
+		query += fmt.Sprintf(" AND m.application_id = $%d", argIdx)
+		args = append(args, *filter.AppID)
+		argIdx++
+	}
+	if filter.CampaignID != nil {
+		query += fmt.Sprintf(" AND m.campaign_id = $%d", argIdx)
+		args = append(args, *filter.CampaignID)
+		argIdx++
+	}
+	if filter.StartDate != nil {
+		query += fmt.Sprintf(" AND m.created_at >= $%d", argIdx)
+		args = append(args, *filter.StartDate)
+		argIdx++
+	}
+	if filter.EndDate != nil {
+		query += fmt.Sprintf(" AND m.created_at <= $%d", argIdx)
+		args = append(args, *filter.EndDate)
+		argIdx++
 	}
 	query += " ORDER BY m.created_at DESC"
 
@@ -91,6 +118,7 @@ func (s *Store) GetMessagesByOrganizationID(ctx context.Context, orgID int, appI
 			&m.ID,
 			&m.OrganizationID,
 			&m.ApplicationID,
+			&m.CampaignID,
 			&m.DeviceID,
 			&m.ToNumber,
 			&m.FromNumber,
@@ -117,6 +145,70 @@ func (s *Store) GetMessagesByOrganizationID(ctx context.Context, orgID int, appI
 		messages = append(messages, m)
 	}
 	return messages, nil
+}
+
+// GetQueuedMessagesByFilter fetches queued messages scoped by org + optional app/campaign/date range.
+// Used by the bulk requeue endpoint.
+func (s *Store) GetQueuedMessagesByFilter(ctx context.Context, orgID int, filter MessageListFilter) ([]model.Message, error) {
+	query := `
+		SELECT id, organization_id, application_id, campaign_id, device_id, to_number, body, status, direction, priority, required_tags, created_at, updated_at, scheduled_at, processed_at, retry_count, max_retries, last_error, metadata, sim_slot
+		FROM messages
+		WHERE status = 'queued' AND organization_id = $1
+	`
+	args := []interface{}{orgID}
+	argIdx := 2
+
+	if filter.AppID != nil {
+		query += fmt.Sprintf(" AND application_id = $%d", argIdx)
+		args = append(args, *filter.AppID)
+		argIdx++
+	}
+	if filter.CampaignID != nil {
+		query += fmt.Sprintf(" AND campaign_id = $%d", argIdx)
+		args = append(args, *filter.CampaignID)
+		argIdx++
+	}
+	if filter.StartDate != nil {
+		query += fmt.Sprintf(" AND created_at >= $%d", argIdx)
+		args = append(args, *filter.StartDate)
+		argIdx++
+	}
+	if filter.EndDate != nil {
+		query += fmt.Sprintf(" AND created_at <= $%d", argIdx)
+		args = append(args, *filter.EndDate)
+		argIdx++
+	}
+	query += " ORDER BY created_at ASC"
+
+	rows, err := s.db.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query queued messages by filter: %w", err)
+	}
+	defer rows.Close()
+
+	var messages []model.Message
+	for rows.Next() {
+		var m model.Message
+		var reqTags []string
+		if err := rows.Scan(
+			&m.ID, &m.OrganizationID, &m.ApplicationID, &m.CampaignID, &m.DeviceID,
+			&m.ToNumber, &m.Body, &m.Status, &m.Direction, &m.Priority,
+			&reqTags, &m.CreatedAt, &m.UpdatedAt, &m.ScheduledAt, &m.ProcessedAt,
+			&m.RetryCount, &m.MaxRetries, &m.LastError, &m.Metadata, &m.SimSlot,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan queued message: %w", err)
+		}
+		m.RequiredTags = reqTags
+		messages = append(messages, m)
+	}
+	return messages, nil
+}
+
+// TouchMessageUpdatedAt bumps updated_at without changing status — prevents watchdog from
+// immediately re-picking a message that was just re-enqueued.
+func (s *Store) TouchMessageUpdatedAt(ctx context.Context, msgID int) error {
+	_, err := s.db.Exec(ctx, `UPDATE messages SET updated_at = NOW() WHERE id = $1`, msgID)
+	return err
 }
 func (s *Store) UpdateMessageStatus(ctx context.Context, msgID int, status string, lastError string) error {
 	query := `UPDATE messages SET status = $1, last_error = $2, updated_at = NOW() WHERE id = $3`

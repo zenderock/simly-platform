@@ -5,10 +5,12 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/zenderock/simly-backend/internal/core"
 	"github.com/zenderock/simly-backend/internal/model"
+	"github.com/zenderock/simly-backend/internal/store"
 )
 
 type MessageHandler struct {
@@ -93,22 +95,42 @@ func (h *MessageHandler) ListMessages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var appID *int
-	// 1. Try Header/Context
+	filter := store.MessageListFilter{}
+
+	// AppID: header/context wins, then query param
 	if id := GetActiveAppID(r); id != 0 {
-		appID = &id
-	} else {
-		// 2. Try Query Param
-		if aidStr := r.URL.Query().Get("application_id"); aidStr != "" {
-			if aid, err := strconv.Atoi(aidStr); err == nil {
-				appID = &aid
-			}
+		filter.AppID = &id
+	} else if aidStr := r.URL.Query().Get("application_id"); aidStr != "" {
+		if aid, err := strconv.Atoi(aidStr); err == nil {
+			filter.AppID = &aid
 		}
 	}
 
-	log.Printf("[ListMessages] Fetching messages for org=%d, app=%v", orgID, appID)
+	if cidStr := r.URL.Query().Get("campaign_id"); cidStr != "" {
+		if cid, err := strconv.Atoi(cidStr); err == nil {
+			filter.CampaignID = &cid
+		}
+	}
+	if sdStr := r.URL.Query().Get("start_date"); sdStr != "" {
+		if t, err := time.Parse(time.RFC3339, sdStr); err == nil {
+			filter.StartDate = &t
+		} else if t, err := time.Parse("2006-01-02", sdStr); err == nil {
+			filter.StartDate = &t
+		}
+	}
+	if edStr := r.URL.Query().Get("end_date"); edStr != "" {
+		if t, err := time.Parse(time.RFC3339, edStr); err == nil {
+			filter.EndDate = &t
+		} else if t, err := time.Parse("2006-01-02", edStr); err == nil {
+			// End of day inclusive
+			eod := t.Add(24*time.Hour - time.Second)
+			filter.EndDate = &eod
+		}
+	}
 
-	messages, err := h.service.ListMessages(r.Context(), orgID, appID)
+	log.Printf("[ListMessages] Fetching messages for org=%d filter=%+v", orgID, filter)
+
+	messages, err := h.service.ListMessages(r.Context(), orgID, filter)
 	if err != nil {
 		log.Printf("[ListMessages] Error fetching messages: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -118,6 +140,68 @@ func (h *MessageHandler) ListMessages(w http.ResponseWriter, r *http.Request) {
 	log.Printf("[ListMessages] Successfully fetched %d messages", len(messages))
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(messages)
+}
+
+func (h *MessageHandler) RequeueMessages(w http.ResponseWriter, r *http.Request) {
+	orgID, err := GetActiveOrgID(r, h.orgService)
+	if err != nil {
+		http.Error(w, "Organization required", http.StatusForbidden)
+		return
+	}
+
+	var req struct {
+		CampaignID *int    `json:"campaign_id"`
+		StartDate  *string `json:"start_date"`
+		EndDate    *string `json:"end_date"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	filter := core.RequeueFilter{}
+
+	// AppID scoping from context (app-scoped API key or active app header)
+	if id := GetActiveAppID(r); id != 0 {
+		filter.AppID = &id
+	}
+	filter.CampaignID = req.CampaignID
+
+	parseDate := func(s string) *time.Time {
+		if t, err := time.Parse(time.RFC3339, s); err == nil {
+			return &t
+		}
+		if t, err := time.Parse("2006-01-02", s); err == nil {
+			return &t
+		}
+		return nil
+	}
+
+	if req.StartDate != nil && *req.StartDate != "" {
+		filter.StartDate = parseDate(*req.StartDate)
+	}
+	if req.EndDate != nil && *req.EndDate != "" {
+		t := parseDate(*req.EndDate)
+		if t != nil {
+			// End of day inclusive when date-only format
+			if len(*req.EndDate) == 10 {
+				eod := t.Add(24*time.Hour - time.Second)
+				filter.EndDate = &eod
+			} else {
+				filter.EndDate = t
+			}
+		}
+	}
+
+	result, err := h.service.BulkRequeue(r.Context(), orgID, filter)
+	if err != nil {
+		log.Printf("[RequeueMessages] Error: %v", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result)
 }
 func (h *MessageHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) {
 	msgIDStr := chi.URLParam(r, "id")

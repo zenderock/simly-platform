@@ -4,7 +4,6 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Table,
   TableBody,
@@ -33,6 +32,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -44,7 +44,6 @@ import {
   MoreHorizontal,
   X,
   Eye,
-  Trash2,
   Copy,
   FileSpreadsheet,
   ChevronLeft,
@@ -53,12 +52,15 @@ import {
   ChevronsRight,
   ArrowUpRight,
   ArrowDownLeft,
-  PhoneIncoming,
   Clock,
+  RotateCcw,
+  Loader2,
 } from "lucide-react";
 import { useDashboardStore } from "@/store/dashboard-store";
 import { useApplicationStore } from "@/store/application-store";
 import { useMessages } from "@/hooks/use-messages";
+import { useCampaigns } from "@/hooks/use-campaigns";
+import { useRequeueMessages } from "@/hooks/use-requeue-messages";
 import { useSearchParams } from "next/navigation";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -83,14 +85,29 @@ export function MessagesTable() {
   const clearFilters = useDashboardStore((state) => state.clearFilters);
 
   const searchParams = useSearchParams();
-  const campaignId = searchParams.get("campaign");
-  const { data: messages = [], isLoading: loading } = useMessages(
-    activeAppId,
-    campaignId ? parseInt(campaignId) : null
-  );
+  const urlCampaignId = searchParams.get("campaign");
+
+  // Requeue scope state
+  const [selectedCampaignId, setSelectedCampaignId] = React.useState<
+    number | null
+  >(urlCampaignId ? parseInt(urlCampaignId) : null);
+  const [startDate, setStartDate] = React.useState<string>("");
+  const [endDate, setEndDate] = React.useState<string>("");
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
+
+  const { data: messages = [], isLoading: loading } = useMessages({
+    applicationId: activeAppId,
+    campaignId: selectedCampaignId,
+    startDate: startDate || null,
+    endDate: endDate || null,
+  });
+
+  const { data: campaigns = [] } = useCampaigns(activeAppId);
+  const requeue = useRequeueMessages();
+
   const [currentPage, setCurrentPage] = React.useState(1);
   const [pageSize, setPageSize] = React.useState(10);
-  const [selectedMessage, setSelectedMessage] = React.useState<any>(null); // Uses any for now as message type is inferred
+  const [selectedMessage, setSelectedMessage] = React.useState<any>(null);
 
   const handleCopyId = (id: number) => {
     navigator.clipboard.writeText(id.toString());
@@ -106,6 +123,13 @@ export function MessagesTable() {
       setDeviceFilter(deviceParam);
     }
   }, [searchParams, setDeviceFilter]);
+
+  // Sync URL campaign param → local state
+  React.useEffect(() => {
+    if (urlCampaignId) {
+      setSelectedCampaignId(parseInt(urlCampaignId));
+    }
+  }, [urlCampaignId]);
 
   const hasActiveFilters =
     statusFilter !== "all" ||
@@ -284,8 +308,49 @@ export function MessagesTable() {
     }
   };
 
+  const handleConfirmRequeue = () => {
+    requeue.mutate(
+      {
+        campaign_id: selectedCampaignId,
+        start_date: startDate || null,
+        end_date: endDate || null,
+      },
+      {
+        onSuccess: (result) => {
+          setConfirmOpen(false);
+          toast({
+            title: "Requeue complete",
+            description: `${result.requeued_count} message${result.requeued_count !== 1 ? "s" : ""} requeued (${result.matched_count} matched).`,
+          });
+        },
+        onError: (err: any) => {
+          setConfirmOpen(false);
+          toast({
+            title: "Requeue failed",
+            description: err?.response?.data || "An error occurred.",
+            variant: "destructive",
+          });
+        },
+      }
+    );
+  };
+
+  // Build human-readable summary for the confirmation dialog
+  const requeueScopeSummary = React.useMemo(() => {
+    const parts: string[] = [];
+    if (selectedCampaignId) {
+      const c = campaigns.find((c) => c.id === selectedCampaignId);
+      parts.push(`Campaign: ${c ? c.name : `#${selectedCampaignId}`}`);
+    }
+    if (startDate) parts.push(`From: ${startDate}`);
+    if (endDate) parts.push(`To: ${endDate}`);
+    if (parts.length === 0) parts.push("All queued messages (no scope filter)");
+    return parts.join(" · ");
+  }, [selectedCampaignId, startDate, endDate, campaigns]);
+
   return (
     <div className="rounded-xl border bg-card shadow-none">
+      {/* ── Toolbar row 1: title + main actions ── */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-3 sm:px-6 sm:py-3.5">
         <div className="flex items-center gap-2 sm:gap-2.5 flex-1">
           <Button
@@ -304,15 +369,18 @@ export function MessagesTable() {
           >
             {filteredMessages.length}
           </Badge>
-          {campaignId && (
+          {selectedCampaignId && (
             <Badge
               variant="outline"
               className="ml-1 text-[10px] sm:text-xs font-bold bg-primary/10 text-primary border-primary/20"
             >
-              Campaign #{campaignId}
+              Campaign #{selectedCampaignId}
               <X
                 className="ml-1 size-3 cursor-pointer"
-                onClick={() => window.history.pushState({}, "", "/messages")}
+                onClick={() => {
+                  setSelectedCampaignId(null);
+                  window.history.pushState({}, "", "/messages");
+                }}
               />
             </Badge>
           )}
@@ -462,6 +530,80 @@ export function MessagesTable() {
         </div>
       </div>
 
+      {/* ── Toolbar row 2: requeue scope controls ── */}
+      <div className="flex flex-wrap items-center gap-2 px-3 sm:px-6 pb-3 border-b">
+        {/* Campaign dropdown */}
+        <Select
+          value={selectedCampaignId ? String(selectedCampaignId) : "all"}
+          onValueChange={(v) =>
+            setSelectedCampaignId(v === "all" ? null : parseInt(v))
+          }
+        >
+          <SelectTrigger className="h-8 w-[180px] text-xs shadow-none font-medium">
+            <SelectValue placeholder="All campaigns" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all" className="text-xs">
+              All campaigns
+            </SelectItem>
+            {campaigns.map((c) => (
+              <SelectItem key={c.id} value={String(c.id)} className="text-xs">
+                {c.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Start date */}
+        <Input
+          type="date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+          className="h-8 w-[140px] text-xs shadow-none"
+          placeholder="Start date"
+        />
+
+        {/* End date */}
+        <Input
+          type="date"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+          className="h-8 w-[140px] text-xs shadow-none"
+          placeholder="End date"
+        />
+
+        {(selectedCampaignId || startDate || endDate) && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 text-xs text-muted-foreground"
+            onClick={() => {
+              setSelectedCampaignId(null);
+              setStartDate("");
+              setEndDate("");
+              window.history.pushState({}, "", "/messages");
+            }}
+          >
+            <X className="size-3 mr-1" />
+            Clear
+          </Button>
+        )}
+
+        <div className="flex-1" />
+
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-8 gap-1.5 text-xs font-semibold border-orange-400 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-950"
+          onClick={() => setConfirmOpen(true)}
+          disabled={loading}
+        >
+          <RotateCcw className="size-3.5" />
+          Retry queued messages
+        </Button>
+      </div>
+
+      {/* ── Table ── */}
       <div className="px-3 sm:px-6 pb-3 sm:pb-4 overflow-x-auto">
         <Table>
           <TableHeader>
@@ -616,6 +758,7 @@ export function MessagesTable() {
         </Table>
       </div>
 
+      {/* ── Pagination ── */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 px-3 sm:px-6 py-3 border-t bg-muted/10">
         <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium italic">
           <span className="hidden sm:inline italic">Rows per page:</span>
@@ -713,6 +856,7 @@ export function MessagesTable() {
         </div>
       </div>
 
+      {/* ── Message details dialog ── */}
       <Dialog
         open={!!selectedMessage}
         onOpenChange={(open) => !open && setSelectedMessage(null)}
@@ -795,6 +939,47 @@ export function MessagesTable() {
               )}
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Requeue confirmation dialog ── */}
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="sm:max-w-[440px]">
+          <DialogHeader>
+            <DialogTitle>Retry queued messages</DialogTitle>
+            <DialogDescription>
+              This will re-enqueue all messages currently in{" "}
+              <strong>queued</strong> status for the selected scope. Messages in
+              any other status are not affected.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-md bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
+            <span className="font-medium text-foreground">Scope: </span>
+            {requeueScopeSummary}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setConfirmOpen(false)}
+              disabled={requeue.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              className="gap-1.5"
+              onClick={handleConfirmRequeue}
+              disabled={requeue.isPending}
+            >
+              {requeue.isPending ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <RotateCcw className="size-3.5" />
+              )}
+              {requeue.isPending ? "Requeueing…" : "Confirm retry"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

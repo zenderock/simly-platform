@@ -613,8 +613,56 @@ func (s *MessageService) UpdateStatus(ctx context.Context, msgID int, status str
 	return nil
 }
 
-func (s *MessageService) ListMessages(ctx context.Context, orgID int, appID *int) ([]model.Message, error) {
-	return s.store.GetMessagesByOrganizationID(ctx, orgID, appID)
+func (s *MessageService) ListMessages(ctx context.Context, orgID int, filter store.MessageListFilter) ([]model.Message, error) {
+	return s.store.GetMessagesByOrganizationID(ctx, orgID, filter)
+}
+
+// RequeueFilter holds the optional scope for a bulk requeue operation.
+type RequeueFilter struct {
+	AppID      *int
+	CampaignID *int
+	StartDate  *time.Time
+	EndDate    *time.Time
+}
+
+// BulkRequeueResult is the response payload for POST /api/messages/requeue.
+type BulkRequeueResult struct {
+	MatchedCount  int `json:"matched_count"`
+	RequeuedCount int `json:"requeued_count"`
+}
+
+// BulkRequeue re-enqueues all queued messages matching the given scope.
+// Only messages with status "queued" are eligible; no other status is touched.
+func (s *MessageService) BulkRequeue(ctx context.Context, orgID int, f RequeueFilter) (BulkRequeueResult, error) {
+	filter := store.MessageListFilter{
+		AppID:      f.AppID,
+		CampaignID: f.CampaignID,
+		StartDate:  f.StartDate,
+		EndDate:    f.EndDate,
+	}
+
+	messages, err := s.store.GetQueuedMessagesByFilter(ctx, orgID, filter)
+	if err != nil {
+		return BulkRequeueResult{}, fmt.Errorf("failed to fetch queued messages: %w", err)
+	}
+
+	result := BulkRequeueResult{MatchedCount: len(messages)}
+
+	for i := range messages {
+		msg := &messages[i]
+		if err := s.EnqueueSMSDelivery(ctx, msg); err != nil {
+			log.Printf("[BulkRequeue] failed to enqueue message %d: %v", msg.ID, err)
+			continue
+		}
+		// Bump updated_at so the watchdog does not immediately re-pick this message.
+		if err := s.store.TouchMessageUpdatedAt(ctx, msg.ID); err != nil {
+			log.Printf("[BulkRequeue] failed to touch message %d: %v", msg.ID, err)
+		}
+		result.RequeuedCount++
+	}
+
+	log.Printf("[BulkRequeue] org=%d matched=%d requeued=%d", orgID, result.MatchedCount, result.RequeuedCount)
+	return result, nil
 }
 
 // GetMessage retrieves a single message by ID

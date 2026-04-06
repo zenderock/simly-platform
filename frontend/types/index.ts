@@ -80,6 +80,7 @@ export interface Message {
   id: number;
   organization_id: number;
   application_id?: number;
+  campaign_id?: number;
   device_id?: number;
   to: string;
   from?: string;
@@ -93,6 +94,26 @@ export interface Message {
   processed_at?: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface Campaign {
+  id: number;
+  organization_id: number;
+  application_id?: number;
+  name: string;
+  template_body: string;
+  status: string;
+  total_messages: number;
+  sent_messages: number;
+  failed_messages: number;
+  scheduled_at?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RequeueResult {
+  matched_count: number;
+  requeued_count: number;
 }
 
 export interface DashboardStats {
