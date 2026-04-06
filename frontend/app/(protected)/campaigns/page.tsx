@@ -6,6 +6,7 @@ import {
   deleteCampaign,
   launchCampaign,
 } from "@/lib/api/campaigns";
+import type { Campaign } from "@/lib/api/campaigns";
 import { getErrorMessage } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -38,6 +39,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  IconAlertCircle,
   IconPlus,
   IconDots,
   IconPlayerPlay,
@@ -83,8 +85,16 @@ export default function CampaignsPage() {
     },
   });
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
+  const getStatusBadge = (campaign: Campaign) => {
+    if (campaign.status === "scheduled" && campaign.pause_reason) {
+      return (
+        <Badge className="bg-amber-500 hover:bg-amber-600 text-white">
+          Needs Attention
+        </Badge>
+      );
+    }
+
+    switch (campaign.status) {
       case "draft":
         return <Badge variant="secondary">Draft</Badge>;
       case "scheduled":
@@ -100,7 +110,7 @@ export default function CampaignsPage() {
       case "failed":
         return <Badge variant="destructive">Failed</Badge>;
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return <Badge variant="outline">{campaign.status}</Badge>;
     }
   };
 
@@ -183,8 +193,14 @@ export default function CampaignsPage() {
                             {campaign.template_body}
                           </span>
                         </div>
+                        {campaign.pause_reason && (
+                          <div className="mt-2 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/20 dark:text-amber-100">
+                            <IconAlertCircle className="mt-0.5 size-3.5 shrink-0" />
+                            <span className="line-clamp-2">{campaign.pause_reason}</span>
+                          </div>
+                        )}
                       </TableCell>
-                      <TableCell>{getStatusBadge(campaign.status)}</TableCell>
+                      <TableCell>{getStatusBadge(campaign)}</TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-1 text-xs">
                           <div className="flex items-center justify-between">

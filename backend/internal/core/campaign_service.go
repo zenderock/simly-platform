@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/hibiken/asynq"
@@ -347,6 +348,9 @@ func (s *CampaignService) LaunchCampaign(ctx context.Context, id, orgID int) err
 	// We do this immediately so UI shows "Processing"
 	if err := s.store.UpdateCampaignStatus(ctx, c.ID, model.CampaignStatusProcessing); err != nil {
 		return err
+	}
+	if err := s.store.UpdateCampaignPauseReason(ctx, c.ID, ""); err != nil {
+		log.Printf("CampaignService: failed to clear pause reason for campaign %d: %v", c.ID, err)
 	}
 
 	return nil

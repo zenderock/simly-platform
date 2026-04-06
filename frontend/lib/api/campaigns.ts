@@ -14,6 +14,7 @@ export interface Campaign {
   total_messages: number;
   sent_messages: number;
   failed_messages: number;
+  pause_reason?: string | null;
   auto_reschedule: boolean;
   created_at: string;
 }

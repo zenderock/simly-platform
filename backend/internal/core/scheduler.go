@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -75,6 +76,10 @@ func (s *SchedulerService) processScheduledCampaigns(ctx context.Context) {
 			log.Printf("Scheduler: Launching campaign %d (%s)", c.ID, c.Name)
 			// Launch the campaign
 			if err := s.campaignService.LaunchCampaign(ctx, c.ID, c.OrganizationID); err != nil {
+				reason := scheduledLaunchFailureReason(time.Now().UTC(), err)
+				if updateErr := s.db.UpdateCampaignPauseReason(ctx, c.ID, reason); updateErr != nil {
+					log.Printf("Scheduler: Failed to persist pause reason for campaign %d: %v", c.ID, updateErr)
+				}
 				log.Printf("Scheduler: Failed to launch campaign %d: %v", c.ID, err)
 			}
 		}
@@ -105,6 +110,9 @@ func (s *SchedulerService) monitorProcessingCampaigns(ctx context.Context) {
 				log.Printf("Scheduler: Failed to update campaign %d status to completed: %v", c.ID, err)
 				continue
 			}
+			if err := s.db.UpdateCampaignPauseReason(ctx, c.ID, ""); err != nil {
+				log.Printf("Scheduler: Failed to clear pause reason for campaign %d: %v", c.ID, err)
+			}
 
 			// Update final stats for quick access
 			if err := s.db.UpdateCampaignFinalStats(ctx, c.ID, stats.Sent+stats.Delivered, stats.Failed); err != nil {
@@ -112,4 +120,8 @@ func (s *SchedulerService) monitorProcessingCampaigns(ctx context.Context) {
 			}
 		}
 	}
+}
+
+func scheduledLaunchFailureReason(at time.Time, err error) string {
+	return fmt.Sprintf("Scheduled launch attempt failed at %s: %s", at.Format(time.RFC3339), err.Error())
 }

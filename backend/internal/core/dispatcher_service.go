@@ -298,6 +298,9 @@ func (d *DispatcherService) checkCampaignCompletions(ctx context.Context) error 
 				log.Printf("DispatcherService: error completing campaign %d: %v", campaign.ID, err)
 				continue
 			}
+			if err := d.store.UpdateCampaignPauseReason(ctx, campaign.ID, ""); err != nil {
+				log.Printf("DispatcherService: error clearing pause reason for campaign %d: %v", campaign.ID, err)
+			}
 
 			// Update final stats
 			if err := d.store.UpdateCampaignFinalStats(ctx, campaign.ID, stats.Sent+stats.Delivered, stats.Failed); err != nil {

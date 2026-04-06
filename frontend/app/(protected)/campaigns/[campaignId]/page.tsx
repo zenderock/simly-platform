@@ -10,6 +10,7 @@ import {
 } from "@/lib/api/campaigns";
 import { listDevices } from "@/lib/api/devices";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Card,
   CardHeader,
@@ -101,6 +102,10 @@ export default function CampaignDetailsPage() {
     enabled: !!campaign?.device_id,
   });
 
+  const hasLaunchAttention =
+    !!campaign?.pause_reason &&
+    (campaign?.status === "scheduled" || campaign?.status === "failed");
+
   const launchMutation = useMutation({
     mutationFn: () => launchCampaign(id),
     onSuccess: () => {
@@ -153,7 +158,15 @@ export default function CampaignDetailsPage() {
 
   const COLORS = chartData.map((d) => d.color);
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string, pauseReason?: string | null) => {
+    if (status === "scheduled" && pauseReason) {
+      return (
+        <Badge className="bg-amber-500 hover:bg-amber-600 text-white">
+          Needs Attention
+        </Badge>
+      );
+    }
+
     switch (status) {
       case "draft":
         return <Badge variant="secondary">Draft</Badge>;
@@ -202,7 +215,7 @@ export default function CampaignDetailsPage() {
                 <h1 className="text-2xl font-bold tracking-tight">
                   {campaign.name}
                 </h1>
-                {getStatusBadge(campaign.status)}
+                {getStatusBadge(campaign.status, campaign.pause_reason)}
               </div>
               <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground font-medium">
                 <span className="flex items-center gap-1 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded text-xs font-mono">
@@ -221,12 +234,16 @@ export default function CampaignDetailsPage() {
                 className={`size-2 rounded-full ${
                   campaign.status === "processing"
                     ? "bg-blue-500 animate-ping"
+                    : hasLaunchAttention
+                    ? "bg-amber-500"
                     : campaign.status === "completed"
                     ? "bg-green-500"
                     : "bg-zinc-400"
                 }`}
               />
-              {campaign.status.toUpperCase()}
+              {hasLaunchAttention
+                ? "ATTENTION REQUIRED"
+                : campaign.status.toUpperCase()}
             </div>
 
             {campaign.status === "draft" && (
@@ -261,6 +278,20 @@ export default function CampaignDetailsPage() {
       </div>
 
       <div className="p-6 space-y-6">
+        {hasLaunchAttention && (
+          <Alert className="border-amber-200 bg-amber-50 text-amber-950 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100">
+            <IconAlertCircle className="size-4" />
+            <AlertTitle>Launch issue detected</AlertTitle>
+            <AlertDescription className="space-y-2">
+              <p>{campaign.pause_reason}</p>
+              <p className="text-xs text-amber-800/80 dark:text-amber-100/70">
+                This campaign is still visible to the scheduler, but the last
+                launch attempt did not start successfully.
+              </p>
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Command Center Grid */}
         <div className="grid gap-6 grid-cols-1 lg:grid-cols-4">
           {/* Main Visualization Card */}
