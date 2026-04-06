@@ -171,10 +171,12 @@ export function MessagesTable() {
         msg.status.toLowerCase() === statusFilter.toLowerCase();
 
       const matchesApp =
-        appFilter === "all" || msg.application_name === appFilter;
+        appFilter === "all" ||
+        (msg.application_name || "Direct API") === appFilter;
 
       const matchesDevice =
-        deviceFilter === "all" || msg.device_name === deviceFilter;
+        deviceFilter === "all" ||
+        (msg.device_name || "Unknown") === deviceFilter;
 
       const matchesDirection =
         directionFilter === "all" || msg.direction === directionFilter;
