@@ -41,6 +41,10 @@ class ApiClient {
 
   Future<Map<String, dynamic>> getBranding() async {
     final response = await dio.get('v1/branding');
-    return response.data as Map<String, dynamic>;
+    final data = response.data;
+    if (data is! Map) {
+      throw Exception('Invalid branding response format');
+    }
+    return Map<String, dynamic>.from(data);
   }
 }

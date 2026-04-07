@@ -51,8 +51,11 @@ class BackgroundHandler {
   static void onStart(ServiceInstance service) async {
     DartPluginRegistrant.ensureInitialized();
 
-    // IMMEDIATELY set as foreground to prevent ANR/Crash on Android 14+
+    // IMMEDIATELY promote to foreground — must happen within 5s on Android 12+
+    // or the OS will kill the service (ANR / ForegroundServiceDidNotStartInTimeException)
     if (service is AndroidServiceInstance) {
+      await service.setAsForegroundService();
+
       service.on('setAsForeground').listen((event) {
         service.setAsForegroundService();
       });
