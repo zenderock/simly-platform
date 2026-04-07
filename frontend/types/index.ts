@@ -13,6 +13,10 @@ export interface Organization {
   max_campaigns: number;
   max_recipients_per_campaign: number;
   auto_save_contacts?: boolean;
+  is_white_label?: boolean;
+  branding_name?: string | null;
+  branding_logo_url?: string | null;
+  branding_color?: string | null;
   created_at: string;
 }
 

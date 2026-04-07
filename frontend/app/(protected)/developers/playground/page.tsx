@@ -193,6 +193,39 @@ const ENDPOINTS: PlaygroundEndpoint[] = [
       { name: "id", label: "Campaign ID", placeholder: "123", required: true },
     ],
   },
+  {
+    id: "generate-link-token",
+    method: "POST" as const,
+    path: "/v1/devices/link-token",
+    name: "Generate Link Token",
+    description: "Generate a QR link token to pair a device (White-Label only)",
+    hasBody: true,
+    bodyFields: [],
+  },
+  {
+    id: "get-link-token",
+    method: "GET" as const,
+    path: "/v1/devices/link-token/{token}",
+    name: "Get Link Token Status",
+    description: "Poll the status of a device link token (White-Label only)",
+    hasBody: false,
+    pathParams: [
+      {
+        name: "token",
+        label: "Link Token",
+        placeholder: "lnk_a1b2c3d4e5f6",
+        required: true,
+      },
+    ],
+  },
+  {
+    id: "get-branding",
+    method: "GET" as const,
+    path: "/v1/branding",
+    name: "Get Branding",
+    description: "Retrieve branding config for your white-label app (White-Label only)",
+    hasBody: false,
+  },
 ];
 
 interface APIResponse {

@@ -15,6 +15,7 @@ import {
   Zap,
   Globe,
   ArrowUpRight,
+  Palette,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { Organization } from "@/types";
@@ -59,6 +60,12 @@ export default function OrganizationPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingDispatch, setSavingDispatch] = useState(false);
+  const [savingBranding, setSavingBranding] = useState(false);
+  const [brandingData, setBrandingData] = useState({
+    branding_name: "",
+    branding_logo_url: "",
+    branding_color: "#8c52ff",
+  });
 
   const [formData, setFormData] = useState({
     name: "",
@@ -76,7 +83,12 @@ export default function OrganizationPage() {
           setOrganization(res.data);
           setFormData({
             name: res.data.name,
-            auto_save_contacts: res.data.auto_save_contacts || false
+            auto_save_contacts: res.data.auto_save_contacts || false,
+          });
+          setBrandingData({
+            branding_name: res.data.branding_name || "",
+            branding_logo_url: res.data.branding_logo_url || "",
+            branding_color: res.data.branding_color || "#8c52ff",
           });
         })
         .catch((err) => {
@@ -153,6 +165,23 @@ export default function OrganizationPage() {
       toast.error(getErrorMessage(error));
       // Revert on failure
       setFormData((prev) => ({ ...prev, auto_save_contacts: !checked }));
+    }
+  };
+
+  const handleSaveBranding = async () => {
+    if (!organizationId) return;
+    setSavingBranding(true);
+    try {
+      await api.put("/organizations/current/branding", {
+        branding_name: brandingData.branding_name || null,
+        branding_logo_url: brandingData.branding_logo_url || null,
+        branding_color: brandingData.branding_color || null,
+      });
+      toast.success("Branding updated successfully");
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setSavingBranding(false);
     }
   };
 
@@ -469,6 +498,106 @@ export default function OrganizationPage() {
                 </div>
               </div>
             </section>
+            {/* White-Label Branding Block */}
+            {organization.is_white_label && (
+              <section className="group">
+                <div className="flex items-center gap-4 mb-6">
+                  <span className="text-xs font-mono text-muted-foreground">03</span>
+                  <h2 className="text-xl uppercase tracking-widest font-light text-foreground flex items-center gap-3">
+                    White-Label Branding
+                    <span className="text-[10px] font-mono bg-violet-500/10 text-violet-500 border border-violet-500/20 px-2 py-0.5 uppercase tracking-widest">
+                      Exclusive
+                    </span>
+                  </h2>
+                  <div className="h-[1px] flex-1 bg-border group-hover:bg-foreground/20 transition-colors" />
+                </div>
+
+                <div className="border border-border bg-muted/10 p-8 space-y-8">
+                  <p className="font-mono text-xs text-muted-foreground uppercase tracking-widest leading-relaxed border-l-[3px] border-violet-500 pl-4">
+                    These values are served to your mobile app at startup via{" "}
+                    <code className="bg-muted px-1 py-0.5">GET /v1/branding</code>.
+                    Leave a field empty to use the default Simly values.
+                  </p>
+
+                  <div className="grid gap-6 sm:grid-cols-2">
+                    <div className="space-y-3">
+                      <Label className="text-xs uppercase tracking-widest text-muted-foreground font-mono flex items-center gap-2">
+                        <Palette className="size-3" /> App Name
+                      </Label>
+                      <Input
+                        value={brandingData.branding_name}
+                        onChange={(e) =>
+                          setBrandingData((prev) => ({ ...prev, branding_name: e.target.value }))
+                        }
+                        placeholder="e.g. Ayoub Gateway"
+                        className="rounded-none border-border bg-transparent focus-visible:ring-1 focus-visible:ring-foreground transition-none h-12 font-light text-base"
+                      />
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label className="text-xs uppercase tracking-widest text-muted-foreground font-mono">
+                        Primary Color (hex)
+                      </Label>
+                      <div className="flex gap-3 items-center">
+                        <input
+                          type="color"
+                          value={brandingData.branding_color}
+                          onChange={(e) =>
+                            setBrandingData((prev) => ({ ...prev, branding_color: e.target.value }))
+                          }
+                          className="h-12 w-14 rounded-none border border-border bg-transparent cursor-pointer p-1"
+                        />
+                        <Input
+                          value={brandingData.branding_color}
+                          onChange={(e) =>
+                            setBrandingData((prev) => ({ ...prev, branding_color: e.target.value }))
+                          }
+                          placeholder="#8c52ff"
+                          className="rounded-none border-border bg-transparent focus-visible:ring-1 focus-visible:ring-foreground transition-none h-12 font-mono"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 sm:col-span-2">
+                      <Label className="text-xs uppercase tracking-widest text-muted-foreground font-mono">
+                        Logo URL
+                      </Label>
+                      <Input
+                        value={brandingData.branding_logo_url}
+                        onChange={(e) =>
+                          setBrandingData((prev) => ({ ...prev, branding_logo_url: e.target.value }))
+                        }
+                        placeholder="https://r2.simly.io/logos/your-logo.png"
+                        className="rounded-none border-border bg-transparent focus-visible:ring-1 focus-visible:ring-foreground transition-none h-12 font-light font-mono text-sm"
+                      />
+                      {brandingData.branding_logo_url && (
+                        <div className="flex items-center gap-4 pt-2">
+                          <img
+                            src={brandingData.branding_logo_url}
+                            alt="Logo preview"
+                            className="h-10 w-auto object-contain border border-border bg-muted/20 p-1"
+                            onError={(e) => (e.currentTarget.style.display = "none")}
+                          />
+                          <span className="text-xs font-mono text-muted-foreground uppercase tracking-widest">Preview</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="pt-4">
+                    <Button
+                      onClick={handleSaveBranding}
+                      disabled={savingBranding}
+                      variant="outline"
+                      className="rounded-none border-violet-500 text-violet-500 hover:bg-violet-500 hover:text-white uppercase tracking-widest text-sm h-12 px-8 transition-colors"
+                    >
+                      {savingBranding ? "Deploying..." : "Deploy Branding"}
+                    </Button>
+                  </div>
+                </div>
+              </section>
+            )}
+
           </div>
 
           {/* Right Column: Metrology (5 cols) */}
