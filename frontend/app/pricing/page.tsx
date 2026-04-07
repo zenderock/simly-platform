@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Check, Sprout, Gem, Building2 } from "lucide-react";
+import { Check, Sprout, Gem, Building2, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Header } from "@/components/landing/header";
 import { Footer } from "@/components/landing/footer";
@@ -139,6 +139,23 @@ export default function PricingPage() {
     },
   ];
 
+  const whiteLabel = {
+    icon: <Layers className="w-4.5 h-4.5" />,
+    category: "Custom",
+    title: "White-Label",
+    description: "Your brand, your system",
+    price: "$120",
+    period: "/month",
+    initials: "W",
+    features: [
+      "Everything in Enterprise",
+      "Custom logo & app name",
+      "QR scan via your own API",
+      "Custom mobile app",
+      "Dedicated support",
+    ],
+  };
+
   return (
     <div className="bg-[#05080A] min-h-screen font-sans flex flex-col text-white selection:bg-[#8c52ff]/30 selection:text-[#8c52ff]">
       <Header />
@@ -154,10 +171,23 @@ export default function PricingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             {plans.map((plan, i) => (
               <PricingCard key={i} {...plan} />
             ))}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="md:col-start-2">
+              <div className="relative">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
+                  <span className="bg-[#8c52ff] text-white text-xs font-semibold px-3 py-1 rounded-full tracking-wide uppercase">
+                    Custom
+                  </span>
+                </div>
+                <PricingCard {...whiteLabel} />
+              </div>
+            </div>
           </div>
         </div>
       </main>

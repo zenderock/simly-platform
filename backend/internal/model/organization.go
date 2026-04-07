@@ -17,6 +17,11 @@ type Organization struct {
 	MaxCampaigns             int `json:"max_campaigns"`
 	MaxRecipientsPerCampaign int `json:"max_recipients_per_campaign"`
 	AutoSaveContacts         bool `json:"auto_save_contacts"`
+	// White-label
+	IsWhiteLabel    bool    `json:"is_white_label" db:"is_white_label"`
+	BrandingName    *string `json:"branding_name" db:"branding_name"`
+	BrandingLogoURL *string `json:"branding_logo_url" db:"branding_logo_url"`
+	BrandingColor   *string `json:"branding_color" db:"branding_color"`
 	// Billing fields
 	StripeCustomerID       *string    `json:"stripe_customer_id,omitempty"`
 	StripeSubscriptionID   *string    `json:"stripe_subscription_id,omitempty"`

@@ -12,18 +12,20 @@ import (
 )
 
 type OrganizationHandler struct {
-	service      *core.OrganizationService
-	auditService *core.AuditService
-	pricePro     string
-	priceAgency  string
+	service         *core.OrganizationService
+	auditService    *core.AuditService
+	pricePro        string
+	priceAgency     string
+	priceWhiteLabel string
 }
 
-func NewOrganizationHandler(service *core.OrganizationService, auditService *core.AuditService, pricePro, priceAgency string) *OrganizationHandler {
+func NewOrganizationHandler(service *core.OrganizationService, auditService *core.AuditService, pricePro, priceAgency, priceWhiteLabel string) *OrganizationHandler {
 	return &OrganizationHandler{
-		service:      service,
-		auditService: auditService,
-		pricePro:     pricePro,
-		priceAgency:  priceAgency,
+		service:         service,
+		auditService:    auditService,
+		pricePro:        pricePro,
+		priceAgency:     priceAgency,
+		priceWhiteLabel: priceWhiteLabel,
 	}
 }
 
@@ -224,10 +226,13 @@ func (h *OrganizationHandler) ListPlans(w http.ResponseWriter, r *http.Request) 
 	copy(plans, model.AvailablePlans)
 
 	for i := range plans {
-		if plans[i].ID == model.PlanPro {
+		switch plans[i].ID {
+		case model.PlanPro:
 			plans[i].StripePriceID = h.pricePro
-		} else if plans[i].ID == model.PlanAgency {
+		case model.PlanAgency:
 			plans[i].StripePriceID = h.priceAgency
+		case model.PlanWhiteLabel:
+			plans[i].StripePriceID = h.priceWhiteLabel
 		}
 	}
 

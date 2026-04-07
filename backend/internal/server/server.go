@@ -113,7 +113,7 @@ func (s *Server) setupRoutes() {
 	alertService := core.NewAlertService(s.DB, emailProvider)
 
 	// Billing (Initialize early for OrgService)
-	billingService := core.NewBillingService(s.DB, s.Config.StripeSecretKey, s.Config.StripeWebhookSecret, s.Config.FrontendURL, s.Config.StripePricePro, s.Config.StripePriceAgency)
+	billingService := core.NewBillingService(s.DB, s.Config.StripeSecretKey, s.Config.StripeWebhookSecret, s.Config.FrontendURL, s.Config.StripePricePro, s.Config.StripePriceAgency, s.Config.StripePriceWhiteLabel)
 
 	// Initialize Feature Limit Manager
 	featureLimitManager := core.NewFeatureLimitManager(s.DB)
@@ -186,7 +186,7 @@ func (s *Server) setupRoutes() {
 	deviceHandler := api.NewDeviceHandler(deviceService, orgService, auditService)
 	messageHandler := api.NewMessageHandler(messageService, orgService, deviceService)
 	webhookHandler := api.NewWebhookHandler(webhookService, orgService, auditService)
-	orgHandler := api.NewOrganizationHandler(orgService, auditService, s.Config.StripePricePro, s.Config.StripePriceAgency)
+	orgHandler := api.NewOrganizationHandler(orgService, auditService, s.Config.StripePricePro, s.Config.StripePriceAgency, s.Config.StripePriceWhiteLabel)
 	alertHandler := api.NewAlertHandler(alertService, orgService)
 	appDIDHandler := api.NewAppDIDHandler(appDIDService, orgService)
 	aiHandler := api.NewAIHandler(aiService, orgService)
@@ -195,8 +195,9 @@ func (s *Server) setupRoutes() {
 	requestLogService := core.NewRequestLogService(s.DB)
 	publicMessageHandler := api.NewPublicMessageHandler(messageService, orgService, appService)
 	publicCampaignHandler := api.NewPublicCampaignHandler(campaignService)
-	publicDeviceHandler := api.NewPublicDeviceHandler(deviceService)
-	publicAPIRouter := api.NewPublicAPIRouter(publicMessageHandler, publicCampaignHandler, publicDeviceHandler, apiKeyService, requestLogService)
+	publicDeviceHandler := api.NewPublicDeviceHandler(deviceService, orgService)
+	brandingHandler := api.NewBrandingHandler(orgService)
+	publicAPIRouter := api.NewPublicAPIRouter(publicMessageHandler, publicCampaignHandler, publicDeviceHandler, brandingHandler, apiKeyService, requestLogService)
 
 	// Request Log Handler (for dashboard)
 	requestLogHandler := api.NewRequestLogHandler(requestLogService, orgService)
@@ -344,6 +345,7 @@ func (s *Server) setupRoutes() {
 			r.Get("/current/stats", orgHandler.GetOrganizationStats)
 			r.Get("/current/dispatch-settings", orgHandler.GetDispatchSettings)
 			r.Put("/current/dispatch-settings", orgHandler.UpdateDispatchSettings)
+			r.Put("/current/branding", brandingHandler.UpdateBranding)
 			r.Get("/plans", orgHandler.ListPlans)
 			r.Post("/", orgHandler.CreateOrganization)
 			r.Post("/members", orgHandler.AddMember)

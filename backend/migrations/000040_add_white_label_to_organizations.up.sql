@@ -1,0 +1,1 @@
+ALTER TABLE organizations ADD COLUMN is_white_label BOOLEAN NOT NULL DEFAULT FALSE;

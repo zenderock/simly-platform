@@ -5,18 +5,21 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/zenderock/simly-backend/internal/core"
 )
 
 // PublicDeviceHandler handles Public API device-related endpoints
 type PublicDeviceHandler struct {
 	deviceService *core.DeviceService
+	orgService    *core.OrganizationService
 }
 
 // NewPublicDeviceHandler creates a new PublicDeviceHandler
-func NewPublicDeviceHandler(deviceService *core.DeviceService) *PublicDeviceHandler {
+func NewPublicDeviceHandler(deviceService *core.DeviceService, orgService *core.OrganizationService) *PublicDeviceHandler {
 	return &PublicDeviceHandler{
 		deviceService: deviceService,
+		orgService:    orgService,
 	}
 }
 
@@ -98,4 +101,59 @@ func (h *PublicDeviceHandler) ListDevices(w http.ResponseWriter, r *http.Request
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+// GenerateLinkToken handles POST /v1/devices/link-token (white-label only)
+func (h *PublicDeviceHandler) GenerateLinkToken(w http.ResponseWriter, r *http.Request) {
+	orgID := GetPublicOrgID(r.Context())
+	if orgID == 0 {
+		AuthError(w, "Invalid authentication context")
+		return
+	}
+
+	org, err := h.orgService.GetOrganizationByID(r.Context(), orgID)
+	if err != nil || !org.IsWhiteLabel {
+		http.Error(w, `{"error":"white-label plan required"}`, http.StatusForbidden)
+		return
+	}
+
+	appID := GetPublicAppID(r.Context())
+	token, err := h.deviceService.GenerateLinkToken(r.Context(), orgID, appID)
+	if err != nil {
+		InternalError(w)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(token)
+}
+
+// GetLinkTokenStatus handles GET /v1/devices/link-token/{token} (white-label only)
+func (h *PublicDeviceHandler) GetLinkTokenStatus(w http.ResponseWriter, r *http.Request) {
+	orgID := GetPublicOrgID(r.Context())
+	if orgID == 0 {
+		AuthError(w, "Invalid authentication context")
+		return
+	}
+
+	org, err := h.orgService.GetOrganizationByID(r.Context(), orgID)
+	if err != nil || !org.IsWhiteLabel {
+		http.Error(w, `{"error":"white-label plan required"}`, http.StatusForbidden)
+		return
+	}
+
+	token := chi.URLParam(r, "token")
+	if token == "" {
+		http.Error(w, "Token required", http.StatusBadRequest)
+		return
+	}
+
+	status, err := h.deviceService.GetLinkTokenStatus(r.Context(), orgID, token)
+	if err != nil {
+		InternalError(w)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(status)
 }
