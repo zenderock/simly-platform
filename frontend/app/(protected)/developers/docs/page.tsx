@@ -190,8 +190,8 @@ const WHITE_LABEL_ENDPOINTS: APIEndpoint[] = [
       },
     ],
     responseExample: {
-      app_name: "Ayoub Gateway",
-      logo_url: "https://r2.simly.io/logos/ayoub-logo.png",
+      app_name: "Simly Gateway",
+      logo_url: "https://zenderock.me/logos/logo.png",
       primary_color: "#1A73E8",
     },
     errorResponses: [

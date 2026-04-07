@@ -529,7 +529,7 @@ export default function OrganizationPage() {
                         onChange={(e) =>
                           setBrandingData((prev) => ({ ...prev, branding_name: e.target.value }))
                         }
-                        placeholder="e.g. Ayoub Gateway"
+                        placeholder="e.g. Simly Gateway"
                         className="rounded-none border-border bg-transparent focus-visible:ring-1 focus-visible:ring-foreground transition-none h-12 font-light text-base"
                       />
                     </div>
@@ -618,7 +618,7 @@ export default function OrganizationPage() {
                       <span className="text-sm uppercase tracking-widest opacity-90 text-background">Cycle SMS Load</span>
                       <div className="flex items-baseline gap-2">
                         <span className="text-6xl font-light tracking-tighter tabular-nums leading-none">
-                          {stats?.messages_this_month?.toLocaleString() || 0}
+                          {(stats?.messages_this_month ?? 0).toLocaleString()}
                         </span>
                         {organization.sms_monthly_limit > 0 && (
                           <span className="font-mono text-sm opacity-50 uppercase tracking-widest">
@@ -653,7 +653,7 @@ export default function OrganizationPage() {
                       <span className="text-sm uppercase tracking-widest opacity-90 text-background">Active Nodes</span>
                       <div className="flex items-baseline gap-2">
                         <span className="text-6xl font-light tracking-tighter tabular-nums leading-none">
-                          {stats?.active_devices || 0}
+                          {(stats?.active_devices ?? 0).toLocaleString()}
                         </span>
                         {organization.max_devices > 0 && (
                           <span className="font-mono text-sm opacity-50 uppercase tracking-widest">
@@ -692,13 +692,13 @@ export default function OrganizationPage() {
                   <div className="grid grid-cols-2 gap-[2px] bg-background/20">
                     <div className="bg-foreground p-5 space-y-3">
                       <span className="block text-xs uppercase font-mono tracking-widest opacity-60">24H Volume</span>
-                      <span className="block text-3xl tracking-tighter font-light tabular-nums">{stats?.messages_today || 0}</span>
+                      <span className="block text-3xl tracking-tighter font-light tabular-nums">{(stats?.messages_today ?? 0).toLocaleString()}</span>
                     </div>
                     <div className="bg-foreground p-5 space-y-3">
                       <span className="block text-xs uppercase font-mono tracking-widest opacity-60">Transmit SR</span>
-                      <span className={`block text-3xl tracking-tighter font-light tabular-nums ${(stats?.success_rate || 0) >= 95 ? "text-background" : "text-amber-500"
+                      <span className={`block text-3xl tracking-tighter font-light tabular-nums ${(stats?.success_rate ?? 0) >= 95 ? "text-background" : "text-amber-500"
                         }`}>
-                        {stats?.success_rate?.toFixed(1) || 0}%
+                        {(stats?.success_rate ?? 0).toFixed(1)}%
                       </span>
                     </div>
                   </div>
