@@ -30,6 +30,7 @@ import {
   IconAlertTriangle,
   IconRocket,
   IconDeviceMobile,
+  IconBrandApple,
 } from "@tabler/icons-react";
 
 const DEVICE_ENDPOINTS: APIEndpoint[] = [
@@ -89,6 +90,125 @@ const DEVICE_ENDPOINTS: APIEndpoint[] = [
     ],
   },
 ];
+const WHITE_LABEL_ENDPOINTS: APIEndpoint[] = [
+  {
+    method: "POST",
+    path: "/v1/devices/link-token",
+    summary: "Generate a device link token",
+    description:
+      "Creates a one-time token used to link a mobile device via QR code scan. Display the returned token as a QR code in your app, then poll the status endpoint to confirm the link. Requires a White-Label plan.",
+    headers: [
+      {
+        name: "Authorization",
+        required: true,
+        description: "Bearer token with your API key",
+        example: "Bearer sk_live_...",
+      },
+    ],
+    responseExample: {
+      token: "lnk_a1b2c3d4e5f6",
+      expires_at: "2026-01-02T10:35:00Z",
+      status: "pending",
+    },
+    errorResponses: [
+      {
+        status: 403,
+        code: "forbidden",
+        description: "White-label plan required",
+      },
+      {
+        status: 401,
+        code: "invalid_api_key",
+        description: "API key is invalid",
+      },
+      {
+        status: 500,
+        code: "internal_error",
+        description: "Server error",
+      },
+    ],
+  },
+  {
+    method: "GET",
+    path: "/v1/devices/link-token/{token}",
+    summary: "Get link token status",
+    description:
+      "Poll this endpoint after displaying the QR code to know when the device has been successfully linked. Status transitions from `pending` → `used` once the mobile app scans the QR code. Requires a White-Label plan.",
+    headers: [
+      {
+        name: "Authorization",
+        required: true,
+        description: "Bearer token with your API key",
+        example: "Bearer sk_live_...",
+      },
+    ],
+    pathParams: [
+      {
+        name: "token",
+        type: "string",
+        required: true,
+        description: "The link token returned by POST /v1/devices/link-token",
+        example: "lnk_a1b2c3d4e5f6",
+      },
+    ],
+    responseExample: {
+      token: "lnk_a1b2c3d4e5f6",
+      status: "used",
+      device_id: 42,
+      expires_at: "2026-01-02T10:35:00Z",
+    },
+    errorResponses: [
+      {
+        status: 403,
+        code: "forbidden",
+        description: "White-label plan required",
+      },
+      {
+        status: 404,
+        code: "resource_not_found",
+        description: "Token not found or expired",
+      },
+      {
+        status: 401,
+        code: "invalid_api_key",
+        description: "API key is invalid",
+      },
+    ],
+  },
+  {
+    method: "GET",
+    path: "/v1/branding",
+    summary: "Get branding configuration",
+    description:
+      "Returns the branding configuration for your white-label app (app name, logo URL, primary color). Called by the mobile app at startup to apply your custom branding. Falls back to Simly defaults if not configured. Requires a White-Label plan.",
+    headers: [
+      {
+        name: "Authorization",
+        required: true,
+        description: "Bearer token with your API key",
+        example: "Bearer sk_live_...",
+      },
+    ],
+    responseExample: {
+      app_name: "Ayoub Gateway",
+      logo_url: "https://r2.simly.io/logos/ayoub-logo.png",
+      primary_color: "#1A73E8",
+    },
+    errorResponses: [
+      {
+        status: 403,
+        code: "forbidden",
+        description: "White-label plan required",
+      },
+      {
+        status: 401,
+        code: "invalid_api_key",
+        description: "API key is invalid",
+      },
+    ],
+  },
+];
+
 const CAMPAIGN_ENDPOINTS: APIEndpoint[] = [
   {
     method: "POST",
@@ -635,6 +755,43 @@ export default function APIDocsPage() {
           </div>
         </div>
 
+        {/* White-Label */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <div className="size-8 rounded-lg bg-violet-500/10 flex items-center justify-center">
+              <IconBrandApple className="size-4 text-violet-600" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl font-bold">White-Label</h2>
+                <Badge className="bg-violet-500/10 text-violet-600 border-violet-500/20 text-[10px]">
+                  $120/month plan
+                </Badge>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Device linking via QR code and branding configuration for your own app
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {WHITE_LABEL_ENDPOINTS.map((endpoint, index) => (
+              <motion.div
+                key={`${endpoint.method}-${endpoint.path}`}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 + index * 0.05 }}
+              >
+                <APIEndpointDoc
+                  endpoint={endpoint}
+                  apiKey={selectedKey?.prefix}
+                  defaultExpanded={false}
+                />
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
         {/* Campaigns */}
         <div className="space-y-4">
           <div className="flex items-center gap-2">
@@ -829,6 +986,24 @@ export default function APIDocsPage() {
                       </td>
                       <td className="px-4 py-2 text-muted-foreground">
                         API key is invalid or revoked
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="px-4 py-2">
+                        <Badge
+                          variant="outline"
+                          className="bg-red-500/10 text-red-600 border-red-500/20"
+                        >
+                          403
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-2">
+                        <code className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">
+                          forbidden
+                        </code>
+                      </td>
+                      <td className="px-4 py-2 text-muted-foreground">
+                        Feature requires White-Label plan
                       </td>
                     </tr>
                     <tr>
