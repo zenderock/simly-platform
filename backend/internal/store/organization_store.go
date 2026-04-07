@@ -41,11 +41,12 @@ func (s *Store) CreateOrganization(ctx context.Context, org *model.Organization)
 
 func (s *Store) GetOrganizationByID(ctx context.Context, id int) (*model.Organization, error) {
 	query := `
-		SELECT id, name, slug, plan, sms_monthly_limit, sms_burst_limit, max_devices, max_sims_per_device, 
+		SELECT id, name, slug, plan, sms_monthly_limit, sms_burst_limit, max_devices, max_sims_per_device,
 		       max_applications, max_contacts, max_campaigns, max_recipients_per_campaign,
-		       stripe_customer_id, stripe_subscription_id, stripe_price_id, stripe_current_period_end, 
-		       sms_throttle_rate_seconds, send_window_start, send_window_end, send_window_timezone, 
-		       auto_save_contacts, created_at, updated_at
+		       stripe_customer_id, stripe_subscription_id, stripe_price_id, stripe_current_period_end,
+		       sms_throttle_rate_seconds, send_window_start, send_window_end, send_window_timezone,
+		       auto_save_contacts, is_white_label, branding_name, branding_logo_url, branding_color,
+		       created_at, updated_at
 		FROM organizations
 		WHERE id = $1
 	`
@@ -72,6 +73,10 @@ func (s *Store) GetOrganizationByID(ctx context.Context, id int) (*model.Organiz
 		&org.SendWindowEnd,
 		&org.SendWindowTimezone,
 		&org.AutoSaveContacts,
+		&org.IsWhiteLabel,
+		&org.BrandingName,
+		&org.BrandingLogoURL,
+		&org.BrandingColor,
 		&org.CreatedAt,
 		&org.UpdatedAt,
 	)
@@ -158,14 +163,15 @@ func (s *Store) UpdateOrganization(ctx context.Context, orgID int, name string, 
 }
 
 func (s *Store) UpdateOrganizationPlan(ctx context.Context, orgID int, plan string, smsMonthly, smsBurst, maxDevices, maxSimsPerDevice, maxApplications, maxContacts, maxCampaigns, maxRecipientsPerCampaign int) error {
+	isWhiteLabel := plan == model.PlanWhiteLabel
 	query := `
-		UPDATE organizations 
+		UPDATE organizations
 		SET plan = $1, sms_monthly_limit = $2, sms_burst_limit = $3, max_devices = $4, max_sims_per_device = $5,
 		    max_applications = $6, max_contacts = $7, max_campaigns = $8, max_recipients_per_campaign = $9,
-		    updated_at = NOW() 
-		WHERE id = $10
+		    is_white_label = $10, updated_at = NOW()
+		WHERE id = $11
 	`
-	result, err := s.db.Exec(ctx, query, plan, smsMonthly, smsBurst, maxDevices, maxSimsPerDevice, maxApplications, maxContacts, maxCampaigns, maxRecipientsPerCampaign, orgID)
+	result, err := s.db.Exec(ctx, query, plan, smsMonthly, smsBurst, maxDevices, maxSimsPerDevice, maxApplications, maxContacts, maxCampaigns, maxRecipientsPerCampaign, isWhiteLabel, orgID)
 	if err != nil {
 		return fmt.Errorf("failed to update organization plan: %w", err)
 	}
@@ -252,6 +258,22 @@ func (s *Store) GetOrganizationStats(ctx context.Context, orgID int) (*model.Org
 	}
 
 	return stats, nil
+}
+
+func (s *Store) UpdateOrganizationBranding(ctx context.Context, orgID int, name, logoURL, color *string) error {
+	query := `
+		UPDATE organizations
+		SET branding_name = $1, branding_logo_url = $2, branding_color = $3, updated_at = NOW()
+		WHERE id = $4
+	`
+	result, err := s.db.Exec(ctx, query, name, logoURL, color, orgID)
+	if err != nil {
+		return fmt.Errorf("failed to update organization branding: %w", err)
+	}
+	if result.RowsAffected() == 0 {
+		return fmt.Errorf("organization not found")
+	}
+	return nil
 }
 
 func (s *Store) UpdateOrganizationStripe(ctx context.Context, orgID int, customerID, subscriptionID string) error {

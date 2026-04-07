@@ -129,5 +129,5 @@ flutter_launcher_icons:
 
 package_rename_config:
   android:
-    app_name: "SIMLY Gateway"
+    app_name: "Gateway"
     package_name: "com.simly.gateway"

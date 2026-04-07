@@ -114,6 +114,10 @@ func (s *OrganizationService) UpdatePlan(ctx context.Context, orgID int, planID 
 	return s.store.UpdateOrganizationPlan(ctx, orgID, planID, 0, limits.SMSBurst, limits.MaxDevices, limits.MaxSimsPerDevice, limits.MaxApplications, limits.MaxContacts, limits.MaxCampaigns, limits.MaxRecipientsPerCampaign)
 }
 
+func (s *OrganizationService) UpdateBranding(ctx context.Context, orgID int, name, logoURL, color *string) error {
+	return s.store.UpdateOrganizationBranding(ctx, orgID, name, logoURL, color)
+}
+
 func (s *OrganizationService) GetDispatchSettings(ctx context.Context, orgID int) (*store.OrganizationDispatchSettings, error) {
 	return s.store.GetOrganizationDispatchSettings(ctx, orgID)
 }

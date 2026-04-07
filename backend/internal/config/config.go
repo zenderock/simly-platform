@@ -19,8 +19,9 @@ type Config struct {
 	StripeSecretKey        string
 	StripePublishableKey   string
 	StripeWebhookSecret    string
-	StripePricePro         string
-	StripePriceAgency      string
+	StripePricePro          string
+	StripePriceAgency       string
+	StripePriceWhiteLabel   string
 	FirebaseServiceAccount string
 	FrontendURL            string
 	TurnstileSecret        string
@@ -50,8 +51,9 @@ func Load() *Config {
 		StripeSecretKey:        getEnv("STRIPE_SECRET_KEY", ""),
 		StripePublishableKey:   getEnv("STRIPE_PUBLISHABLE_KEY", ""),
 		StripeWebhookSecret:    getEnv("STRIPE_WEBHOOK_SECRET", ""),
-		StripePricePro:         getEnv("STRIPE_PRICE_PRO", "price_pro_default"),
-		StripePriceAgency:      getEnv("STRIPE_PRICE_AGENCY", "price_agency_default"),
+		StripePricePro:        getEnv("STRIPE_PRICE_PRO", "price_pro_default"),
+		StripePriceAgency:     getEnv("STRIPE_PRICE_AGENCY", "price_agency_default"),
+		StripePriceWhiteLabel: getEnv("STRIPE_PRICE_WHITE_LABEL", "price_white_label_default"),
 		FirebaseServiceAccount: getEnv("FIREBASE_SERVICE_ACCOUNT", ""),
 		FrontendURL:            getEnv("FRONTEND_URL", "http://localhost:3000"),
 		TurnstileSecret:        getEnv("TURNSTILE_SECRET_KEY", "1x0000000000000000000000000000000AA"),

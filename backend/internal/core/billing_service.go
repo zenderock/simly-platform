@@ -19,23 +19,25 @@ import (
 
 // BillingService handles Stripe billing integration
 type BillingService struct {
-	store             *store.Store
-	stripeSecretKey   string
-	webhookSecret     string
-	frontendURL       string
-	stripePricePro    string
-	stripePriceAgency string
+	store                  *store.Store
+	stripeSecretKey        string
+	webhookSecret          string
+	frontendURL            string
+	stripePricePro         string
+	stripePriceAgency      string
+	stripePriceWhiteLabel  string
 }
 
-func NewBillingService(store *store.Store, stripeSecretKey, webhookSecret, frontendURL, stripePricePro, stripePriceAgency string) *BillingService {
+func NewBillingService(store *store.Store, stripeSecretKey, webhookSecret, frontendURL, stripePricePro, stripePriceAgency, stripePriceWhiteLabel string) *BillingService {
 	stripe.Key = stripeSecretKey
 	return &BillingService{
-		store:             store,
-		stripeSecretKey:   stripeSecretKey,
-		webhookSecret:     webhookSecret,
-		frontendURL:       frontendURL,
-		stripePricePro:    stripePricePro,
-		stripePriceAgency: stripePriceAgency,
+		store:                 store,
+		stripeSecretKey:       stripeSecretKey,
+		webhookSecret:         webhookSecret,
+		frontendURL:           frontendURL,
+		stripePricePro:        stripePricePro,
+		stripePriceAgency:     stripePriceAgency,
+		stripePriceWhiteLabel: stripePriceWhiteLabel,
 	}
 }
 
@@ -117,10 +119,13 @@ func (s *BillingService) HandleWebhook(payload []byte, signature string) error {
 		var planID string
 		if len(subscription.Items.Data) > 0 {
 			priceID := subscription.Items.Data[0].Price.ID
-			if priceID == s.stripePricePro {
+			switch {
+			case priceID == s.stripePricePro:
 				planID = model.PlanPro
-			} else if priceID == s.stripePriceAgency {
+			case priceID == s.stripePriceAgency:
 				planID = model.PlanAgency
+			case priceID == s.stripePriceWhiteLabel:
+				planID = model.PlanWhiteLabel
 			}
 		}
 
@@ -186,7 +191,7 @@ func (s *BillingService) ReportUsageToStripe(ctx context.Context, orgID int, usa
 		for _, item := range subscription.Items.Data {
 			// Logic to identify the correct item.
 			// If we rely on the plan ID matching the price ID:
-			if item.Price.ID == s.stripePricePro || item.Price.ID == s.stripePriceAgency {
+			if item.Price.ID == s.stripePricePro || item.Price.ID == s.stripePriceAgency || item.Price.ID == s.stripePriceWhiteLabel {
 				subscriptionItemID = item.ID
 				break
 			}

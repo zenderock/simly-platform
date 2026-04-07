@@ -6,6 +6,7 @@ import 'app/routes/app_pages.dart';
 import 'app/data/services/background_handler.dart';
 import 'app/data/services/auth_service.dart';
 import 'app/data/services/settings_service.dart';
+import 'app/data/services/branding_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,10 +24,11 @@ void main() async {
 
   Get.put(AuthService());
   Get.put(SettingsService());
+  await Get.putAsync(() => BrandingService().init());
 
   runApp(
     GetMaterialApp(
-      title: "Simly Gateway",
+      title: "Gateway",
       initialRoute: AppPages.INITIAL,
       getPages: AppPages.routes,
       debugShowCheckedModeBanner: false,

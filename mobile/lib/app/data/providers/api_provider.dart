@@ -38,4 +38,9 @@ class ApiClient {
       dio.post(path, data: data);
   Future<Response> get(String path) => dio.get(path);
   Future<Response> put(String path, dynamic data) => dio.put(path, data: data);
+
+  Future<Map<String, dynamic>> getBranding() async {
+    final response = await dio.get('v1/branding');
+    return response.data as Map<String, dynamic>;
+  }
 }

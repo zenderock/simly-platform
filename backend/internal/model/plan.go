@@ -26,9 +26,10 @@ type PlanLimits struct {
 }
 
 const (
-	PlanFree   = "free"         // Reverted from "starter" to "free"
-	PlanPro    = "professional" // Renamed from "pro" to "professional"
-	PlanAgency = "enterprise"   // Renamed from "agency" to "enterprise"
+	PlanFree       = "free"         // Reverted from "starter" to "free"
+	PlanPro        = "professional" // Renamed from "pro" to "professional"
+	PlanAgency     = "enterprise"   // Renamed from "agency" to "enterprise"
+	PlanWhiteLabel = "white_label"
 )
 
 // AvailablePlans returns all available subscription plans
@@ -116,6 +117,34 @@ var AvailablePlans = []Plan{
 			SMSRatePerMessage:        0,
 			SMSBurst:                 1000,
 			SMSMonthly:               -1, // Unlimited
+			MaxDevices:               -1, // unlimited
+			MaxSimsPerDevice:         4,
+			MaxApplications:          -1, // unlimited
+			MaxContacts:              -1, // unlimited
+			MaxCampaigns:             -1, // unlimited
+			MaxRecipientsPerCampaign: -1, // unlimited
+		},
+		Popular: false,
+	},
+	{
+		ID:          PlanWhiteLabel,
+		Name:        "White-Label",
+		Price:       12000, // $120
+		Period:      "month",
+		Description: "Your brand, your system",
+		Features: []string{
+			"Unlimited SMS",
+			"Unlimited devices",
+			"Unlimited apps",
+			"QR scan via public API",
+			"Custom branding (logo + name)",
+			"Dedicated mobile app",
+			"Dedicated support",
+		},
+		Limits: PlanLimits{
+			SMSRatePerMessage:        0,
+			SMSBurst:                 200,
+			SMSMonthly:               -1, // unlimited
 			MaxDevices:               -1, // unlimited
 			MaxSimsPerDevice:         4,
 			MaxApplications:          -1, // unlimited

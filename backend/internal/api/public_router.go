@@ -12,6 +12,7 @@ type PublicAPIRouter struct {
 	requestLogService *core.RequestLogService
 	campaignHandler   *PublicCampaignHandler
 	deviceHandler     *PublicDeviceHandler
+	brandingHandler   *BrandingHandler
 }
 
 // NewPublicAPIRouter creates a new PublicAPIRouter
@@ -19,6 +20,7 @@ func NewPublicAPIRouter(
 	messageHandler *PublicMessageHandler,
 	campaignHandler *PublicCampaignHandler,
 	deviceHandler *PublicDeviceHandler,
+	brandingHandler *BrandingHandler,
 	apiKeyService *core.APIKeyService,
 	requestLogService *core.RequestLogService,
 ) *PublicAPIRouter {
@@ -26,6 +28,7 @@ func NewPublicAPIRouter(
 		messageHandler:    messageHandler,
 		campaignHandler:   campaignHandler,
 		deviceHandler:     deviceHandler,
+		brandingHandler:   brandingHandler,
 		apiKeyService:     apiKeyService,
 		requestLogService: requestLogService,
 	}
@@ -39,7 +42,12 @@ func (pr *PublicAPIRouter) RegisterRoutes(r chi.Router) {
 	r.Use(RequestLoggerMiddleware(pr.requestLogService))
 
 	// Device endpoints
-	r.Get("/devices", pr.deviceHandler.ListDevices) // GET /v1/devices
+	r.Get("/devices", pr.deviceHandler.ListDevices)                           // GET /v1/devices
+	r.Post("/devices/link-token", pr.deviceHandler.GenerateLinkToken)         // POST /v1/devices/link-token (white-label)
+	r.Get("/devices/link-token/{token}", pr.deviceHandler.GetLinkTokenStatus) // GET /v1/devices/link-token/{token} (white-label)
+
+	// Branding endpoint (white-label)
+	r.Get("/branding", pr.brandingHandler.GetBranding) // GET /v1/branding
 
 	// Message endpoints
 	r.Route("/messages", func(r chi.Router) {
