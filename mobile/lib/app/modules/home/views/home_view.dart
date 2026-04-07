@@ -1,23 +1,44 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../controllers/home_controller.dart';
+import 'package:mobile/app/data/services/branding_service.dart';
 
 class HomeView extends GetView<HomeController> {
   const HomeView({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final branding = Get.find<BrandingService>();
+    
     return Scaffold(
       backgroundColor: const Color(0xFFFBFBFC),
       appBar: AppBar(
-        title: const Text(
-          'SIMLY Gateway',
-          style: TextStyle(
-            fontWeight: FontWeight.w800,
-            fontSize: 16,
-            letterSpacing: -0.5,
-            color: Color(0xFF1A1A1A),
-          ),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Obx(() {
+              if (branding.logoUrl.value.isNotEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Image.network(
+                    branding.logoUrl.value,
+                    height: 24,
+                    errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                  ),
+                );
+              }
+              return const SizedBox.shrink();
+            }),
+            Obx(() => Text(
+              branding.appName.value.toUpperCase(),
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 16,
+                letterSpacing: -0.5,
+                color: Color(0xFF1A1A1A),
+              ),
+            )),
+          ],
         ),
         backgroundColor: Colors.white,
         elevation: 0,
@@ -62,17 +83,17 @@ class HomeView extends GetView<HomeController> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  'Scan the QR code on your dashboard\nto start using Simly Gateway',
+                Obx(() => Text(
+                  'Scan the QR code on your dashboard\nto start using ${branding.appName.value}',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.black.withOpacity(0.4),
                     height: 1.5,
                   ),
-                ),
+                )),
                 const SizedBox(height: 32),
-                ElevatedButton.icon(
+                Obx(() => ElevatedButton.icon(
                   onPressed: () => Get.toNamed('/auth'),
                   icon: const Icon(Icons.add_rounded, color: Colors.white),
                   label: const Text(
@@ -83,7 +104,7 @@ class HomeView extends GetView<HomeController> {
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1A1A1A),
+                    backgroundColor: branding.primaryColor.value,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
                       vertical: 16,
@@ -93,7 +114,7 @@ class HomeView extends GetView<HomeController> {
                     ),
                     elevation: 0,
                   ),
-                ),
+                )),
               ],
             ),
           );

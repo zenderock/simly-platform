@@ -2,14 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../controllers/auth_controller.dart';
+import 'package:mobile/app/data/services/branding_service.dart';
 
 class AuthView extends GetView<AuthController> {
   const AuthView({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final branding = Get.find<BrandingService>();
+    
     return Scaffold(
-      appBar: AppBar(title: const Text('Link Device'), centerTitle: true),
+      appBar: AppBar(
+        title: Obx(() => Text('Link Device to ${branding.appName.value}')),
+        centerTitle: true,
+      ),
       body: Stack(
         children: [
           MobileScanner(
