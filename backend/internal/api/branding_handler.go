@@ -32,7 +32,7 @@ func (h *BrandingHandler) GetBranding(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Default to Simly branding if not configured
-	appName := "Gateway"
+	appName := "Simly Gateway"
 	if org.BrandingName != nil && *org.BrandingName != "" {
 		appName = *org.BrandingName
 	}
