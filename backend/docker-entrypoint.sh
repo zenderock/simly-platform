@@ -2,14 +2,8 @@
 set -eu
 
 if [ -n "${DATABASE_URL:-}" ]; then
-  if [ -f "./neon_backup.dump" ]; then
-    echo "neon_backup.dump found, importing..."
-    pg_restore --no-owner --no-privileges --clean --if-exists -d "$DATABASE_URL" ./neon_backup.dump || true
-    echo "Neon dump import complete."
-  fi
-
   echo "Simly migration preflight..."
-  # Retry up to 10 times with 3s delay — handles cold-start and transient DB unavailability
+  # Retry up to 10 times with 3s delay — handles Neon cold-start and transient DB unavailability
   attempt=1
   max_attempts=10
   until ./simly-backend prepare-db; do

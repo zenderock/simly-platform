@@ -23,7 +23,7 @@ FROM alpine:latest
 WORKDIR /app
 
 # Install runtime dependencies (certificates for HTTPS calls to Neon/Resend/Stripe)
-RUN apk add --no-cache ca-certificates tzdata postgresql-client
+RUN apk add --no-cache ca-certificates tzdata
 
 # Copy binary from builder
 COPY --from=builder /app/simly-backend .
@@ -36,9 +36,6 @@ COPY --from=builder /app/migrations ./migrations
 
 # Copy Firebase service account file
 COPY --from=builder /app/*.json ./
-
-# Copy Neon one-time migration dump (imported once on first deploy)
-COPY neon_backup.dump ./neon_backup.dump
 
 RUN chmod +x /app/docker-entrypoint.sh
 
