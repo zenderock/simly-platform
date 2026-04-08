@@ -7,7 +7,7 @@ class BrandingService extends GetxService {
   final _api = ApiClient();
   final _storage = GetStorage();
 
-  final appName = 'Gateway'.obs;
+  final appName = 'Simly Gateway'.obs;
   final logoUrl = ''.obs;
   final primaryColor = const Color(0xFF8c52ff).obs;
 
