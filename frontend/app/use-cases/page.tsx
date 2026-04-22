@@ -240,7 +240,7 @@ const UseCaseSection: React.FC<UseCaseSectionProps> = ({
 
             <blockquote className="relative z-10">
               <p className="text-xl md:text-2xl font-light text-white/90 italic leading-relaxed">
-                "{quote}"
+                &quot;{quote}&quot;
               </p>
               <footer className="mt-8 flex items-center gap-4">
                 <div className="w-10 h-10 rounded-full bg-linear-to-br from-white/10 to-white/5 border border-white/10 flex items-center justify-center text-xs font-bold text-white/50">

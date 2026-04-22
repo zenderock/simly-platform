@@ -236,7 +236,7 @@ export function GlobalSearch() {
           )}
           
           {!loading && query && results.length === 0 && (
-            <CommandEmpty>No results found for "{query}"</CommandEmpty>
+            <CommandEmpty>No results found for &quot;{query}&quot;</CommandEmpty>
           )}
 
           {!loading && results.length > 0 && Object.entries(groupedResults).map(([type, items]) => {

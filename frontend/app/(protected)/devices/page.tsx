@@ -175,8 +175,8 @@ export default function DevicesPage() {
         <div className="flex items-center gap-3 p-3 text-sm bg-orange-50 border border-orange-100 dark:bg-orange-950/20 dark:border-orange-900/30 text-orange-600 rounded-lg">
           <ShieldAlert className="size-4 shrink-0" />
           <p>
-            You've reached your device limit of {org?.max_devices}. Upgrade to a
-            Pro plan to add more devices.
+            You&apos;ve reached your device limit of {org?.max_devices}. Upgrade
+            to a Pro plan to add more devices.
           </p>
         </div>
       )}

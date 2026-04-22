@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/utils";
+import api from "@/lib/api";
 import { AssignNumberDialog } from "@/components/applications/assign-number-dialog";
 import { IconPlus, IconPhone, IconTrash } from "@tabler/icons-react";
 
@@ -48,11 +49,8 @@ export default function ApplicationNumbersPage() {
 
   const fetchApplication = async () => {
     try {
-      const response = await fetch(`/api/applications/${applicationId}`);
-      if (response.ok) {
-        const app = await response.json();
-        setApplication(app);
-      }
+      const response = await api.get<Application>(`/applications/${applicationId}`);
+      setApplication(response.data);
     } catch (error) {
       console.error("Failed to fetch application:", error);
     }
@@ -61,11 +59,8 @@ export default function ApplicationNumbersPage() {
   const fetchNumbers = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/applications/${applicationId}/dids`);
-      if (response.ok) {
-        const data = await response.json();
-        setNumbers(data);
-      }
+      const response = await api.get<AppDID[]>(`/applications/${applicationId}/dids`);
+      setNumbers(response.data);
     } catch (error) {
       console.error("Failed to fetch numbers:", error);
       toast.error("Failed to load assigned numbers");
@@ -76,26 +71,15 @@ export default function ApplicationNumbersPage() {
 
   const handleAssignNumber = async (didNumber: string, description: string) => {
     try {
-      const response = await fetch("/api/dids", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          application_id: applicationId,
-          did_number: didNumber,
-          description: description,
-        }),
+      await api.post("/dids", {
+        application_id: applicationId,
+        did_number: didNumber,
+        description: description,
       });
 
-      if (response.ok) {
-        toast.success("Number assigned successfully");
-        fetchNumbers();
-        setShowAssignDialog(false);
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        toast.error(getErrorMessage({ response: { data: errorData } }));
-      }
+      toast.success("Number assigned successfully");
+      fetchNumbers();
+      setShowAssignDialog(false);
     } catch (error) {
       console.error("Failed to assign number:", error);
       toast.error(getErrorMessage(error));
@@ -108,17 +92,9 @@ export default function ApplicationNumbersPage() {
     }
 
     try {
-      const response = await fetch(`/api/dids/${didId}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        toast.success("Number unassigned successfully");
-        fetchNumbers();
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        toast.error(getErrorMessage({ response: { data: errorData } }));
-      }
+      await api.delete(`/dids/${didId}`);
+      toast.success("Number unassigned successfully");
+      fetchNumbers();
     } catch (error) {
       console.error("Failed to unassign number:", error);
       toast.error(getErrorMessage(error));

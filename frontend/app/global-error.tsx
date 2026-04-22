@@ -1,15 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import { Poppins } from "next/font/google";
 import { Button } from "@/components/ui/button";
 import "./globals.css";
-
-const poppinsSans = Poppins({
-  variable: "--font-sans",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
-});
 
 export default function GlobalError({
   error,
@@ -24,7 +17,7 @@ export default function GlobalError({
 
   return (
     <html lang="en">
-      <body className={`${poppinsSans.variable} antialiased`}>
+      <body className="antialiased">
         <div className="flex min-h-screen flex-col items-center justify-center space-y-4 text-center">
           <div className="space-y-2">
             <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl text-destructive">

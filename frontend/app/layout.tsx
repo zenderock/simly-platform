@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Poppins } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import Providers from "@/components/providers";
@@ -9,14 +8,10 @@ import { Analytics } from "@vercel/analytics/next";
 import { PostHogProvider } from "@/components/providers/posthog-provider";
 import SuspendedPostHogPageView from "@/components/providers/posthog-pageview";
 
-
-const poppinsSans = Poppins({
-  variable: "--font-sans",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
-});
+const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(appUrl),
   title: "Simly - Android SMS Gateway",
   description: "Transform your Android phone into a professional SMS gateway.",
   other: {
@@ -31,7 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning translate="no">
-      <body className={`${poppinsSans.variable} antialiased`}>
+      <body className="antialiased">
         <Providers>
           <PostHogProvider>
             <SuspendedPostHogPageView />

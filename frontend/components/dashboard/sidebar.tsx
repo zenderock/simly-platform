@@ -583,7 +583,7 @@ export function DashboardSidebar({
           <DialogHeader>
             <DialogTitle>Rename Application</DialogTitle>
             <DialogDescription>
-              Enter a new name for "{appToRename?.name}"
+              Enter a new name for &quot;{appToRename?.name}&quot;
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
@@ -620,8 +620,8 @@ export function DashboardSidebar({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Application</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete "{appToDelete?.name}"? This action
-              cannot be undone and will delete all associated data.
+              Are you sure you want to delete &quot;{appToDelete?.name}&quot;?
+              This action cannot be undone and will delete all associated data.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

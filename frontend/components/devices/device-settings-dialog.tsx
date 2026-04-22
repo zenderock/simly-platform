@@ -38,9 +38,11 @@ export function DeviceSettingsDialog({
   const updateDevice = useUpdateDevice();
 
   useEffect(() => {
-    if (device) {
-      setName(device.name);
-    }
+    const frame = requestAnimationFrame(() => {
+      setName(device?.name ?? "");
+    });
+
+    return () => cancelAnimationFrame(frame);
   }, [device]);
 
   const handleUpdateSettings = async () => {

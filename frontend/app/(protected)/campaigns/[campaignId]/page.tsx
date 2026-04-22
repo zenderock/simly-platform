@@ -615,7 +615,7 @@ export default function CampaignDetailsPage() {
                   </h4>
                   <div className="bg-black rounded-lg p-3 font-mono text-[10px] text-zinc-400 select-all">
                     curl -X POST /v1/campaigns/{id}/launch \ <br />
-                    -H "Authorization: Bearer sk_..."
+                    -H &quot;Authorization: Bearer sk_...&quot;
                   </div>
                   <Button
                     variant="link"

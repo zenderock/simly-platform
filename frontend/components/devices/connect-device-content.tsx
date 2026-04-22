@@ -147,7 +147,7 @@ export function ConnectDeviceContent({
 
           <div className="flex flex-col gap-2">
             <div className="text-xs text-muted-foreground mb-2">
-              Can't scan?{" "}
+              Can&apos;t scan?{" "}
               <button
                 onClick={handleDownload}
                 className="text-primary hover:underline font-medium"

@@ -43,9 +43,9 @@ export default function TermsPage() {
               3. Disclaimer
             </h2>
             <p className="text-white/70 leading-relaxed">
-              The service is provided "as is" without warranties of any kind. We
-              do not guarantee immediate delivery of SMS messages as it depends
-              on your device connectivity and carrier network.
+              The service is provided &quot;as is&quot; without warranties of any
+              kind. We do not guarantee immediate delivery of SMS messages as it
+              depends on your device connectivity and carrier network.
             </p>
           </section>
         </div>

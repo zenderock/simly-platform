@@ -372,7 +372,7 @@ export function OnboardingModal() {
                       transition={{ delay: 0.3 }}
                       className="text-4xl font-bold tracking-tight"
                     >
-                      You're all set!
+                      You&apos;re all set!
                     </motion.h2>
                     <motion.p
                       initial={{ opacity: 0, y: 20 }}

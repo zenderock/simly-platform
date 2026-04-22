@@ -165,7 +165,7 @@ export function CreateKeyDialog({ applications, onCreated }: CreateKeyDialogProp
             <DialogHeader>
               <DialogTitle>API Key Generated</DialogTitle>
               <DialogDescription className="text-emerald-600 font-medium">
-                Please copy your key now. You won't be able to see it again!
+                Please copy your key now. You won&apos;t be able to see it again!
               </DialogDescription>
             </DialogHeader>
             
@@ -218,7 +218,7 @@ export function CreateKeyDialog({ applications, onCreated }: CreateKeyDialogProp
             </div>
 
             <Button onClick={handleReset} className="w-full font-bold h-11" variant="outline">
-              Done, I've saved it
+              Done, I&apos;ve saved it
             </Button>
           </div>
         )}

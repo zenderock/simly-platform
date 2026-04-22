@@ -514,7 +514,7 @@ export default function CreateCampaignPage() {
                                 </SelectContent>
                               </Select>
                               <FormDescription>
-                                Leave 'Automatic' to optimize delivery rates.
+                                Leave &apos;Automatic&apos; to optimize delivery rates.
                               </FormDescription>
                               <FormMessage />
                             </FormItem>
@@ -591,7 +591,7 @@ export default function CreateCampaignPage() {
                             <FormLabel className="text-base">Send Window</FormLabel>
                             <FormDescription className="text-xs max-w-[360px]">
                               Restrict sending to specific hours (UTC). Leave on
-                              "Organization default" to use your global settings.
+                              &quot;Organization default&quot; to use your global settings.
                             </FormDescription>
                           </div>
                           <div className="grid grid-cols-2 gap-3">

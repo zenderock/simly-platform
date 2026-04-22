@@ -99,8 +99,8 @@ export default function NotificationsPage() {
             <Bell className="size-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">No notifications</h3>
             <p className="text-muted-foreground text-center">
-              You're all caught up! Notifications will appear here when there
-              are updates.
+              You&apos;re all caught up! Notifications will appear here when
+              there are updates.
             </p>
           </CardContent>
         </Card>
