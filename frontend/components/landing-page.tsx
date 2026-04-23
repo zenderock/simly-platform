@@ -959,6 +959,23 @@ const PricingSection: React.FC = () => {
     },
   ];
 
+  const whiteLabel = {
+    icon: <Layers className="w-4.5 h-4.5" />,
+    category: "Custom",
+    title: "White-Label",
+    description: "Your brand, your system.",
+    price: "$120",
+    period: "/month",
+    initials: "W",
+    features: [
+      "Everything in Enterprise",
+      "Custom logo & app name",
+      "QR scan via your own API",
+      "Dedicated mobile app",
+      "Dedicated support",
+    ],
+  };
+
   return (
     <section
       className="border bg-[#05080A] border-white/10 border-b pt-24 pb-24"
@@ -977,6 +994,17 @@ const PricingSection: React.FC = () => {
           {plans.map((plan, i) => (
             <PricingCard key={i} {...plan} />
           ))}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-white/10 border border-white/10 border-t-0 mt-0">
+          <div className="col-start-1 md:col-start-2 relative">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
+              <span className="bg-[#8c52ff] text-white text-xs font-semibold px-3 py-1 rounded-full tracking-wide uppercase">
+                Custom
+              </span>
+            </div>
+            <PricingCard {...whiteLabel} />
+          </div>
         </div>
       </div>
     </section>

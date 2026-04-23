@@ -48,6 +48,7 @@ func TestMain(m *testing.M) {
 		os.Setenv("RESEND_API_KEY", "")
 		os.Setenv("STRIPE_SECRET_KEY", "")
 		os.Setenv("STRIPE_WEBHOOK_SECRET", "")
+		os.Setenv("BILLING_ADMIN_SECRET", "test-billing-admin-secret")
 		os.Setenv("R2_ACCOUNT_ID", "")
 		os.Setenv("OPENROUTER_API_KEY", "")
 		os.Setenv("FIREBASE_SERVICE_ACCOUNT", "")

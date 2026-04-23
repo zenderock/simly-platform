@@ -44,6 +44,7 @@ func (s *Store) GetOrganizationByID(ctx context.Context, id int) (*model.Organiz
 		SELECT id, name, slug, plan, sms_monthly_limit, sms_burst_limit, max_devices, max_sims_per_device,
 		       max_applications, max_contacts, max_campaigns, max_recipients_per_campaign,
 		       stripe_customer_id, stripe_subscription_id, stripe_price_id, stripe_current_period_end,
+		       trial_consumed_at, trial_consumed_plan_id,
 		       sms_throttle_rate_seconds, send_window_start, send_window_end, send_window_timezone,
 		       auto_save_contacts, is_white_label, branding_name, branding_logo_url, branding_color,
 		       created_at, updated_at
@@ -68,6 +69,8 @@ func (s *Store) GetOrganizationByID(ctx context.Context, id int) (*model.Organiz
 		&org.StripeSubscriptionID,
 		&org.StripePriceID,
 		&org.StripeCurrentPeriodEnd,
+		&org.TrialConsumedAt,
+		&org.TrialConsumedPlanID,
 		&org.SMSThrottleRateSeconds,
 		&org.SendWindowStart,
 		&org.SendWindowEnd,

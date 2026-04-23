@@ -196,7 +196,7 @@ func (s *Server) setupRoutes(opts Options) {
 	deviceHandler := api.NewDeviceHandler(deviceService, orgService, auditService)
 	messageHandler := api.NewMessageHandler(messageService, orgService, deviceService)
 	webhookHandler := api.NewWebhookHandler(webhookService, orgService, auditService)
-	orgHandler := api.NewOrganizationHandler(orgService, auditService, s.Config.StripePricePro, s.Config.StripePriceAgency, s.Config.StripePriceWhiteLabel)
+	orgHandler := api.NewOrganizationHandler(orgService, billingService, auditService, s.Config.StripePricePro, s.Config.StripePriceAgency, s.Config.StripePriceWhiteLabel)
 	alertHandler := api.NewAlertHandler(alertService, orgService)
 	appDIDHandler := api.NewAppDIDHandler(appDIDService, orgService)
 	aiHandler := api.NewAIHandler(aiService, orgService)
@@ -227,7 +227,7 @@ func (s *Server) setupRoutes(opts Options) {
 	uploadHandler := api.NewUploadHandler(storageService)
 
 	// Billing Handler
-	billingHandler := api.NewBillingHandler(billingService, orgService)
+	billingHandler := api.NewBillingHandler(billingService, orgService, s.Config.BillingAdminSecret)
 
 	// Routing
 	r := s.Router
@@ -244,7 +244,7 @@ func (s *Server) setupRoutes(opts Options) {
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-Organization-ID", "X-Application-ID"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-Organization-ID", "X-Application-ID", "X-Admin-Secret"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: false,
 		MaxAge:           300,
@@ -252,6 +252,9 @@ func (s *Server) setupRoutes(opts Options) {
 
 	// Public Routes
 	r.Post("/api/webhooks/stripe", billingHandler.HandleStripeWebhook)
+	r.Route("/api/internal/billing", func(r chi.Router) {
+		billingHandler.RegisterInternalRoutes(r)
+	})
 
 	// Health Check
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {

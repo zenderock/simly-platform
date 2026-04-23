@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Loader2, Sparkles } from "lucide-react";
+import { Check, Sparkles } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import api from "@/lib/api";
 import { Plan } from "@/types/plan";
@@ -93,12 +93,20 @@ export default function PlansPage() {
 
   const formatPrice = (cents: number) => `$${(cents / 100).toFixed(0)}`;
   const currentPlanId = currentOrg?.plan?.toLowerCase() || "free";
+  const formatTrialEnd = (value?: string | null) => {
+    if (!value) return null;
+    return new Date(value).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
 
   const getPlanIcon = (planId: string) => {
     switch (planId) {
-      case "agency":
+      case "enterprise":
         return <IconRocket className="size-5" />;
-      case "pro":
+      case "professional":
         return <IconBolt className="size-5" />;
       default:
         return <IconBuilding className="size-5" />;
@@ -107,9 +115,9 @@ export default function PlansPage() {
 
   const getPlanColor = (planId: string) => {
     switch (planId) {
-      case "agency":
+      case "enterprise":
         return "text-amber-500 bg-amber-500/10";
-      case "pro":
+      case "professional":
         return "text-violet-500 bg-violet-500/10";
       default:
         return "text-emerald-500 bg-emerald-500/10";
@@ -152,6 +160,8 @@ export default function PlansPage() {
           const isCurrent = plan.id === currentPlanId;
           const isFree = plan.id === "free";
           const isPopular = plan.popular;
+          const hasTrial = Boolean(plan.trial_available && plan.trial_days);
+          const trialEnd = formatTrialEnd(plan.trial_ends_at);
 
           return (
             <div
@@ -195,6 +205,19 @@ export default function PlansPage() {
                     /{plan.period}
                   </span>
                 </div>
+
+                {hasTrial && (
+                  <div className="space-y-1">
+                    <Badge variant="secondary" className="w-fit">
+                      {plan.trial_days}-day free trial
+                    </Badge>
+                    {trialEnd && (
+                      <p className="text-xs text-muted-foreground">
+                        Trial offer ends {trialEnd}
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   {plan.description}
@@ -288,6 +311,8 @@ export default function PlansPage() {
                   "Current plan"
                 ) : !plan.stripe_price_id && !isFree ? (
                   "Contact sales"
+                ) : hasTrial ? (
+                  `Start ${plan.trial_days}-day trial`
                 ) : (
                   `Upgrade to ${plan.name}`
                 )}

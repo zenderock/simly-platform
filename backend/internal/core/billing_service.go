@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"strconv"
@@ -19,13 +20,14 @@ import (
 
 // BillingService handles Stripe billing integration
 type BillingService struct {
-	store                  *store.Store
-	stripeSecretKey        string
-	webhookSecret          string
-	frontendURL            string
-	stripePricePro         string
-	stripePriceAgency      string
-	stripePriceWhiteLabel  string
+	store                 *store.Store
+	stripeSecretKey       string
+	webhookSecret         string
+	frontendURL           string
+	stripePricePro        string
+	stripePriceAgency     string
+	stripePriceWhiteLabel string
+	now                   func() time.Time
 }
 
 func NewBillingService(store *store.Store, stripeSecretKey, webhookSecret, frontendURL, stripePricePro, stripePriceAgency, stripePriceWhiteLabel string) *BillingService {
@@ -38,30 +40,56 @@ func NewBillingService(store *store.Store, stripeSecretKey, webhookSecret, front
 		stripePricePro:        stripePricePro,
 		stripePriceAgency:     stripePriceAgency,
 		stripePriceWhiteLabel: stripePriceWhiteLabel,
+		now:                   time.Now,
 	}
+}
+
+func (s *BillingService) GetTrialSettings(ctx context.Context) (*model.BillingTrialSettings, error) {
+	return s.store.GetBillingTrialSettings(ctx)
+}
+
+func (s *BillingService) UpdateTrialSettings(ctx context.Context, settings *model.BillingTrialSettings) (*model.BillingTrialSettings, error) {
+	normalized, err := s.normalizeTrialSettings(settings)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.store.UpsertBillingTrialSettings(ctx, normalized); err != nil {
+		return nil, fmt.Errorf("failed to save billing trial settings: %w", err)
+	}
+
+	return normalized, nil
+}
+
+func (s *BillingService) GetTrialPreviewForOrganization(ctx context.Context, orgID int) (*model.BillingTrialSettings, error) {
+	settings, err := s.store.GetBillingTrialSettings(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if !s.isTrialSettingActive(settings) {
+		return nil, nil
+	}
+
+	org, err := s.store.GetOrganizationByID(ctx, orgID)
+	if err != nil {
+		return nil, err
+	}
+	if org.TrialConsumedAt != nil {
+		return nil, nil
+	}
+
+	return settings, nil
 }
 
 // CreateCheckoutSession creates a Stripe checkout session
 func (s *BillingService) CreateCheckoutSession(ctx context.Context, orgID int, priceID string, userEmail string) (string, error) {
-	// Determine mode based on price type (subscription vs one-time)
-	params := &stripe.CheckoutSessionParams{
-		Mode: stripe.String(string(stripe.CheckoutSessionModeSubscription)),
-		LineItems: []*stripe.CheckoutSessionLineItemParams{
-			{
-				Price:    stripe.String(priceID),
-				Quantity: stripe.Int64(1),
-			},
-		},
-		SuccessURL: stripe.String(s.frontendURL + "/checkout/success"),
-		CancelURL:  stripe.String(s.frontendURL + "/checkout/cancel"),
-		Metadata: map[string]string{
-			"organization_id": fmt.Sprintf("%d", orgID),
-		},
+	planID := s.planIDForPriceID(priceID)
+	appliedTrial, err := s.getAppliedTrialForCheckout(ctx, orgID, planID)
+	if err != nil {
+		return "", err
 	}
 
-	if userEmail != "" {
-		params.CustomerEmail = stripe.String(userEmail)
-	}
+	params := s.buildCheckoutSessionParams(orgID, priceID, planID, userEmail, appliedTrial)
 
 	sess, err := session.New(params)
 	if err != nil {
@@ -153,12 +181,27 @@ func (s *BillingService) HandleWebhook(payload []byte, signature string) error {
 			log.Printf("Organization %d upgraded to plan %s", orgID, planID)
 		}
 
+		if session.Metadata["trial_applied"] == "true" {
+			consumedPlanID := session.Metadata["target_plan_id"]
+			if consumedPlanID == "" {
+				consumedPlanID = planID
+			}
+			if consumedPlanID != "" {
+				if err := s.store.MarkOrganizationTrialConsumed(context.Background(), orgID, consumedPlanID, s.now().UTC()); err != nil {
+					log.Printf("Failed to mark organization trial as consumed: %v", err)
+					return err
+				}
+			}
+		}
+
 	case "invoice.paid":
 		// Handle successful payment
 		log.Println("Invoice paid")
 	case "invoice.payment_failed":
 		// Handle payment failure
 		log.Println("Invoice payment failed")
+	case "customer.subscription.trial_will_end":
+		log.Println("Subscription trial will end soon")
 	}
 
 	return nil
@@ -260,4 +303,111 @@ func (s *BillingService) UpdateSubscription(ctx context.Context, orgID int, newP
 	}
 
 	return nil
+}
+
+func (s *BillingService) buildCheckoutSessionParams(orgID int, priceID, planID, userEmail string, appliedTrial *model.BillingTrialSettings) *stripe.CheckoutSessionParams {
+	params := &stripe.CheckoutSessionParams{
+		Mode: stripe.String(string(stripe.CheckoutSessionModeSubscription)),
+		LineItems: []*stripe.CheckoutSessionLineItemParams{
+			{
+				Price:    stripe.String(priceID),
+				Quantity: stripe.Int64(1),
+			},
+		},
+		SuccessURL:              stripe.String(s.frontendURL + "/checkout/success"),
+		CancelURL:               stripe.String(s.frontendURL + "/checkout/cancel"),
+		PaymentMethodCollection: stripe.String(string(stripe.CheckoutSessionPaymentMethodCollectionAlways)),
+		Metadata: map[string]string{
+			"organization_id": fmt.Sprintf("%d", orgID),
+		},
+	}
+
+	if planID != "" {
+		params.Metadata["selected_plan_id"] = planID
+	}
+	if userEmail != "" {
+		params.CustomerEmail = stripe.String(userEmail)
+	}
+	if appliedTrial != nil {
+		params.Metadata["trial_applied"] = "true"
+		params.Metadata["target_plan_id"] = appliedTrial.TargetPlanID
+		params.SubscriptionData = &stripe.CheckoutSessionSubscriptionDataParams{
+			TrialPeriodDays: stripe.Int64(int64(appliedTrial.TrialDays)),
+		}
+	}
+
+	return params
+}
+
+func (s *BillingService) getAppliedTrialForCheckout(ctx context.Context, orgID int, planID string) (*model.BillingTrialSettings, error) {
+	if planID == "" {
+		return nil, nil
+	}
+
+	settings, err := s.GetTrialPreviewForOrganization(ctx, orgID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load billing trial settings: %w", err)
+	}
+	if settings == nil || settings.TargetPlanID != planID {
+		return nil, nil
+	}
+
+	return settings, nil
+}
+
+func (s *BillingService) planIDForPriceID(priceID string) string {
+	switch priceID {
+	case s.stripePricePro:
+		return model.PlanPro
+	case s.stripePriceAgency:
+		return model.PlanAgency
+	case s.stripePriceWhiteLabel:
+		return model.PlanWhiteLabel
+	default:
+		return ""
+	}
+}
+
+func (s *BillingService) normalizeTrialSettings(settings *model.BillingTrialSettings) (*model.BillingTrialSettings, error) {
+	if settings == nil {
+		return nil, errors.New("billing trial settings are required")
+	}
+	if !model.IsPaidPlan(settings.TargetPlanID) {
+		return nil, fmt.Errorf("target_plan_id must be a valid paid plan")
+	}
+	if settings.TrialDays <= 0 {
+		return nil, fmt.Errorf("trial_days must be greater than 0")
+	}
+	if !settings.RequirePaymentMethod {
+		return nil, fmt.Errorf("require_payment_method must be true in v1")
+	}
+	if settings.StartsAt != nil && settings.EndsAt != nil && !settings.StartsAt.Before(*settings.EndsAt) {
+		return nil, fmt.Errorf("starts_at must be before ends_at")
+	}
+
+	normalized := *settings
+	normalized.StartsAt = cloneTimePtr(settings.StartsAt)
+	normalized.EndsAt = cloneTimePtr(settings.EndsAt)
+	if normalized.StartsAt != nil {
+		start := normalized.StartsAt.UTC()
+		normalized.StartsAt = &start
+	}
+	if normalized.EndsAt != nil {
+		end := normalized.EndsAt.UTC()
+		normalized.EndsAt = &end
+	}
+
+	return &normalized, nil
+}
+
+func (s *BillingService) isTrialSettingActive(settings *model.BillingTrialSettings) bool {
+	return settings != nil && settings.IsActiveAt(s.now().UTC()) && model.IsPaidPlan(settings.TargetPlanID)
+}
+
+func cloneTimePtr(value *time.Time) *time.Time {
+	if value == nil {
+		return nil
+	}
+	cloned := value.UTC()
+	return &cloned
 }

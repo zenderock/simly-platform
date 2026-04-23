@@ -1,0 +1,15 @@
+CREATE TABLE IF NOT EXISTS billing_trial_settings (
+    id SMALLINT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+    enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    target_plan_id VARCHAR(64) NOT NULL,
+    trial_days INTEGER NOT NULL,
+    starts_at TIMESTAMP WITH TIME ZONE,
+    ends_at TIMESTAMP WITH TIME ZONE,
+    require_payment_method BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE organizations
+    ADD COLUMN IF NOT EXISTS trial_consumed_at TIMESTAMP WITH TIME ZONE,
+    ADD COLUMN IF NOT EXISTS trial_consumed_plan_id VARCHAR(64);

@@ -12,10 +12,10 @@ type Organization struct {
 	MaxDevices       int    `json:"max_devices"`
 	MaxSimsPerDevice int    `json:"max_sims_per_device"`
 	// New feature limits for pay-per-use pricing
-	MaxApplications          int `json:"max_applications"`
-	MaxContacts              int `json:"max_contacts"`
-	MaxCampaigns             int `json:"max_campaigns"`
-	MaxRecipientsPerCampaign int `json:"max_recipients_per_campaign"`
+	MaxApplications          int  `json:"max_applications"`
+	MaxContacts              int  `json:"max_contacts"`
+	MaxCampaigns             int  `json:"max_campaigns"`
+	MaxRecipientsPerCampaign int  `json:"max_recipients_per_campaign"`
 	AutoSaveContacts         bool `json:"auto_save_contacts"`
 	// White-label
 	IsWhiteLabel    bool    `json:"is_white_label" db:"is_white_label"`
@@ -27,6 +27,8 @@ type Organization struct {
 	StripeSubscriptionID   *string    `json:"stripe_subscription_id,omitempty"`
 	StripePriceID          *string    `json:"stripe_price_id,omitempty"`
 	StripeCurrentPeriodEnd *time.Time `json:"stripe_current_period_end,omitempty"`
+	TrialConsumedAt        *time.Time `json:"trial_consumed_at,omitempty"`
+	TrialConsumedPlanID    *string    `json:"trial_consumed_plan_id,omitempty"`
 	// Dispatch settings for intelligent SMS dispatch
 	SMSThrottleRateSeconds int       `json:"sms_throttle_rate_seconds"`
 	SendWindowStart        int       `json:"send_window_start"`

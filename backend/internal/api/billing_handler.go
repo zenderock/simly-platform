@@ -1,29 +1,39 @@
 package api
 
 import (
+	"crypto/subtle"
 	"encoding/json"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/zenderock/simly-backend/internal/core"
+	"github.com/zenderock/simly-backend/internal/model"
 )
 
 type BillingHandler struct {
-	billingService *core.BillingService
-	orgService     *core.OrganizationService
+	billingService     *core.BillingService
+	orgService         *core.OrganizationService
+	billingAdminSecret string
 }
 
-func NewBillingHandler(billingService *core.BillingService, orgService *core.OrganizationService) *BillingHandler {
+func NewBillingHandler(billingService *core.BillingService, orgService *core.OrganizationService, billingAdminSecret string) *BillingHandler {
 	return &BillingHandler{
-		billingService: billingService,
-		orgService:     orgService,
+		billingService:     billingService,
+		orgService:         orgService,
+		billingAdminSecret: billingAdminSecret,
 	}
 }
 
 func (h *BillingHandler) RegisterRoutes(r chi.Router) {
 	r.Post("/checkout", h.CreateCheckoutSession)
 	r.Post("/portal", h.CreateBillingPortalSession)
+}
+
+func (h *BillingHandler) RegisterInternalRoutes(r chi.Router) {
+	r.Get("/trial-settings", h.GetTrialSettings)
+	r.Put("/trial-settings", h.UpdateTrialSettings)
 }
 
 // RegisterPublicRoutes registers routes that don't need authentication (like webhooks)
@@ -97,6 +107,56 @@ func (h *BillingHandler) HandleStripeWebhook(w http.ResponseWriter, r *http.Requ
 	w.WriteHeader(http.StatusOK)
 }
 
+func (h *BillingHandler) GetTrialSettings(w http.ResponseWriter, r *http.Request) {
+	if !h.authorizeInternalAdmin(w, r) {
+		return
+	}
+
+	settings, err := h.billingService.GetTrialSettings(r.Context())
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	RespondWithJSON(w, http.StatusOK, settings)
+}
+
+func (h *BillingHandler) UpdateTrialSettings(w http.ResponseWriter, r *http.Request) {
+	if !h.authorizeInternalAdmin(w, r) {
+		return
+	}
+
+	type updateTrialSettingsRequest struct {
+		Enabled              bool       `json:"enabled"`
+		TargetPlanID         string     `json:"target_plan_id"`
+		TrialDays            int        `json:"trial_days"`
+		StartsAt             *time.Time `json:"starts_at"`
+		EndsAt               *time.Time `json:"ends_at"`
+		RequirePaymentMethod bool       `json:"require_payment_method"`
+	}
+
+	var req updateTrialSettingsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		RespondWithError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	settings, err := h.billingService.UpdateTrialSettings(r.Context(), &model.BillingTrialSettings{
+		Enabled:              req.Enabled,
+		TargetPlanID:         req.TargetPlanID,
+		TrialDays:            req.TrialDays,
+		StartsAt:             req.StartsAt,
+		EndsAt:               req.EndsAt,
+		RequirePaymentMethod: req.RequirePaymentMethod,
+	})
+	if err != nil {
+		RespondWithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	RespondWithJSON(w, http.StatusOK, settings)
+}
+
 // Helpers placeholders - Assuming functionality exists in Middleware or Context
 func getUserEmailFromContext(r *http.Request) string {
 	// Try to get email from JWT claims stored in context
@@ -129,4 +189,19 @@ func getUserEmailFromContext(r *http.Request) string {
 func getOrgIDFromContext(r *http.Request) int {
 	// Deprecated: use GetActiveOrgID instead
 	return 0
+}
+
+func (h *BillingHandler) authorizeInternalAdmin(w http.ResponseWriter, r *http.Request) bool {
+	if h.billingAdminSecret == "" {
+		RespondWithError(w, http.StatusServiceUnavailable, "Billing admin API is disabled")
+		return false
+	}
+
+	providedSecret := r.Header.Get("X-Admin-Secret")
+	if subtle.ConstantTimeCompare([]byte(providedSecret), []byte(h.billingAdminSecret)) != 1 {
+		RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return false
+	}
+
+	return true
 }

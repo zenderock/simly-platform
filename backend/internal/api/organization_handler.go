@@ -13,15 +13,17 @@ import (
 
 type OrganizationHandler struct {
 	service         *core.OrganizationService
+	billingService  *core.BillingService
 	auditService    *core.AuditService
 	pricePro        string
 	priceAgency     string
 	priceWhiteLabel string
 }
 
-func NewOrganizationHandler(service *core.OrganizationService, auditService *core.AuditService, pricePro, priceAgency, priceWhiteLabel string) *OrganizationHandler {
+func NewOrganizationHandler(service *core.OrganizationService, billingService *core.BillingService, auditService *core.AuditService, pricePro, priceAgency, priceWhiteLabel string) *OrganizationHandler {
 	return &OrganizationHandler{
 		service:         service,
+		billingService:  billingService,
 		auditService:    auditService,
 		pricePro:        pricePro,
 		priceAgency:     priceAgency,
@@ -225,6 +227,18 @@ func (h *OrganizationHandler) ListPlans(w http.ResponseWriter, r *http.Request) 
 	plans := make([]model.Plan, len(model.AvailablePlans))
 	copy(plans, model.AvailablePlans)
 
+	var trialSettings *model.BillingTrialSettings
+	if h.billingService != nil {
+		orgID, err := GetActiveOrgID(r, h.service)
+		if err == nil {
+			trialSettings, err = h.billingService.GetTrialPreviewForOrganization(r.Context(), orgID)
+			if err != nil {
+				http.Error(w, "Failed to load billing trial settings", http.StatusInternalServerError)
+				return
+			}
+		}
+	}
+
 	for i := range plans {
 		switch plans[i].ID {
 		case model.PlanPro:
@@ -233,6 +247,13 @@ func (h *OrganizationHandler) ListPlans(w http.ResponseWriter, r *http.Request) 
 			plans[i].StripePriceID = h.priceAgency
 		case model.PlanWhiteLabel:
 			plans[i].StripePriceID = h.priceWhiteLabel
+		}
+
+		if trialSettings != nil && trialSettings.TargetPlanID == plans[i].ID {
+			trialDays := trialSettings.TrialDays
+			plans[i].TrialAvailable = true
+			plans[i].TrialDays = &trialDays
+			plans[i].TrialEndsAt = trialSettings.EndsAt
 		}
 	}
 

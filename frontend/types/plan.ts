@@ -20,4 +20,7 @@ export interface Plan {
   limits: PlanLimits;
   popular: boolean;
   stripe_price_id?: string;
+  trial_available?: boolean;
+  trial_days?: number | null;
+  trial_ends_at?: string | null;
 }
