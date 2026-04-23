@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/zenderock/simly-backend/internal/model"
 	"github.com/zenderock/simly-backend/internal/store"
 	"golang.org/x/crypto/bcrypt"
@@ -95,7 +96,6 @@ func (s *UserService) ResetPassword(ctx context.Context, token string, newPasswo
 		return errors.New("the reset link has expired")
 	}
 
-
 	// Hash new password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
 	if err != nil {
@@ -110,8 +110,6 @@ func (s *UserService) ResetPassword(ctx context.Context, token string, newPasswo
 		return txStore.ClearUserResetToken(ctx, user.ID)
 	})
 }
-
-
 
 func (s *UserService) Register(ctx context.Context, req model.CreateUserRequest) (*model.AuthResponse, error) {
 	// Check if user already exists
@@ -139,6 +137,9 @@ func (s *UserService) Register(ctx context.Context, req model.CreateUserRequest)
 	err = s.store.ExecTx(ctx, func(txStore *store.Store) error {
 		// 1. Create User
 		if err := txStore.CreateUser(ctx, user); err != nil {
+			if isUniqueViolation(err) {
+				return ErrUserExists
+			}
 			return fmt.Errorf("failed to create user: %w", err)
 		}
 
@@ -185,6 +186,11 @@ func (s *UserService) Register(ctx context.Context, req model.CreateUserRequest)
 		User:          *user,
 		Organizations: []model.Organization{*createdOrg},
 	}, nil
+}
+
+func isUniqueViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "23505"
 }
 
 func (s *UserService) Login(ctx context.Context, req model.LoginRequest) (*model.AuthResponse, error) {

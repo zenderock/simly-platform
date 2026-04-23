@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import api from "@/lib/api";
 import { useAuth } from "@/lib/auth";
+import { getErrorMessage } from "@/lib/utils";
 import LoaderQuater from "@/components/loader";
 import { usePostHog } from "posthog-js/react";
 
@@ -21,6 +22,7 @@ export default function RegisterPage() {
   const [turnstileToken, setTurnstileToken] = React.useState<string | null>(
     null
   );
+  const turnstileRef = React.useRef<any>(null);
 
   async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -62,10 +64,11 @@ export default function RegisterPage() {
 
       router.push("/dashboard");
     } catch (err: any) {
-      setError(
-        err.response?.data?.error ||
-        "Failed to create account. Please try again."
-      );
+      setError(getErrorMessage(err));
+      setTurnstileToken(null);
+      if (turnstileRef.current) {
+        turnstileRef.current.reset();
+      }
     } finally {
       setIsLoading(false);
     }
@@ -142,6 +145,7 @@ export default function RegisterPage() {
 
         <div className="flex justify-center py-2">
           <Turnstile
+            ref={turnstileRef}
             siteKey={
               process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY ||
               "1x00000000000000000000AA"

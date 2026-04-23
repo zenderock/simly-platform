@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/zenderock/simly-backend/internal/core"
@@ -43,8 +44,8 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.service.Register(r.Context(), req)
 	if err != nil {
-		if err.Error() == "email already registered" {
-			RespondWithError(w, http.StatusConflict, "Email already registered")
+		if errors.Is(err, core.ErrUserExists) {
+			RespondWithError(w, http.StatusConflict, "An account with this email already exists. Try signing in or resetting your password.")
 			return
 		}
 		RespondWithError(w, http.StatusInternalServerError, "Registration failed")
@@ -129,5 +130,3 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]string{"message": "Your password has been reset successfully."})
 }
-
-
