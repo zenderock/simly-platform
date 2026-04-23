@@ -159,22 +159,7 @@ func (s *BillingService) HandleWebhook(payload []byte, signature string) error {
 
 		// 4. Update Organization Plan & Limits
 		if planID != "" {
-			limits := model.GetPlanLimits(planID)
-			// Keeping SMSMonthlyLimit handled by model logic (e.g. -1 for unlimited)
-			err = s.store.UpdateOrganizationPlan(
-				context.Background(),
-				orgID,
-				planID,
-				limits.SMSMonthly,
-				limits.SMSBurst,
-				limits.MaxDevices,
-				limits.MaxSimsPerDevice,
-				limits.MaxApplications,
-				limits.MaxContacts,
-				limits.MaxCampaigns,
-				limits.MaxRecipientsPerCampaign,
-			)
-			if err != nil {
+			if err := s.applyPlanToOrg(context.Background(), orgID, planID); err != nil {
 				log.Printf("Failed to upgrade organization plan: %v", err)
 				return err
 			}
@@ -194,11 +179,59 @@ func (s *BillingService) HandleWebhook(payload []byte, signature string) error {
 			}
 		}
 
+	case "customer.subscription.deleted":
+		var subscription stripe.Subscription
+		if err := json.Unmarshal(event.Data.Raw, &subscription); err != nil {
+			log.Printf("Error parsing webhook JSON: %v", err)
+			return err
+		}
+		customerID := subscription.Customer.ID
+		org, err := s.store.GetOrganizationByStripeCustomerID(context.Background(), customerID)
+		if err != nil {
+			log.Printf("No org found for Stripe customer %s: %v", customerID, err)
+			return nil
+		}
+		if err := s.applyPlanToOrg(context.Background(), org.ID, model.PlanFree); err != nil {
+			log.Printf("Failed to downgrade org %d to free: %v", org.ID, err)
+			return err
+		}
+		if err := s.store.UpdateOrganizationStripe(context.Background(), org.ID, customerID, ""); err != nil {
+			log.Printf("Failed to clear subscription ID for org %d: %v", org.ID, err)
+		}
+		log.Printf("Organization %d downgraded to free (subscription deleted)", org.ID)
+
+	case "customer.subscription.updated":
+		var subscription stripe.Subscription
+		if err := json.Unmarshal(event.Data.Raw, &subscription); err != nil {
+			log.Printf("Error parsing webhook JSON: %v", err)
+			return err
+		}
+		if subscription.Status != stripe.SubscriptionStatusActive {
+			log.Printf("Subscription %s updated with status %s, skipping plan sync", subscription.ID, subscription.Status)
+			return nil
+		}
+		customerID := subscription.Customer.ID
+		org, err := s.store.GetOrganizationByStripeCustomerID(context.Background(), customerID)
+		if err != nil {
+			log.Printf("No org found for Stripe customer %s: %v", customerID, err)
+			return nil
+		}
+		var planID string
+		if len(subscription.Items.Data) > 0 {
+			planID = s.planIDForPriceID(subscription.Items.Data[0].Price.ID)
+		}
+		if planID == "" || planID == org.Plan {
+			return nil
+		}
+		if err := s.applyPlanToOrg(context.Background(), org.ID, planID); err != nil {
+			log.Printf("Failed to sync org %d plan to %s: %v", org.ID, planID, err)
+			return err
+		}
+		log.Printf("Organization %d plan synced to %s (subscription updated)", org.ID, planID)
+
 	case "invoice.paid":
-		// Handle successful payment
 		log.Println("Invoice paid")
 	case "invoice.payment_failed":
-		// Handle payment failure
 		log.Println("Invoice payment failed")
 	case "customer.subscription.trial_will_end":
 		log.Println("Subscription trial will end soon")
@@ -402,6 +435,14 @@ func (s *BillingService) normalizeTrialSettings(settings *model.BillingTrialSett
 
 func (s *BillingService) isTrialSettingActive(settings *model.BillingTrialSettings) bool {
 	return settings != nil && settings.IsActiveAt(s.now().UTC()) && model.IsPaidPlan(settings.TargetPlanID)
+}
+
+func (s *BillingService) applyPlanToOrg(ctx context.Context, orgID int, planID string) error {
+	limits := model.GetPlanLimits(planID)
+	return s.store.UpdateOrganizationPlan(ctx, orgID, planID,
+		limits.SMSMonthly, limits.SMSBurst, limits.MaxDevices, limits.MaxSimsPerDevice,
+		limits.MaxApplications, limits.MaxContacts, limits.MaxCampaigns, limits.MaxRecipientsPerCampaign,
+	)
 }
 
 func cloneTimePtr(value *time.Time) *time.Time {
