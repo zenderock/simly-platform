@@ -107,7 +107,9 @@ func (s *BillingService) CreatePortalSession(ctx context.Context, orgID int) (st
 
 // HandleWebhook handles Stripe webhook events
 func (s *BillingService) HandleWebhook(payload []byte, signature string) error {
-	event, err := webhook.ConstructEvent(payload, signature, s.webhookSecret)
+	event, err := webhook.ConstructEventWithOptions(payload, signature, s.webhookSecret, webhook.ConstructEventOptions{
+		IgnoreAPIVersionMismatch: true,
+	})
 	if err != nil {
 		return fmt.Errorf("webhook signature verification failed: %w", err)
 	}
