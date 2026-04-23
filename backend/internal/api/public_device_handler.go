@@ -53,6 +53,7 @@ type PublicSimResponse struct {
 func (h *PublicDeviceHandler) ListDevices(w http.ResponseWriter, r *http.Request) {
 	// Get context values from auth middleware
 	orgID := GetPublicOrgID(r.Context())
+	appID := GetPublicAppID(r.Context())
 
 	if orgID == 0 {
 		AuthError(w, "Invalid authentication context")
@@ -60,7 +61,7 @@ func (h *PublicDeviceHandler) ListDevices(w http.ResponseWriter, r *http.Request
 	}
 
 	// List devices for organization
-	devices, err := h.deviceService.ListDevices(r.Context(), orgID, 0)
+	devices, err := h.deviceService.ListDevices(r.Context(), orgID, appID)
 	if err != nil {
 		fmt.Printf("Error listing devices: %v\n", err)
 		InternalError(w)

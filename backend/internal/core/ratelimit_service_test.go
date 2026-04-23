@@ -74,24 +74,24 @@ func TestRateLimitService_CalculateSMSCost_PlanLimits(t *testing.T) {
 		expectedCost float64
 	}{
 		{
-			name:         "Starter plan",
-			plan:         "starter",
-			expectedCost: 5.0,
+			name:         "Free plan",
+			plan:         model.PlanFree,
+			expectedCost: 0.0,
 		},
 		{
 			name:         "Professional plan",
-			plan:         "professional",
-			expectedCost: 3.0,
+			plan:         model.PlanPro,
+			expectedCost: 0.0,
 		},
 		{
 			name:         "Enterprise plan",
-			plan:         "enterprise",
-			expectedCost: 2.0,
+			plan:         model.PlanAgency,
+			expectedCost: 0.0,
 		},
 		{
-			name:         "Unknown plan defaults to starter",
+			name:         "Unknown plan defaults to free",
 			plan:         "unknown",
-			expectedCost: 5.0,
+			expectedCost: 0.0,
 		},
 	}
 
@@ -197,7 +197,7 @@ func TestRateLimitService_UsageRecordStructure(t *testing.T) {
 	appID := 100
 	messageID := 200
 	orgID := 1
-	cost := 5.0
+	cost := 0.0
 	period := time.Now().Format("2006-01")
 
 	record := &model.UsageRecord{
@@ -239,15 +239,15 @@ func TestRateLimitService_NoMonthlyQuotaLogic(t *testing.T) {
 }
 
 func TestRateLimitService_PlanLimitsStructure(t *testing.T) {
-	// Test that all plans have the correct structure for pay-per-use pricing
-	plans := []string{"starter", "professional", "enterprise"}
+	// Test that all plans have the correct structure for the current bundled pricing
+	plans := []string{model.PlanFree, model.PlanPro, model.PlanAgency}
 
 	for _, planID := range plans {
 		t.Run("Plan_"+planID, func(t *testing.T) {
 			limits := model.GetPlanLimits(planID)
 
-			// All plans should have per-SMS rates
-			assert.Greater(t, limits.SMSRatePerMessage, 0.0, "Plan %s should have SMS rate > 0", planID)
+			// Plans should expose a valid SMS rate, including zero when messages are bundled.
+			assert.GreaterOrEqual(t, limits.SMSRatePerMessage, 0.0, "Plan %s should have SMS rate >= 0", planID)
 
 			// All plans should have burst limits
 			assert.Greater(t, limits.SMSBurst, 0, "Plan %s should have burst limit > 0", planID)

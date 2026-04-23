@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -11,35 +13,49 @@ import 'app/data/services/branding_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  try {
-    await Firebase.initializeApp();
-  } catch (e) {
-    debugPrint(
-      "Firebase initialization failed: $e. Make sure google-services.json is present.",
-    );
-  }
+  FlutterError.onError = (details) {
+    debugPrint('Flutter framework error: ${details.exceptionAsString()}');
+    FlutterError.presentError(details);
+  };
 
-  await GetStorage.init();
-  await BackgroundHandler.initializeService();
+  PlatformDispatcher.instance.onError = (error, stack) {
+    debugPrint('Uncaught platform error: $error');
+    return true;
+  };
 
-  Get.put(AuthService());
-  Get.put(SettingsService());
-  await Get.putAsync(() => BrandingService().init());
+  await runZonedGuarded(() async {
+    try {
+      await Firebase.initializeApp();
+    } catch (e) {
+      debugPrint(
+        'Firebase initialization failed: $e. Make sure google-services.json is present.',
+      );
+    }
 
-  runApp(
-    GetMaterialApp(
-      title: "Gateway",
-      initialRoute: AppPages.INITIAL,
-      getPages: AppPages.routes,
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        primaryColor: const Color.fromARGB(255, 128, 0, 139),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF1A1A1A),
-          primary: const Color(0xFF1A1A1A),
+    await GetStorage.init();
+    await BackgroundHandler.initializeService();
+
+    Get.put(AuthService());
+    Get.put(SettingsService());
+    await Get.putAsync(() => BrandingService().init());
+
+    runApp(
+      GetMaterialApp(
+        title: "Gateway",
+        initialRoute: AppPages.INITIAL,
+        getPages: AppPages.routes,
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          useMaterial3: true,
+          primaryColor: const Color.fromARGB(255, 128, 0, 139),
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: const Color(0xFF1A1A1A),
+            primary: const Color(0xFF1A1A1A),
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }, (error, stack) {
+    debugPrint('Uncaught app error: $error');
+  });
 }

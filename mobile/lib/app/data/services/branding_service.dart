@@ -22,6 +22,8 @@ class BrandingService extends GetxService {
     return this;
   }
 
+  Future<void> reloadBranding() => _loadBranding();
+
   Future<void> _loadBranding() async {
     try {
       final data = await _api.getBranding();
@@ -32,11 +34,27 @@ class BrandingService extends GetxService {
         logoUrl.value = data['logo_url'] as String;
       }
       if (data['primary_color'] != null) {
-        final hex = (data['primary_color'] as String).replaceFirst('#', '');
-        primaryColor.value = Color(int.parse('FF$hex', radix: 16));
+        final parsedColor = _parseHexColor(data['primary_color'] as String);
+        if (parsedColor != null) {
+          primaryColor.value = parsedColor;
+        }
       }
     } catch (_) {
       // Fallback to default Simly/Gateway branding — silently ignored
     }
+  }
+
+  Color? _parseHexColor(String input) {
+    final sanitized = input.replaceFirst('#', '').trim();
+    if (sanitized.length != 6) {
+      return null;
+    }
+
+    final value = int.tryParse('FF$sanitized', radix: 16);
+    if (value == null) {
+      return null;
+    }
+
+    return Color(value);
   }
 }

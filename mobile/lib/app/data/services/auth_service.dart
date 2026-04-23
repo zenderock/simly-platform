@@ -16,15 +16,15 @@ class AuthService extends GetxService {
     }
   }
 
-  void login(int id, String token) {
-    _storage.write('device_id', id);
-    _storage.write('device_token', token);
+  Future<void> login(int id, String token) async {
+    await _storage.write('device_id', id);
+    await _storage.write('device_token', token);
     isAuthenticated.value = true;
   }
 
-  void logout() {
-    _storage.remove('device_id');
-    _storage.remove('device_token');
+  Future<void> logout() async {
+    await _storage.remove('device_id');
+    await _storage.remove('device_token');
     isAuthenticated.value = false;
   }
 }

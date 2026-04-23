@@ -17,6 +17,8 @@ type APIKeyService struct {
 	appService *ApplicationService
 }
 
+const apiKeyPrefixLength = 10
+
 func NewAPIKeyService(store *store.Store) *APIKeyService {
 	return &APIKeyService{store: store}
 }
@@ -58,7 +60,7 @@ func (s *APIKeyService) CreateAPIKey(ctx context.Context, orgID, appID int, name
 		ApplicationID:  appID,
 		Name:           name,
 		KeyHash:        string(hash),
-		Prefix:         rawKey[:12] + "...",
+		Prefix:         rawKey[:apiKeyPrefixLength],
 	}
 
 	if err := s.store.CreateAPIKey(ctx, apiKey); err != nil {
@@ -98,7 +100,7 @@ func (s *APIKeyService) CreateAPIKeyWithSandbox(ctx context.Context, orgID, appI
 		ApplicationID:  appID,
 		Name:           name,
 		KeyHash:        string(hash),
-		Prefix:         rawKey[:12] + "...",
+		Prefix:         rawKey[:apiKeyPrefixLength],
 	}
 
 	if err := s.store.CreateAPIKey(ctx, apiKey); err != nil {
@@ -128,12 +130,12 @@ type APIKeyVerifyResult struct {
 
 // VerifyAPIKey verifies an API key and returns the key details along with sandbox status
 func (s *APIKeyService) VerifyAPIKey(ctx context.Context, rawKey string) (*model.APIKey, error) {
-	if len(rawKey) < 12 {
+	if len(rawKey) < apiKeyPrefixLength {
 		return nil, errors.New("invalid key format")
 	}
 
 	// 1. Extract Prefix
-	prefix := rawKey[:12] + "..."
+	prefix := rawKey[:apiKeyPrefixLength]
 
 	// 2. Find Candidates
 	candidates, err := s.store.GetAPIKeysByPrefix(ctx, prefix)

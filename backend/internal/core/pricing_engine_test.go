@@ -17,52 +17,52 @@ func TestPricingEngine_CalculateSMSCostForPlan(t *testing.T) {
 		expectedCost float64
 	}{
 		{
-			name:         "Starter plan - no volume discount",
+			name:         "Free plan - no volume discount",
 			planID:       model.PlanFree,
 			volume:       100,
-			expectedCost: 5.0,
+			expectedCost: 0.0,
 		},
 		{
 			name:         "Professional plan - no discount under 1000",
 			planID:       model.PlanPro,
 			volume:       500,
-			expectedCost: 3.0,
+			expectedCost: 0.0,
 		},
 		{
 			name:         "Professional plan - 5% discount for 1000+",
 			planID:       model.PlanPro,
 			volume:       1500,
-			expectedCost: 2.85, // 3.0 * 0.95
+			expectedCost: 0.0,
 		},
 		{
 			name:         "Professional plan - 10% discount for 5000+",
 			planID:       model.PlanPro,
 			volume:       6000,
-			expectedCost: 2.7, // 3.0 * 0.90
+			expectedCost: 0.0,
 		},
 		{
 			name:         "Enterprise plan - no discount under 1000",
 			planID:       model.PlanAgency,
 			volume:       500,
-			expectedCost: 2.0,
+			expectedCost: 0.0,
 		},
 		{
 			name:         "Enterprise plan - 10% discount for 1000+",
 			planID:       model.PlanAgency,
 			volume:       2000,
-			expectedCost: 1.8, // 2.0 * 0.90
+			expectedCost: 0.0,
 		},
 		{
 			name:         "Enterprise plan - 15% discount for 5000+",
 			planID:       model.PlanAgency,
 			volume:       7000,
-			expectedCost: 1.7, // 2.0 * 0.85
+			expectedCost: 0.0,
 		},
 		{
 			name:         "Enterprise plan - 20% discount for 10000+",
 			planID:       model.PlanAgency,
 			volume:       15000,
-			expectedCost: 1.6, // 2.0 * 0.80
+			expectedCost: 0.0,
 		},
 	}
 
@@ -81,7 +81,7 @@ func TestPricingEngine_GetPlanLimits(t *testing.T) {
 		name   string
 		planID string
 	}{
-		{name: "Starter plan", planID: model.PlanFree},
+		{name: "Free plan", planID: model.PlanFree},
 		{name: "Professional plan", planID: model.PlanPro},
 		{name: "Enterprise plan", planID: model.PlanAgency},
 	}
@@ -91,7 +91,7 @@ func TestPricingEngine_GetPlanLimits(t *testing.T) {
 			limits := engine.GetPlanLimits(tt.planID)
 
 			// Verify that limits are returned and have expected structure
-			assert.Greater(t, limits.SMSRatePerMessage, 0.0)
+			assert.GreaterOrEqual(t, limits.SMSRatePerMessage, 0.0)
 			assert.Greater(t, limits.SMSBurst, 0)
 			assert.GreaterOrEqual(t, limits.MaxDevices, -1) // -1 means unlimited
 			assert.Greater(t, limits.MaxSimsPerDevice, 0)
@@ -111,28 +111,28 @@ func TestPricingEngine_EstimateMonthlyCost(t *testing.T) {
 		maxExpectedSMSCost      float64
 	}{
 		{
-			name:                    "Starter plan - 100 SMS",
+			name:                    "Free plan - 100 SMS included",
 			planID:                  model.PlanFree,
 			expectedMonthlyVolume:   100,
 			expectedSubscriptionFee: 0.0,
-			minExpectedSMSCost:      500.0, // 100 * 5.0 cents
-			maxExpectedSMSCost:      500.0,
+			minExpectedSMSCost:      0.0,
+			maxExpectedSMSCost:      0.0,
 		},
 		{
-			name:                    "Professional plan - 2000 SMS with discount",
+			name:                    "Professional plan - 2000 SMS included",
 			planID:                  model.PlanPro,
 			expectedMonthlyVolume:   2000,
-			expectedSubscriptionFee: 29.0,
-			minExpectedSMSCost:      5700.0, // 2000 * 2.85 cents (with 5% discount)
-			maxExpectedSMSCost:      5700.0,
+			expectedSubscriptionFee: 10.0,
+			minExpectedSMSCost:      0.0,
+			maxExpectedSMSCost:      0.0,
 		},
 		{
-			name:                    "Enterprise plan - 15000 SMS with max discount",
+			name:                    "Enterprise plan - 15000 SMS included",
 			planID:                  model.PlanAgency,
 			expectedMonthlyVolume:   15000,
 			expectedSubscriptionFee: 99.0,
-			minExpectedSMSCost:      24000.0, // 15000 * 1.6 cents (with 20% discount)
-			maxExpectedSMSCost:      24000.0,
+			minExpectedSMSCost:      0.0,
+			maxExpectedSMSCost:      0.0,
 		},
 	}
 
@@ -159,7 +159,8 @@ func TestPricingEngine_GetAvailablePlans(t *testing.T) {
 		assert.NotEmpty(t, plan.ID)
 		assert.NotEmpty(t, plan.Name)
 		assert.GreaterOrEqual(t, plan.Price, 0)
-		assert.Greater(t, plan.Limits.SMSRatePerMessage, 0.0)
+		assert.GreaterOrEqual(t, plan.Limits.SMSRatePerMessage, 0.0)
+		assert.Greater(t, plan.Limits.SMSBurst, 0)
 	}
 }
 

@@ -34,8 +34,14 @@ class HomeController extends GetxController {
   RxBool get isAuthenticated => _authService.isAuthenticated;
 
   StreamSubscription? _connectivitySubscription;
+  StreamSubscription? _batterySubscription;
+  StreamSubscription<Map<String, dynamic>?>? _logSubscription;
+  StreamSubscription<Map<String, dynamic>?>? _notificationModeSubscription;
+  StreamSubscription<Map<String, dynamic>?>? _pushSubscription;
   Timer? _heartbeatTimer;
   Timer? _statTimer;
+  Worker? _heartbeatIntervalWorker;
+  Worker? _authStateWorker;
 
   @override
   void onInit() {
@@ -43,9 +49,16 @@ class HomeController extends GetxController {
     _initDeviceStats();
     _checkServiceStatus();
     _initLogListener();
+    _heartbeatIntervalWorker = ever<int>(
+      _settingsService.heartbeatIntervalSeconds,
+      (_) {
+        debugPrint("Heartbeat interval changed, restarting timer...");
+        _startHeartbeats();
+      },
+    );
 
     // Auto-start service when authentication becomes true (e.g. after linking)
-    ever(_authService.isAuthenticated, (bool authed) {
+    _authStateWorker = ever(_authService.isAuthenticated, (bool authed) {
       if (authed) {
         _checkServiceStatus();
       }
@@ -53,20 +66,24 @@ class HomeController extends GetxController {
   }
 
   void _initLogListener() {
-    FlutterBackgroundService().on('onLog').listen((event) {
+    _logSubscription = FlutterBackgroundService().on('onLog').listen((event) {
       if (event != null) {
         logs.insert(0, event);
         if (logs.length > 50) logs.removeLast();
       }
     });
 
-    FlutterBackgroundService().on('updateNotificationMode').listen((event) {
+    _notificationModeSubscription = FlutterBackgroundService()
+        .on('updateNotificationMode')
+        .listen((event) {
       if (event != null && event['mode'] != null) {
-        notificationMode.value = event['mode'];
+        notificationMode.value = event['mode'].toString();
       }
     });
 
-    FlutterBackgroundService().on('onPushReceived').listen((event) {
+    _pushSubscription = FlutterBackgroundService()
+        .on('onPushReceived')
+        .listen((event) {
       lastPushReceivedAt.value = DateTime.now();
       notificationMode.value = "Push (FCM)";
     });
@@ -88,15 +105,21 @@ class HomeController extends GetxController {
   @override
   void onClose() {
     _connectivitySubscription?.cancel();
+    _batterySubscription?.cancel();
+    _logSubscription?.cancel();
+    _notificationModeSubscription?.cancel();
+    _pushSubscription?.cancel();
     _heartbeatTimer?.cancel();
     _statTimer?.cancel();
+    _heartbeatIntervalWorker?.dispose();
+    _authStateWorker?.dispose();
     super.onClose();
   }
 
   Future<void> _initDeviceStats() async {
     final battery = Battery();
     batteryLevel.value = await battery.batteryLevel;
-    battery.onBatteryStateChanged.listen((state) async {
+    _batterySubscription = battery.onBatteryStateChanged.listen((state) async {
       batteryLevel.value = await battery.batteryLevel;
     });
 
@@ -185,12 +208,6 @@ class HomeController extends GetxController {
       _sendHeartbeat();
     });
     _sendHeartbeat(); // First one immediate
-
-    // Listen for settings changes to restart timer with new interval
-    ever(_settingsService.heartbeatIntervalSeconds, (_) {
-      debugPrint("Heartbeat interval changed, restarting timer...");
-      _startHeartbeats();
-    });
   }
 
   /// Toggle Always Active mode

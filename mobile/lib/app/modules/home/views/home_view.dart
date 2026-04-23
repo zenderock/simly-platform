@@ -472,11 +472,13 @@ class HomeView extends GetView<HomeController> {
             const Color(0xFF8B5CF6),
           ),
         ),
-        _buildStatItem(
-          'SIM Slots',
-          '${controller.simCards.length} Active',
-          Icons.sim_card_outlined,
-          const Color(0xFF10B981),
+        Obx(
+          () => _buildStatItem(
+            'SIM Slots',
+            '${controller.simCards.length} Active',
+            Icons.sim_card_outlined,
+            const Color(0xFF10B981),
+          ),
         ),
       ],
     );

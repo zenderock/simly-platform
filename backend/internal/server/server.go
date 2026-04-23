@@ -30,6 +30,10 @@ type Server struct {
 	Dispatcher *core.DispatcherService
 }
 
+type Options struct {
+	DisableBackgroundServices bool
+}
+
 // PrepareDatabase repairs known-safe dirty migration states and then applies
 // pending migrations.
 func PrepareDatabase(cfg *config.Config) error {
@@ -45,6 +49,10 @@ func PrepareDatabase(cfg *config.Config) error {
 }
 
 func New(cfg *config.Config) (*Server, error) {
+	return NewWithOptions(cfg, Options{})
+}
+
+func NewWithOptions(cfg *config.Config, opts Options) (*Server, error) {
 	// Database & Migrations
 	db, err := store.New(cfg.DatabaseURL)
 	if err != nil {
@@ -61,7 +69,7 @@ func New(cfg *config.Config) (*Server, error) {
 		Router: chi.NewRouter(),
 	}
 
-	s.setupRoutes()
+	s.setupRoutes(opts)
 	return s, nil
 }
 
@@ -75,7 +83,7 @@ func (s *Server) Close() {
 	s.DB.Close()
 }
 
-func (s *Server) setupRoutes() {
+func (s *Server) setupRoutes(opts Options) {
 	jwtSecret := []byte(s.Config.JWTSecret)
 
 	// Redis Config
@@ -146,37 +154,39 @@ func (s *Server) setupRoutes() {
 	campaignService := core.NewCampaignService(s.DB, messageService, featureLimitManager, taskClient)
 
 	// Workers
-	scheduler := core.NewSchedulerService(s.DB, messageService, campaignService)
-	go scheduler.Start(context.Background())
+	if !opts.DisableBackgroundServices {
+		scheduler := core.NewSchedulerService(s.DB, messageService, campaignService)
+		go scheduler.Start(context.Background())
 
-	monitoringService := core.NewMonitoringService(s.DB, alertService, messageService)
-	go monitoringService.Start(context.Background())
+		monitoringService := core.NewMonitoringService(s.DB, alertService, messageService)
+		go monitoringService.Start(context.Background())
 
-	// Initialize Redis Worker — consumes Asynq tasks and drives actual SMS dispatch
-	sendWindowManager := core.NewSendWindowManager(s.DB)
-	redisWorker := worker.NewRedisWorker(
-		redisConnOpt,
-		s.DB,
-		messageService,
-		devicePoolManager,
-		sendWindowManager,
-		taskClient,
-	)
-	s.RedisWorker = redisWorker
+		// Initialize Redis Worker — consumes Asynq tasks and drives actual SMS dispatch
+		sendWindowManager := core.NewSendWindowManager(s.DB)
+		redisWorker := worker.NewRedisWorker(
+			redisConnOpt,
+			s.DB,
+			messageService,
+			devicePoolManager,
+			sendWindowManager,
+			taskClient,
+		)
+		s.RedisWorker = redisWorker
 
-	// Start Worker in background
-	go func() {
-		if err := redisWorker.Start(); err != nil {
-			log.Printf("Redis Worker failed to start: %v", err)
-		}
-	}()
+		// Start Worker in background
+		go func() {
+			if err := redisWorker.Start(); err != nil {
+				log.Printf("Redis Worker failed to start: %v", err)
+			}
+		}()
 
-	// Start watchdog dispatcher — re-enqueues stuck 'queued' messages every minute
-	watchdogConfig := core.DefaultDispatchConfig()
-	watchdogConfig.TickInterval = 1 * time.Minute
-	dispatcher := core.NewDispatcherService(s.DB, messageService, devicePoolManager, sendWindowManager, alertService, watchdogConfig)
-	s.Dispatcher = dispatcher
-	dispatcher.Start(context.Background())
+		// Start watchdog dispatcher — re-enqueues stuck 'queued' messages every minute
+		watchdogConfig := core.DefaultDispatchConfig()
+		watchdogConfig.TickInterval = 1 * time.Minute
+		dispatcher := core.NewDispatcherService(s.DB, messageService, devicePoolManager, sendWindowManager, alertService, watchdogConfig)
+		s.Dispatcher = dispatcher
+		dispatcher.Start(context.Background())
+	}
 
 	// Handlers
 	authHandler := api.NewAuthHandler(authUserService, captchaService, emailValidator)

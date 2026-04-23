@@ -11,36 +11,40 @@ func TestProperty_PlanUpgradeVerifier(t *testing.T) {
 	engine := &PricingEngine{}
 
 	t.Run("Property 8: Plan upgrade immediately applies new rates", func(t *testing.T) {
-		// Verify that different plans yield different rates via CalculateSMSCostForPlan
-		// This simulates the effect after a DB update would happen
+		// Verify that current plan pricing is reflected immediately.
+		// SMS are currently included at a zero unit cost across built-in plans.
 
-		starterCost := engine.CalculateSMSCostForPlan(model.PlanFree, 1)
+		freeCost := engine.CalculateSMSCostForPlan(model.PlanFree, 1)
 		proCost := engine.CalculateSMSCostForPlan(model.PlanPro, 1)
-		agencyCost := engine.CalculateSMSCostForPlan(model.PlanAgency, 1)
+		enterpriseCost := engine.CalculateSMSCostForPlan(model.PlanAgency, 1)
 
-		assert.Equal(t, 5.0, starterCost, "Starter plan should appear as 5 cents")
-		assert.Equal(t, 3.0, proCost, "Pro plan should appear as 3 cents")
-		assert.Equal(t, 2.0, agencyCost, "Agency plan logic should appear as 2 cents")
+		assert.Equal(t, 0.0, freeCost, "Free plan should currently include SMS")
+		assert.Equal(t, 0.0, proCost, "Professional plan should currently include SMS")
+		assert.Equal(t, 0.0, enterpriseCost, "Enterprise plan should currently include SMS")
 
-		assert.Less(t, proCost, starterCost, "Upgrade to Pro should reduce costs")
-		assert.Less(t, agencyCost, proCost, "Upgrade to Agency should reduce costs further")
+		freeLimits := model.GetPlanLimits(model.PlanFree)
+		proLimits := model.GetPlanLimits(model.PlanPro)
+		enterpriseLimits := model.GetPlanLimits(model.PlanAgency)
+
+		assert.Greater(t, proLimits.SMSBurst, freeLimits.SMSBurst, "Upgrade to Professional should increase burst capacity")
+		assert.Greater(t, enterpriseLimits.SMSBurst, proLimits.SMSBurst, "Upgrade to Enterprise should further increase burst capacity")
 	})
 
 	t.Run("Property 9: Plan-based limit updates are correct", func(t *testing.T) {
 		// Verify limits for each plan
-		starterLimits := model.GetPlanLimits(model.PlanFree)
+		freeLimits := model.GetPlanLimits(model.PlanFree)
 		proLimits := model.GetPlanLimits(model.PlanPro)
-		agencyLimits := model.GetPlanLimits(model.PlanAgency)
+		enterpriseLimits := model.GetPlanLimits(model.PlanAgency)
 
 		// Check Applications
-		assert.Equal(t, 1, starterLimits.MaxApplications)
+		assert.Equal(t, 1, freeLimits.MaxApplications)
 		assert.Equal(t, 5, proLimits.MaxApplications)
-		assert.Equal(t, -1, agencyLimits.MaxApplications, "Agency should have unlimited applications")
+		assert.Equal(t, -1, enterpriseLimits.MaxApplications, "Enterprise should have unlimited applications")
 
 		// Check Contacts
-		assert.Equal(t, 100, starterLimits.MaxContacts)
+		assert.Equal(t, 100, freeLimits.MaxContacts)
 		assert.Equal(t, 1000, proLimits.MaxContacts)
-		assert.Equal(t, -1, agencyLimits.MaxContacts)
+		assert.Equal(t, -1, enterpriseLimits.MaxContacts)
 
 		// Verify logic transitions
 		// Simulate logic that would occur in FeatureLimitManager
@@ -55,7 +59,7 @@ func TestProperty_PlanUpgradeVerifier(t *testing.T) {
 		currentApps := 3
 
 		// On Starter (Max 1), they should be blocked
-		assert.False(t, checkLimit(starterLimits.MaxApplications, currentApps), "Starter plan should block 3 apps")
+		assert.False(t, checkLimit(freeLimits.MaxApplications, currentApps), "Free plan should block 3 apps")
 
 		// Upgrade to Pro (Max 5), they should be allowed
 		assert.True(t, checkLimit(proLimits.MaxApplications, currentApps), "Pro plan should allow 3 apps")
@@ -67,6 +71,6 @@ func TestProperty_PlanUpgradeVerifier(t *testing.T) {
 		assert.False(t, checkLimit(proLimits.MaxContacts, currentContacts), "Pro plan should block 10k contacts")
 
 		// Upgrade to Agency (Unlimited), allowed
-		assert.True(t, checkLimit(agencyLimits.MaxContacts, currentContacts), "Agency plan should allow 10k contacts")
+		assert.True(t, checkLimit(enterpriseLimits.MaxContacts, currentContacts), "Enterprise plan should allow 10k contacts")
 	})
 }

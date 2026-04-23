@@ -141,7 +141,10 @@ func (s *CampaignService) ListCampaigns(ctx context.Context, orgID int, appID in
 	return s.store.ListCampaigns(ctx, orgID)
 }
 
-func (s *CampaignService) ListCampaignsByStatus(ctx context.Context, orgID int, status string) ([]model.Campaign, error) {
+func (s *CampaignService) ListCampaignsByStatus(ctx context.Context, orgID int, appID int, status string) ([]model.Campaign, error) {
+	if appID != 0 {
+		return s.store.ListCampaignsByStatusAndApplication(ctx, orgID, appID, status)
+	}
 	return s.store.ListCampaignsByStatus(ctx, orgID, status)
 }
 

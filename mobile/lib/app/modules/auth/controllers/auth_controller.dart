@@ -7,28 +7,33 @@ import 'package:mobile/app/data/providers/api_provider.dart';
 import 'package:mobile/app/routes/app_pages.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:mobile/app/data/services/auth_service.dart';
+import 'package:mobile/app/data/services/branding_service.dart';
 
 class AuthController extends GetxController {
   final _apiProvider = ApiClient();
   final _authService = Get.find<AuthService>();
+  final _brandingService = Get.find<BrandingService>();
   final isLoading = false.obs;
 
   Future<void> linkDevice(String scannedData) async {
     if (isLoading.value) return;
     isLoading.value = true;
 
-    print("QR Code Scanned: $scannedData");
+    debugPrint('QR Code scanned');
 
     try {
-      String token = scannedData;
+      String token = scannedData.trim();
       try {
         final decoded = jsonDecode(scannedData);
         if (decoded is Map && decoded.containsKey('token')) {
-          token = decoded['token'];
-          print("Decoded token from JSON: $token");
+          token = decoded['token'].toString().trim();
         }
       } catch (e) {
-        print("Scanned data is not JSON, using as raw token: $e");
+        debugPrint('Scanned payload is not JSON: $e');
+      }
+
+      if (token.isEmpty) {
+        throw const FormatException('QR code invalide: token manquant.');
       }
 
       final deviceInfo = DeviceInfoPlugin();
@@ -40,15 +45,11 @@ class AuthController extends GetxController {
       String? fcmToken;
       try {
         fcmToken = await FirebaseMessaging.instance.getToken();
-        print("FCM Token: $fcmToken");
       } catch (e) {
-        print("Failed to get FCM token: $e");
+        debugPrint('Failed to get FCM token: $e');
       }
 
       final path = 'devices/link';
-      print(
-        "Sending link request to: ${_apiProvider.dio.options.baseUrl}$path",
-      );
       final response = await _apiProvider.post(path, {
         'token': token,
         'name': deviceName,
@@ -56,20 +57,32 @@ class AuthController extends GetxController {
         'fcm_token': fcmToken ?? 'device_polling_only',
       });
 
-      print("Response status: ${response.statusCode}");
-      print("Response data: ${response.data}");
-
       if (response.statusCode == 201) {
         final data = response.data;
-        _authService.login(data['id'], data['token'] ?? data['fcm_token']);
-        print("Linking successful! Device ID: ${data['id']}");
+        if (data is! Map) {
+          throw const FormatException('Reponse serveur invalide.');
+        }
+
+        final map = Map<String, dynamic>.from(data);
+        final rawId = map['id'];
+        final rawToken = map['token'];
+        final deviceId = rawId is int ? rawId : int.tryParse(rawId.toString());
+        final deviceToken = rawToken?.toString().trim() ?? '';
+
+        if (deviceId == null || deviceToken.isEmpty) {
+          throw const FormatException(
+            'Reponse de liaison incomplete: identifiants manquants.',
+          );
+        }
+
+        await _authService.login(deviceId, deviceToken);
+        await _brandingService.reloadBranding();
 
         Get.offAllNamed(Routes.HOME);
       } else {
-        print("Linking failed with status: ${response.statusCode}");
         Get.snackbar(
-          "Error",
-          "Failed to link device. Status: ${response.statusCode}",
+          'Error',
+          'Failed to link device. Status: ${response.statusCode}',
           backgroundColor: const Color(0xFFEF4444),
           colorText: Colors.white,
           snackPosition: SnackPosition.BOTTOM,
@@ -78,30 +91,29 @@ class AuthController extends GetxController {
         );
       }
     } catch (e) {
-      String errorMessage = "An error occurred during linking.";
+      String errorMessage = 'An error occurred during linking.';
       if (e is DioException) {
         if (e.response != null) {
-          print("Dio Error Response: ${e.response?.data}");
           // Try to extract message string from backend response body usually "message" or just the body if it's string
           final data = e.response?.data;
           if (data is String) {
             errorMessage = data;
           } else if (data is Map && data.containsKey('message')) {
-            errorMessage = data['message'];
+            errorMessage = data['message'].toString();
           } else {
-            errorMessage = "Server error: ${e.response?.statusCode}";
+            errorMessage = 'Server error: ${e.response?.statusCode}';
           }
         } else {
-          errorMessage = e.message ?? "Connection error";
+          errorMessage = e.message ?? 'Connection error';
         }
       } else {
         errorMessage = e.toString();
       }
 
-      print("Linking exception details: $errorMessage");
+      debugPrint('Linking exception details: $errorMessage');
 
       Get.snackbar(
-        "Linking Failed",
+        'Linking Failed',
         errorMessage,
         backgroundColor: const Color(0xFFEF4444),
         colorText: Colors.white,

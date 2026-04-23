@@ -12,6 +12,8 @@ import 'package:mobile/app/data/pigeon/sms_gateway.g.dart';
 
 @pragma('vm:entry-point')
 class BackgroundHandler {
+  static bool _isPolling = false;
+
   static Future<void> initializeService() async {
     // Request notification permission on Android 13+
     final notificationStatus = await Permission.notification.request();
@@ -78,8 +80,11 @@ class BackgroundHandler {
 
     final dio = Dio(
       BaseOptions(
-        baseUrl: Config.baseUrl,
+        baseUrl: Config.baseUrl.endsWith('/')
+            ? Config.baseUrl
+            : '${Config.baseUrl}/',
         connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
       ),
     );
 
@@ -126,10 +131,17 @@ class BackgroundHandler {
     ServiceInstance service,
     SmsGatewayHostApi smsApi,
   ) async {
+    if (_isPolling) {
+      debugPrint('Skipping poll: previous cycle still running');
+      return;
+    }
+
     final deviceToken = storage.read('device_token');
     final deviceId = storage.read('device_id');
 
     if (deviceToken == null || deviceId == null) return;
+
+    _isPolling = true;
 
     try {
       final response = await dio.get(
@@ -140,28 +152,43 @@ class BackgroundHandler {
       if (response.statusCode == 200 && response.data != null) {
         final List messages = response.data is List ? response.data : [];
         for (var msg in messages) {
-          final int msgId = msg['id'];
-
-          // Skip if already processing this message
-          if (_processingMessages.contains(msgId)) {
-            debugPrint("Message $msgId already being processed, skipping");
+          if (msg is! Map) {
             continue;
           }
 
-          final String to = msg['to'];
-          final String body = msg['body'];
-          final int? simSlot = msg['sim_slot'];
+          final data = Map<String, dynamic>.from(msg.cast<dynamic, dynamic>());
+          final rawId = data['id'];
+          final int? msgId = rawId is int
+              ? rawId
+              : int.tryParse(rawId?.toString() ?? '');
+          final String to = data['to']?.toString() ?? '';
+          final String body = data['body']?.toString() ?? '';
+          final dynamic rawSimSlot = data['sim_slot'];
+          final int? simSlot = rawSimSlot is int
+              ? rawSimSlot
+              : int.tryParse(rawSimSlot?.toString() ?? '');
+
+          if (msgId == null || to.isEmpty || body.isEmpty) {
+            debugPrint('Skipping invalid pending message payload: $data');
+            continue;
+          }
+
+          // Skip if already processing this message
+          if (_processingMessages.contains(msgId)) {
+            debugPrint('Message $msgId already being processed, skipping');
+            continue;
+          }
 
           // Mark as processing locally
           _processingMessages.add(msgId);
-          debugPrint("Processing message $msgId to $to");
+          debugPrint('Processing message $msgId to $to');
 
           // Send SMS directly via Pigeon native API
           try {
             final result = await smsApi.sendSms(to, body, simSlot);
 
             if (result.success) {
-              debugPrint("SMS sent successfully to $to (confirmed by network)");
+              debugPrint('SMS sent successfully to $to (confirmed by network)');
 
               // Log to UI
               service.invoke('onLog', {
@@ -180,12 +207,10 @@ class BackgroundHandler {
                   ),
                 );
               } catch (e) {
-                debugPrint("Failed to update message status: $e");
+                debugPrint('Failed to update message status: $e');
               }
             } else {
-              debugPrint(
-                "SMS failed: ${result.errorCode} - ${result.errorMessage}",
-              );
+              debugPrint('SMS failed: ${result.errorCode} - ${result.errorMessage}');
 
               service.invoke('onLog', {
                 'to': to,
@@ -206,11 +231,11 @@ class BackgroundHandler {
                   ),
                 );
               } catch (e) {
-                debugPrint("Failed to update message status: $e");
+                debugPrint('Failed to update message status: $e');
               }
             }
           } catch (e) {
-            debugPrint("SMS exception: $e");
+            debugPrint('SMS exception: $e');
             service.invoke('onLog', {
               'to': to,
               'status': 'error',
@@ -228,7 +253,7 @@ class BackgroundHandler {
                 ),
               );
             } catch (e) {
-              debugPrint("Failed to update message status: $e");
+              debugPrint('Failed to update message status: $e');
             }
           } finally {
             _processingMessages.remove(msgId);
@@ -236,7 +261,9 @@ class BackgroundHandler {
         }
       }
     } catch (e) {
-      debugPrint("Poll failed: $e");
+      debugPrint('Poll failed: $e');
+    } finally {
+      _isPolling = false;
     }
   }
 }
