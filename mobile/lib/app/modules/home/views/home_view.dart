@@ -9,7 +9,7 @@ class HomeView extends GetView<HomeController> {
   @override
   Widget build(BuildContext context) {
     final branding = Get.find<BrandingService>();
-    
+
     return Scaffold(
       backgroundColor: const Color(0xFFFBFBFC),
       appBar: AppBar(
@@ -21,23 +21,27 @@ class HomeView extends GetView<HomeController> {
                 return Padding(
                   padding: const EdgeInsets.only(right: 12),
                   child: Image.network(
+                    key: ValueKey(branding.logoUrl.value),
                     branding.logoUrl.value,
                     height: 24,
-                    errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                    errorBuilder: (context, error, stackTrace) =>
+                        const SizedBox.shrink(),
                   ),
                 );
               }
               return const SizedBox.shrink();
             }),
-            Obx(() => Text(
-              branding.appName.value.toUpperCase(),
-              style: TextStyle(
-                fontWeight: FontWeight.w800,
-                fontSize: 16,
-                letterSpacing: -0.5,
-                color: Color(0xFF1A1A1A),
+            Obx(
+              () => Text(
+                branding.appName.value.toUpperCase(),
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 16,
+                  letterSpacing: -0.5,
+                  color: branding.primaryColor.value,
+                ),
               ),
-            )),
+            ),
           ],
         ),
         backgroundColor: Colors.white,
