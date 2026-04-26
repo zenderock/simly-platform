@@ -61,7 +61,10 @@ export default function DevicesPage() {
   const activeCount = devices.filter(
     (d: Device) => d.status === "online"
   ).length;
-  const limitReached = org ? devices.length >= org.max_devices : false;
+  const hasDeviceLimit = org ? org.max_devices > 0 : false;
+  const limitReached = org
+    ? hasDeviceLimit && devices.length >= org.max_devices
+    : false;
 
   const handleDelete = async (id: number) => {
     if (confirm("Are you sure you want to remove this device?")) {
@@ -156,7 +159,7 @@ export default function DevicesPage() {
               <p className="font-bold tabular-nums">
                 {devices.length}{" "}
                 <span className="text-muted-foreground font-normal">
-                  / {org.max_devices === 100 ? "∞" : org.max_devices}
+                  / {hasDeviceLimit ? org.max_devices : "∞"}
                 </span>
               </p>
             </div>
