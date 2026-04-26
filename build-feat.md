@@ -22,3 +22,5 @@ OBLIGATOIRE :
 Mentalité :
 Ce code part en production demain. Pas d'excuses, pas de raccourcis. Si quelque chose manque dans les specs, tu poses la question ou tu implémente la solution la plus robuste par défaut.
 Fournis du code complet, déployable immédiatement, sans aucune dette technique.
+
+j'ai envoyé un message via l'app mobile et voici l'erreur : PlatformException(channel-error, Unable to establish connection on channel: "dev.flutter.pigeon.mobile.SmsGatewayHostApi.sendSms"., null, null)
