@@ -58,7 +58,7 @@ workflows:
             "storePassword=$KEYSTORE_PASSWORD" \
             "keyPassword=$KEY_PASSWORD" \
             "keyAlias=$KEY_ALIAS" \
-            "storeFile=app/upload-keystore.p12" \
+            "storeFile=upload-keystore.p12" \
             > android/key.properties
       - name: Get Flutter packages
         script: flutter pub get
