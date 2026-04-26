@@ -10,6 +10,7 @@ interface User {
   email: string;
   name: string;
   avatar_url?: string;
+  is_platform_admin?: boolean;
 }
 
 interface AuthState {

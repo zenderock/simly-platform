@@ -150,8 +150,12 @@ const API_ENDPOINTS: APIEndpoint[] = [
       status: "delivered",
       to: "+33612345678",
       body: "Hello from Simly!",
+      last_error_code: null,
+      last_error: null,
+      failure_category: null,
+      retry_count: 0,
+      max_retries: 3,
       created_at: "2026-01-02T10:30:00Z",
-      processed_at: "2026-01-02T10:30:05Z",
     },
     errorResponses: [
       {
@@ -245,7 +249,11 @@ const MESSAGE_STATUSES = [
     status: "delivered",
     description: "Message was delivered to the recipient",
   },
-  { status: "failed", description: "Message delivery failed" },
+  {
+    status: "failed",
+    description:
+      "Message delivery failed. The status response includes last_error_code, last_error, failure_category, retry_count, and can include events with ?include=events.",
+  },
 ];
 
 export default function DocsPage() {

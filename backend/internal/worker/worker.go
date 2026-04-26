@@ -106,6 +106,7 @@ func (w *RedisWorker) HandleSMSDeliveryTask(ctx context.Context, t *asynq.Task) 
 	if err != nil {
 		return fmt.Errorf("failed to get message: %w", err)
 	}
+	w.messageService.RecordWorkerEvent(ctx, msg, core.MessageEventWorkerStarted, nil, nil)
 
 	// Check if message is already in a terminal state (avoid double processing)
 	if msg.Status == model.MessageStatusSent || msg.Status == model.MessageStatusFailed {
@@ -128,6 +129,9 @@ func (w *RedisWorker) HandleSMSDeliveryTask(ctx context.Context, t *asynq.Task) 
 				delay = 1 * time.Minute // Safe fallback
 			}
 			log.Printf("[Worker] Outside send window. Retrying in %v (at %v)", delay, nextOpen)
+			w.messageService.RecordWorkerEvent(ctx, msg, core.MessageEventRetryScheduled, fmt.Errorf("outside send window"), map[string]any{
+				"retry_at": nextOpen,
+			})
 			return &RateLimitError{
 				RetryIn: delay,
 				Msg:     fmt.Sprintf("outside send window, retrying at %v", nextOpen),
@@ -135,7 +139,9 @@ func (w *RedisWorker) HandleSMSDeliveryTask(ctx context.Context, t *asynq.Task) 
 		}
 
 		// Fallback to default backoff if calculation fails
-		return fmt.Errorf("outside send window, retrying later")
+		retryErr := fmt.Errorf("outside send window, retrying later")
+		w.messageService.RecordWorkerEvent(ctx, msg, core.MessageEventRetryScheduled, retryErr, nil)
+		return retryErr
 	}
 
 	// Get available device
@@ -152,26 +158,41 @@ func (w *RedisWorker) HandleSMSDeliveryTask(ctx context.Context, t *asynq.Task) 
 					delay := time.Until(nextWindow)
 
 					log.Printf("[Worker] Daily limit reached for Message %d. Auto-Rescheduling for %v (in %v)", msgID, nextWindow, delay)
+					w.messageService.RecordWorkerEvent(ctx, msg, core.MessageEventRetryScheduled, err, map[string]any{
+						"retry_at": nextWindow,
+					})
 					return &RateLimitError{
 						RetryIn: delay,
 						Msg:     fmt.Sprintf("daily quota reached, rescheduling for %v", nextWindow),
 					}
 				}
 			}
+			w.messageService.RecordWorkerEvent(ctx, msg, core.MessageEventRetryScheduled, err, nil)
 			return fmt.Errorf("daily quota reached for all suitable devices")
 		}
+		w.messageService.RecordWorkerEvent(ctx, msg, core.MessageEventDeviceSelected, err, nil)
 		return fmt.Errorf("failed to get device: %w", err)
 	}
 
 	if device == nil {
 		// No device available, retry later
-		return fmt.Errorf("no device available, retrying")
+		err := fmt.Errorf("no device available, retrying")
+		w.messageService.RecordWorkerEvent(ctx, msg, core.MessageEventDeviceSelected, err, nil)
+		return err
 	}
+	w.messageService.RecordWorkerEvent(ctx, msg, core.MessageEventDeviceSelected, nil, map[string]any{
+		"device_id": device.ID,
+		"sim_slot":  slotIndex,
+	})
 
 	// Dispatch
 	if err := w.dispatchMessage(ctx, msg, device, slotIndex); err != nil {
 		// Record failure
 		w.devicePool.RecordFailure(device.ID)
+		w.messageService.RecordWorkerEvent(ctx, msg, core.MessageEventPushFailed, err, map[string]any{
+			"device_id": device.ID,
+			"sim_slot":  slotIndex,
+		})
 		return fmt.Errorf("dispatch failed: %w", err)
 	}
 

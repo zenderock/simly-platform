@@ -36,6 +36,7 @@ export interface User {
   id: number;
   name: string;
   email: string;
+  is_platform_admin?: boolean;
 }
 
 export interface Application {
@@ -98,6 +99,35 @@ export interface Message {
   processed_at?: string;
   created_at: string;
   updated_at: string;
+  retry_count: number;
+  max_retries: number;
+  last_error?: string;
+  last_error_code?: string;
+  failure_category?: string;
+  failed_at?: string;
+  last_attempted_at?: string;
+  sim_slot?: number;
+}
+
+export interface MessageEvent {
+  id: number;
+  message_id: number;
+  organization_id: number;
+  application_id?: number;
+  device_id?: number;
+  sim_slot?: number;
+  event_type: string;
+  status?: string;
+  attempt: number;
+  source: string;
+  reason_code?: string;
+  reason_message?: string;
+  metadata?: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface SupportMessage extends Message {
+  organization_name: string;
 }
 
 export interface Campaign {
@@ -125,7 +155,10 @@ export interface DashboardStats {
   sent_messages: number;
   delivered_messages: number;
   failed_messages: number;
+  queued_messages: number;
+  scheduled_messages: number;
   pending_messages: number;
+  failure_breakdown?: Record<string, number>;
   active_devices: number;
   total_devices: number;
   current_month_cost: number;

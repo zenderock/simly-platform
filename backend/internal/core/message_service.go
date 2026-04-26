@@ -18,6 +18,20 @@ const (
 	TypeSMSDelivery = "sms:deliver"
 )
 
+const (
+	MessageEventAccepted       = "accepted"
+	MessageEventQueued         = "queued"
+	MessageEventScheduled      = "scheduled"
+	MessageEventWorkerStarted  = "worker_started"
+	MessageEventDeviceSelected = "device_selected"
+	MessageEventPushSent       = "push_sent"
+	MessageEventPushFailed     = "push_failed"
+	MessageEventSMSSent        = "sms_sent"
+	MessageEventSMSFailed      = "sms_failed"
+	MessageEventRetryScheduled = "retry_scheduled"
+	MessageEventFailedTerminal = "failed_terminal"
+)
+
 // SMSDeliveryPayload is the payload for SMS delivery tasks
 type SMSDeliveryPayload struct {
 	MessageID int `json:"message_id"`
@@ -90,6 +104,7 @@ func (s *MessageService) ReceiveSMS(ctx context.Context, orgID int, fromNumber s
 	if err := s.store.CreateMessage(ctx, msg); err != nil {
 		return err
 	}
+	s.recordMessageEvent(ctx, msg, MessageEventAccepted, "mobile", nil, nil, map[string]any{"direction": "inbound"})
 
 	// Automated Opt-Out / Opt-In Handling
 	cleanBody := strings.TrimSpace(strings.ToUpper(body))
@@ -244,6 +259,25 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 			if err := s.store.CreateMessage(ctx, msg); err != nil {
 				return nil, err
 			}
+			eventType := MessageEventSMSSent
+			var reasonCode *string
+			var reasonMessage *string
+			if fakeStatus == "failed" {
+				eventType = MessageEventFailedTerminal
+				code := "sandbox_failure"
+				message := "Sandbox failure number requested"
+				category := "sms_provider"
+				reasonCode = &code
+				reasonMessage = &message
+				if err := s.store.UpdateMessageStatusWithDiagnostics(ctx, msg.ID, fakeStatus, message, reasonCode, &category); err != nil {
+					return nil, err
+				}
+				msg.LastError = &message
+				msg.LastErrorCode = reasonCode
+				msg.FailureCategory = &category
+			}
+			s.recordMessageEvent(ctx, msg, MessageEventAccepted, "api", nil, nil, map[string]any{"sandbox": true})
+			s.recordMessageEvent(ctx, msg, eventType, "sandbox", reasonCode, reasonMessage, map[string]any{"sandbox": true})
 
 			// Record usage for billing
 			if cost, err := s.rateLimiter.CalculateSMSCost(ctx, orgID); err == nil {
@@ -316,6 +350,12 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 	if err := s.store.CreateMessage(ctx, msg); err != nil {
 		return nil, err
 	}
+	s.recordMessageEvent(ctx, msg, MessageEventAccepted, "api", nil, nil, nil)
+	if msg.Status == "scheduled" {
+		s.recordMessageEvent(ctx, msg, MessageEventScheduled, "api", nil, nil, map[string]any{"scheduled_at": msg.ScheduledAt})
+	} else {
+		s.recordMessageEvent(ctx, msg, MessageEventQueued, "api", nil, nil, nil)
+	}
 
 	// 3.5. Auto Save Contacts if enabled
 	if org.AutoSaveContacts {
@@ -383,6 +423,7 @@ func (s *MessageService) EnqueueSMSDelivery(ctx context.Context, msg *model.Mess
 		return err
 	}
 	log.Printf("Enqueued task: %s, queue: %s", info.ID, info.Queue)
+	s.recordMessageEvent(ctx, msg, MessageEventQueued, "worker", nil, nil, map[string]any{"queue": queueName, "task_id": info.ID})
 	return nil
 }
 
@@ -439,6 +480,11 @@ func (s *MessageService) NotifyDeviceWithExclusion(ctx context.Context, msg *mod
 		if msg.DeviceID != nil && s.devicePoolManager != nil {
 			s.devicePoolManager.RecordFailure(*msg.DeviceID)
 		}
+		code := "device_selection_failed"
+		category := normalizeFailureCategory(code, err.Error())
+		message := err.Error()
+		_ = s.store.UpdateMessageStatusWithDiagnostics(ctx, msg.ID, msg.Status, message, &code, &category)
+		s.recordMessageEvent(ctx, msg, MessageEventPushFailed, "worker", &code, &message, map[string]any{"failure_category": category})
 		return fmt.Errorf("failed to find device for notification: %w", err)
 	}
 
@@ -447,6 +493,11 @@ func (s *MessageService) NotifyDeviceWithExclusion(ctx context.Context, msg *mod
 		if s.devicePoolManager != nil {
 			s.devicePoolManager.RecordFailure(device.ID)
 		}
+		code := "missing_fcm_token"
+		category := normalizeFailureCategory(code, "device has no valid push token")
+		message := "device has no valid push token"
+		_ = s.store.UpdateMessageStatusWithDiagnostics(ctx, msg.ID, msg.Status, message, &code, &category)
+		s.recordMessageEvent(ctx, msg, MessageEventPushFailed, "worker", &code, &message, map[string]any{"failure_category": category})
 		return errors.New("device has no valid push token")
 	}
 
@@ -473,6 +524,15 @@ func (s *MessageService) NotifyDeviceWithExclusion(ctx context.Context, msg *mod
 			// Record successful send
 			s.devicePoolManager.RecordSend(device.ID)
 		}
+	}
+	if pushErr != nil {
+		code := "push_failed"
+		category := normalizeFailureCategory(code, pushErr.Error())
+		message := pushErr.Error()
+		_ = s.store.UpdateMessageStatusWithDiagnostics(ctx, msg.ID, msg.Status, message, &code, &category)
+		s.recordMessageEvent(ctx, msg, MessageEventPushFailed, "worker", &code, &message, map[string]any{"failure_category": category})
+	} else {
+		s.recordMessageEvent(ctx, msg, MessageEventPushSent, "worker", nil, nil, map[string]any{"device_id": device.ID})
 	}
 
 	return pushErr
@@ -502,20 +562,28 @@ func (s *MessageService) UpdateStatus(ctx context.Context, msgID int, status str
 
 	// 3. Handle Retries for Failures
 	if status == "failed" {
+		fullError := buildFullError(errorCode, errorMessage)
+		codePtr := stringPtrOrNil(errorCode)
+		category := normalizeFailureCategory(errorCode, errorMessage)
+		s.recordMessageEvent(ctx, msg, MessageEventSMSFailed, "mobile", codePtr, stringPtrOrNil(errorMessage), map[string]any{"failure_category": category})
 		if msg.RetryCount < msg.MaxRetries {
 			newRetryCount := msg.RetryCount + 1
 			log.Printf("Message %d failed, retrying (%d/%d) via Queue...\n", msgID, newRetryCount, msg.MaxRetries)
 
 			// 1. Clear device assignment and increment retry in DB
-			if err := s.store.UpdateMessageRetry(ctx, msgID, newRetryCount, "Last delivery attempt failed", "queued"); err != nil {
+			if err := s.store.UpdateMessageRetryWithDiagnostics(ctx, msgID, newRetryCount, fullError, "queued", codePtr, &category); err != nil {
 				return fmt.Errorf("failed to update message retry: %w", err)
 			}
+			msg.RetryCount = newRetryCount
+			msg.Status = "queued"
+			msg.LastError = stringPtrOrNil(fullError)
+			msg.LastErrorCode = codePtr
+			msg.FailureCategory = &category
+			s.recordMessageEvent(ctx, msg, MessageEventRetryScheduled, "api", codePtr, stringPtrOrNil(fullError), map[string]any{"failure_category": category})
 
 			// 2. Enqueue retry logic
 			if s.taskClient != nil {
 				// Update status in object
-				msg.RetryCount = newRetryCount
-				msg.Status = "queued"
 				msg.DeviceID = nil // Reset device ID
 
 				if err := s.EnqueueSMSDelivery(ctx, msg); err != nil {
@@ -527,15 +595,25 @@ func (s *MessageService) UpdateStatus(ctx context.Context, msgID int, status str
 	}
 
 	// 4. Update Status Normally (Success or Terminal Failure)
-	fullError := ""
-	if errorCode != "" {
-		fullError = fmt.Sprintf("%s: %s", errorCode, errorMessage)
-	} else if errorMessage != "" {
-		fullError = errorMessage
+	fullError := buildFullError(errorCode, errorMessage)
+	codePtr := stringPtrOrNil(errorCode)
+	var categoryPtr *string
+	if status == "failed" {
+		category := normalizeFailureCategory(errorCode, errorMessage)
+		categoryPtr = &category
 	}
 
-	if err := s.store.UpdateMessageStatus(ctx, msgID, status, fullError); err != nil {
+	if err := s.store.UpdateMessageStatusWithDiagnostics(ctx, msgID, status, fullError, codePtr, categoryPtr); err != nil {
 		return err
+	}
+	msg.Status = status
+	msg.LastError = stringPtrOrNil(fullError)
+	msg.LastErrorCode = codePtr
+	msg.FailureCategory = categoryPtr
+	if status == "sent" || status == "delivered" {
+		s.recordMessageEvent(ctx, msg, MessageEventSMSSent, "mobile", nil, nil, nil)
+	} else if status == "failed" {
+		s.recordMessageEvent(ctx, msg, MessageEventFailedTerminal, "mobile", codePtr, stringPtrOrNil(fullError), map[string]any{"failure_category": *categoryPtr})
 	}
 
 	// 5. Record Usage for billing when message is successfully sent
@@ -668,6 +746,105 @@ func (s *MessageService) BulkRequeue(ctx context.Context, orgID int, f RequeueFi
 // GetMessage retrieves a single message by ID
 func (s *MessageService) GetMessage(ctx context.Context, msgID int) (*model.Message, error) {
 	return s.store.GetMessageByID(ctx, msgID)
+}
+
+func (s *MessageService) ListMessageEvents(ctx context.Context, orgID int, msgID int) ([]model.MessageEvent, error) {
+	msg, err := s.store.GetMessageByID(ctx, msgID)
+	if err != nil {
+		return nil, err
+	}
+	if msg.OrganizationID != orgID {
+		return nil, errors.New("message not found")
+	}
+	return s.store.GetMessageEvents(ctx, msgID)
+}
+
+func (s *MessageService) ListMessageEventsForSupport(ctx context.Context, msgID int) ([]model.MessageEvent, error) {
+	return s.store.GetMessageEvents(ctx, msgID)
+}
+
+func (s *MessageService) SearchSupportMessages(ctx context.Context, filter store.MessageListFilter, orgID *int) ([]model.SupportMessage, error) {
+	return s.store.SearchSupportMessages(ctx, filter, orgID)
+}
+
+func (s *MessageService) RecordWorkerEvent(ctx context.Context, msg *model.Message, eventType string, reason error, metadata map[string]any) {
+	var codePtr *string
+	var messagePtr *string
+	if reason != nil {
+		code := eventType
+		message := reason.Error()
+		codePtr = &code
+		messagePtr = &message
+		if metadata == nil {
+			metadata = map[string]any{}
+		}
+		category := normalizeFailureCategory(code, message)
+		metadata["failure_category"] = category
+	}
+	s.recordMessageEvent(ctx, msg, eventType, "worker", codePtr, messagePtr, metadata)
+}
+
+func (s *MessageService) recordMessageEvent(ctx context.Context, msg *model.Message, eventType string, source string, reasonCode *string, reasonMessage *string, metadata map[string]any) {
+	if msg == nil || msg.ID == 0 {
+		return
+	}
+	if metadata == nil {
+		metadata = map[string]any{}
+	}
+	event := &model.MessageEvent{
+		MessageID:      msg.ID,
+		OrganizationID: msg.OrganizationID,
+		ApplicationID:  msg.ApplicationID,
+		DeviceID:       msg.DeviceID,
+		SimSlot:        msg.SimSlot,
+		EventType:      eventType,
+		Status:         stringPtrOrNil(msg.Status),
+		Attempt:        msg.RetryCount,
+		Source:         source,
+		ReasonCode:     reasonCode,
+		ReasonMessage:  reasonMessage,
+		Metadata:       metadata,
+	}
+	if err := s.store.CreateMessageEvent(ctx, event); err != nil {
+		log.Printf("Warning: failed to record message event message_id=%d event_type=%s: %v", msg.ID, eventType, err)
+	}
+}
+
+func buildFullError(errorCode string, errorMessage string) string {
+	if errorCode != "" && errorMessage != "" {
+		return fmt.Sprintf("%s: %s", errorCode, errorMessage)
+	}
+	if errorCode != "" {
+		return errorCode
+	}
+	return errorMessage
+}
+
+func stringPtrOrNil(value string) *string {
+	if value == "" {
+		return nil
+	}
+	return &value
+}
+
+func normalizeFailureCategory(errorCode string, errorMessage string) string {
+	value := strings.ToLower(strings.TrimSpace(errorCode + " " + errorMessage))
+	switch {
+	case strings.Contains(value, "quota") || strings.Contains(value, "limit"):
+		return "quota_reached"
+	case strings.Contains(value, "window"):
+		return "send_window"
+	case strings.Contains(value, "device_selection") || strings.Contains(value, "no gateways") || strings.Contains(value, "no device"):
+		return "no_device"
+	case strings.Contains(value, "offline") || strings.Contains(value, "missing_fcm_token") || strings.Contains(value, "fcm token"):
+		return "device_offline"
+	case strings.Contains(value, "push") || strings.Contains(value, "notify") || strings.Contains(value, "firebase") || strings.Contains(value, "fcm"):
+		return "push_failed"
+	case strings.Contains(value, "sms") || strings.Contains(value, "network") || strings.Contains(value, "radio") || strings.Contains(value, "sim") || strings.Contains(value, "carrier"):
+		return "sms_provider"
+	default:
+		return "unknown"
+	}
 }
 
 // RequeueOne re-enqueues a single message. Returns an error if the message

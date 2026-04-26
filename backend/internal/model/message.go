@@ -36,8 +36,34 @@ type Message struct {
 	RetryCount      int            `json:"retry_count"`
 	MaxRetries      int            `json:"max_retries"`
 	LastError       *string        `json:"last_error,omitempty"`
+	LastErrorCode   *string        `json:"last_error_code,omitempty"`
+	FailureCategory *string        `json:"failure_category,omitempty"`
+	FailedAt        *time.Time     `json:"failed_at,omitempty"`
+	LastAttemptedAt *time.Time     `json:"last_attempted_at,omitempty"`
 	SimSlot         *int           `json:"sim_slot,omitempty"` // 0 or 1
 	Metadata        map[string]any `json:"metadata,omitempty"`
+}
+
+type MessageEvent struct {
+	ID             int            `json:"id"`
+	MessageID      int            `json:"message_id"`
+	OrganizationID int            `json:"organization_id"`
+	ApplicationID  *int           `json:"application_id,omitempty"`
+	DeviceID       *int           `json:"device_id,omitempty"`
+	SimSlot        *int           `json:"sim_slot,omitempty"`
+	EventType      string         `json:"event_type"`
+	Status         *string        `json:"status,omitempty"`
+	Attempt        int            `json:"attempt"`
+	Source         string         `json:"source"`
+	ReasonCode     *string        `json:"reason_code,omitempty"`
+	ReasonMessage  *string        `json:"reason_message,omitempty"`
+	Metadata       map[string]any `json:"metadata,omitempty"`
+	CreatedAt      time.Time      `json:"created_at"`
+}
+
+type SupportMessage struct {
+	Message
+	OrganizationName string `json:"organization_name"`
 }
 
 type SendMessageRequest struct {

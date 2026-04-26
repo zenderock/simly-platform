@@ -46,11 +46,17 @@ type PublicSendMessageRequest struct {
 
 // PublicMessageResponse represents the response for message operations
 type PublicMessageResponse struct {
-	ID        string `json:"id"`
-	Status    string `json:"status"`
-	To        string `json:"to"`
-	Body      string `json:"body"`
-	CreatedAt string `json:"created_at"`
+	ID              string               `json:"id"`
+	Status          string               `json:"status"`
+	To              string               `json:"to"`
+	Body            string               `json:"body"`
+	LastErrorCode   *string              `json:"last_error_code,omitempty"`
+	LastError       *string              `json:"last_error,omitempty"`
+	FailureCategory *string              `json:"failure_category,omitempty"`
+	RetryCount      int                  `json:"retry_count"`
+	MaxRetries      int                  `json:"max_retries"`
+	Events          []model.MessageEvent `json:"events,omitempty"`
+	CreatedAt       string               `json:"created_at"`
 }
 
 // SendMessage handles POST /v1/messages
@@ -127,11 +133,16 @@ func (h *PublicMessageHandler) SendMessage(w http.ResponseWriter, r *http.Reques
 
 	// Build response
 	response := PublicMessageResponse{
-		ID:        fmt.Sprintf("msg_%d", msg.ID),
-		Status:    msg.Status,
-		To:        msg.ToNumber,
-		Body:      msg.Body,
-		CreatedAt: msg.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		ID:              fmt.Sprintf("msg_%d", msg.ID),
+		Status:          msg.Status,
+		To:              msg.ToNumber,
+		Body:            msg.Body,
+		LastErrorCode:   msg.LastErrorCode,
+		LastError:       msg.LastError,
+		FailureCategory: msg.FailureCategory,
+		RetryCount:      msg.RetryCount,
+		MaxRetries:      msg.MaxRetries,
+		CreatedAt:       msg.CreatedAt.Format("2006-01-02T15:04:05Z"),
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -218,13 +229,17 @@ func (h *PublicMessageHandler) SendOTP(w http.ResponseWriter, r *http.Request) {
 
 	// Build response
 	response := PublicMessageResponse{
-		ID:        fmt.Sprintf("msg_%d", msg.ID),
-		Status:    msg.Status,
-		To:        msg.ToNumber,
-		Body:      msg.Body,
-		CreatedAt: msg.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		ID:              fmt.Sprintf("msg_%d", msg.ID),
+		Status:          msg.Status,
+		To:              msg.ToNumber,
+		Body:            msg.Body,
+		LastErrorCode:   msg.LastErrorCode,
+		LastError:       msg.LastError,
+		FailureCategory: msg.FailureCategory,
+		RetryCount:      msg.RetryCount,
+		MaxRetries:      msg.MaxRetries,
+		CreatedAt:       msg.CreatedAt.Format("2006-01-02T15:04:05Z"),
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(response)
@@ -274,11 +289,24 @@ func (h *PublicMessageHandler) GetMessage(w http.ResponseWriter, r *http.Request
 
 	// Build response
 	response := PublicMessageResponse{
-		ID:        fmt.Sprintf("msg_%d", msg.ID),
-		Status:    msg.Status,
-		To:        msg.ToNumber,
-		Body:      msg.Body,
-		CreatedAt: msg.CreatedAt.Format("2006-01-02T15:04:05Z"),
+		ID:              fmt.Sprintf("msg_%d", msg.ID),
+		Status:          msg.Status,
+		To:              msg.ToNumber,
+		Body:            msg.Body,
+		LastErrorCode:   msg.LastErrorCode,
+		LastError:       msg.LastError,
+		FailureCategory: msg.FailureCategory,
+		RetryCount:      msg.RetryCount,
+		MaxRetries:      msg.MaxRetries,
+		CreatedAt:       msg.CreatedAt.Format("2006-01-02T15:04:05Z"),
+	}
+	if r.URL.Query().Get("include") == "events" {
+		events, err := h.messageService.ListMessageEvents(r.Context(), orgID, msgID)
+		if err != nil {
+			http.Error(w, "Failed to fetch message events", http.StatusInternalServerError)
+			return
+		}
+		response.Events = events
 	}
 
 	w.Header().Set("Content-Type", "application/json")

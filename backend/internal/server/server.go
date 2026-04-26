@@ -195,6 +195,7 @@ func (s *Server) setupRoutes(opts Options) {
 	apiKeyHandler := api.NewAPIKeyHandler(apiKeyService, appService, orgService, auditService)
 	deviceHandler := api.NewDeviceHandler(deviceService, orgService, auditService)
 	messageHandler := api.NewMessageHandler(messageService, orgService, deviceService)
+	supportHandler := api.NewSupportHandler(messageService)
 	webhookHandler := api.NewWebhookHandler(webhookService, orgService, auditService)
 	orgHandler := api.NewOrganizationHandler(orgService, billingService, auditService, s.Config.StripePricePro, s.Config.StripePriceAgency, s.Config.StripePriceWhiteLabel)
 	alertHandler := api.NewAlertHandler(alertService, orgService)
@@ -328,8 +329,16 @@ func (s *Server) setupRoutes(opts Options) {
 			r.Post("/send", messageHandler.SendSMS)
 			r.Post("/inbound", messageHandler.InternalReceiveSMS)
 			r.Post("/requeue", messageHandler.RequeueMessages)
+			r.Get("/{id}", messageHandler.GetMessage)
+			r.Get("/{id}/events", messageHandler.GetMessageEvents)
 			r.Post("/{id}/status", messageHandler.UpdateStatus)
 			r.Post("/{id}/requeue", messageHandler.RequeueOne)
+		})
+
+		r.Route("/api/support", func(r chi.Router) {
+			r.Use(api.PlatformAdminMiddleware(s.DB))
+			r.Get("/messages", supportHandler.ListMessages)
+			r.Get("/messages/{id}/events", supportHandler.GetMessageEvents)
 		})
 
 		// Webhooks

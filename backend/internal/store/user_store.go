@@ -19,12 +19,13 @@ func (s *Store) CreateUser(ctx context.Context, user *model.User) error {
 	if err != nil {
 		return fmt.Errorf("failed to create user: %w", err)
 	}
+	user.IsPlatformAdmin = model.IsPlatformAdminEmail(user.Email)
 	return nil
 }
 
 func (s *Store) GetUserByEmail(ctx context.Context, email string) (*model.User, error) {
 	query := `
-		SELECT id, email, password_hash, name, avatar_url, created_at, updated_at
+		SELECT id, email, password_hash, name, avatar_url, is_platform_admin, created_at, updated_at
 		FROM users
 		WHERE email = $1
 	`
@@ -35,6 +36,7 @@ func (s *Store) GetUserByEmail(ctx context.Context, email string) (*model.User, 
 		&user.PasswordHash,
 		&user.Name,
 		&user.AvatarURL,
+		&user.IsPlatformAdmin,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
@@ -44,11 +46,12 @@ func (s *Store) GetUserByEmail(ctx context.Context, email string) (*model.User, 
 		}
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
+	user.IsPlatformAdmin = user.IsPlatformAdmin || model.IsPlatformAdminEmail(user.Email)
 	return user, nil
 }
 func (s *Store) GetUsersByOrganizationID(ctx context.Context, orgID int) ([]model.User, error) {
 	query := `
-		SELECT u.id, u.email, u.name, u.avatar_url, u.created_at, u.updated_at
+		SELECT u.id, u.email, u.name, u.avatar_url, u.is_platform_admin, u.created_at, u.updated_at
 		FROM users u
 		JOIN organization_members om ON u.id = om.user_id
 		WHERE om.organization_id = $1
@@ -62,16 +65,17 @@ func (s *Store) GetUsersByOrganizationID(ctx context.Context, orgID int) ([]mode
 	var users []model.User
 	for rows.Next() {
 		var u model.User
-		if err := rows.Scan(&u.ID, &u.Email, &u.Name, &u.AvatarURL, &u.CreatedAt, &u.UpdatedAt); err != nil {
+		if err := rows.Scan(&u.ID, &u.Email, &u.Name, &u.AvatarURL, &u.IsPlatformAdmin, &u.CreatedAt, &u.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("failed to scan user: %w", err)
 		}
+		u.IsPlatformAdmin = u.IsPlatformAdmin || model.IsPlatformAdminEmail(u.Email)
 		users = append(users, u)
 	}
 	return users, nil
 }
 func (s *Store) GetUserByID(ctx context.Context, userID int) (*model.User, error) {
 	query := `
-		SELECT id, email, password_hash, name, avatar_url, created_at, updated_at
+		SELECT id, email, password_hash, name, avatar_url, is_platform_admin, created_at, updated_at
 		FROM users
 		WHERE id = $1
 	`
@@ -82,6 +86,7 @@ func (s *Store) GetUserByID(ctx context.Context, userID int) (*model.User, error
 		&user.PasswordHash,
 		&user.Name,
 		&user.AvatarURL,
+		&user.IsPlatformAdmin,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
@@ -91,7 +96,18 @@ func (s *Store) GetUserByID(ctx context.Context, userID int) (*model.User, error
 		}
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
+	user.IsPlatformAdmin = user.IsPlatformAdmin || model.IsPlatformAdminEmail(user.Email)
 	return user, nil
+}
+
+func (s *Store) IsPlatformAdmin(ctx context.Context, userID int) (bool, error) {
+	var isPlatformAdmin bool
+	var email string
+	err := s.db.QueryRow(ctx, `SELECT email, is_platform_admin FROM users WHERE id = $1`, userID).Scan(&email, &isPlatformAdmin)
+	if err != nil {
+		return false, fmt.Errorf("failed to check platform admin: %w", err)
+	}
+	return isPlatformAdmin || model.IsPlatformAdminEmail(email), nil
 }
 
 func (s *Store) UpdateUser(ctx context.Context, userID int, name, email, avatarURL string) error {
@@ -138,7 +154,7 @@ func (s *Store) SetUserResetToken(ctx context.Context, userID int, token string,
 
 func (s *Store) GetUserByResetToken(ctx context.Context, token string) (*model.User, error) {
 	query := `
-		SELECT id, email, password_hash, name, avatar_url, password_reset_token, password_reset_expires_at, created_at, updated_at
+		SELECT id, email, password_hash, name, avatar_url, password_reset_token, password_reset_expires_at, is_platform_admin, created_at, updated_at
 		FROM users
 		WHERE password_reset_token = $1
 	`
@@ -151,6 +167,7 @@ func (s *Store) GetUserByResetToken(ctx context.Context, token string) (*model.U
 		&user.AvatarURL,
 		&user.PasswordResetToken,
 		&user.PasswordResetExpiresAt,
+		&user.IsPlatformAdmin,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
@@ -160,6 +177,7 @@ func (s *Store) GetUserByResetToken(ctx context.Context, token string) (*model.U
 		}
 		return nil, err
 	}
+	user.IsPlatformAdmin = user.IsPlatformAdmin || model.IsPlatformAdminEmail(user.Email)
 	return user, nil
 }
 
@@ -172,4 +190,3 @@ func (s *Store) ClearUserResetToken(ctx context.Context, userID int) error {
 	_, err := s.db.Exec(ctx, query, userID)
 	return err
 }
-

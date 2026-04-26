@@ -116,6 +116,17 @@ const developerMenuItems = [
   { title: "Logs", icon: IconList, href: "/developers/logs" },
 ];
 
+const supportMenuItems = [
+  { title: "Support Messages", icon: IconShieldHalfFilled, href: "/support/messages" },
+];
+
+function isPlatformAdminUser(user?: { email?: string; is_platform_admin?: boolean } | null) {
+  return (
+    !!user?.is_platform_admin ||
+    user?.email?.trim().toLowerCase().endsWith("@zenderock.me")
+  );
+}
+
 export function DashboardSidebar({
   ...props
 }: React.ComponentProps<typeof Sidebar>) {
@@ -423,7 +434,7 @@ export function DashboardSidebar({
           <SidebarGroup className="p-0">
             <SidebarGroupContent>
               <SidebarMenu>
-                {menuItems.map((item) => (
+                {[...menuItems, ...(isPlatformAdminUser(user) ? supportMenuItems : [])].map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
                       asChild

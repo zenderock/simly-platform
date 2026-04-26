@@ -55,10 +55,12 @@ import {
   Clock,
   RotateCcw,
   Loader2,
+  AlertTriangle,
+  ListTree,
 } from "lucide-react";
 import { useDashboardStore } from "@/store/dashboard-store";
 import { useApplicationStore } from "@/store/application-store";
-import { useMessages } from "@/hooks/use-messages";
+import { useMessageEvents, useMessages } from "@/hooks/use-messages";
 import { useCampaigns } from "@/hooks/use-campaigns";
 import { useRequeueMessages, useRequeueOneMessage } from "@/hooks/use-requeue-messages";
 import { useSearchParams } from "next/navigation";
@@ -98,8 +100,11 @@ export function MessagesTable() {
   const { data: messages = [], isLoading: loading } = useMessages({
     applicationId: activeAppId,
     campaignId: selectedCampaignId,
+    status: statusFilter !== "all" ? statusFilter : null,
+    search: searchQuery || null,
     startDate: startDate || null,
     endDate: endDate || null,
+    limit: 500,
   });
 
   const { data: campaigns = [] } = useCampaigns(activeAppId);
@@ -109,6 +114,8 @@ export function MessagesTable() {
   const [currentPage, setCurrentPage] = React.useState(1);
   const [pageSize, setPageSize] = React.useState(10);
   const [selectedMessage, setSelectedMessage] = React.useState<any>(null);
+  const { data: selectedEvents = [], isLoading: loadingEvents } =
+    useMessageEvents(selectedMessage?.id);
 
   const handleCopyId = (id: number) => {
     navigator.clipboard.writeText(id.toString());
@@ -263,9 +270,16 @@ export function MessagesTable() {
         "Message",
         "Application",
         "Status",
+        "Error Code",
+        "Failure Category",
+        "Last Error",
+        "Retry Count",
         "Device",
+        "SIM Slot",
         "Date",
         "Scheduled At",
+        "Failed At",
+        "Last Attempted At",
       ];
 
       const rows = filteredMessages.map((msg) => [
@@ -274,9 +288,16 @@ export function MessagesTable() {
         `"${(msg.body || "").replace(/"/g, '""')}"`,
         msg.application_name || "Direct API",
         msg.status,
+        msg.last_error_code || "",
+        msg.failure_category || "",
+        `"${(msg.last_error || "").replace(/"/g, '""')}"`,
+        `${msg.retry_count || 0}/${msg.max_retries || 0}`,
         msg.device_name || "—",
+        msg.sim_slot ?? "",
         msg.created_at ? new Date(msg.created_at).toISOString() : "",
         msg.scheduled_at ? new Date(msg.scheduled_at).toISOString() : "",
+        msg.failed_at ? new Date(msg.failed_at).toISOString() : "",
+        msg.last_attempted_at ? new Date(msg.last_attempted_at).toISOString() : "",
       ]);
 
       const csvContent = [
@@ -629,6 +650,9 @@ export function MessagesTable() {
               <TableHead className="min-w-[100px] font-bold text-muted-foreground text-[10px] uppercase italic">
                 Status
               </TableHead>
+              <TableHead className="min-w-[180px] font-bold text-muted-foreground text-[10px] uppercase italic">
+                Diagnostic
+              </TableHead>
               <TableHead className="min-w-[120px] font-bold text-muted-foreground text-[10px] uppercase italic">
                 Device
               </TableHead>
@@ -642,7 +666,7 @@ export function MessagesTable() {
             {paginatedMessages.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={8}
+                  colSpan={10}
                   className="h-24 text-center text-muted-foreground text-sm italic"
                 >
                   No messages found.
@@ -698,11 +722,42 @@ export function MessagesTable() {
                       {msg.status}
                     </Badge>
                   </TableCell>
+                  <TableCell className="max-w-[220px]">
+                    {msg.last_error || msg.last_error_code ? (
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1 text-[11px] font-semibold text-destructive">
+                          <AlertTriangle className="size-3" />
+                          <span className="truncate">
+                            {msg.last_error_code || msg.failure_category || "failed"}
+                          </span>
+                        </div>
+                        <div className="truncate text-[10px] text-muted-foreground">
+                          {msg.last_error || msg.failure_category}
+                        </div>
+                        <div className="text-[10px] text-muted-foreground">
+                          Retry {msg.retry_count || 0}/{msg.max_retries || 0}
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-muted-foreground">
+                        Retry {msg.retry_count || 0}/{msg.max_retries || 0}
+                      </span>
+                    )}
+                  </TableCell>
                   <TableCell className="text-xs font-medium text-muted-foreground">
-                    {msg.device_name ||
-                      (msg.status === "pending" || msg.status === "scheduled"
-                        ? "Auto"
-                        : "—")}
+                    <div className="space-y-1">
+                      <div>
+                        {msg.device_name ||
+                          (msg.status === "pending" || msg.status === "scheduled"
+                            ? "Auto"
+                            : "—")}
+                      </div>
+                      {msg.sim_slot !== undefined && msg.sim_slot !== null && (
+                        <div className="text-[10px] text-muted-foreground">
+                          SIM {msg.sim_slot}
+                        </div>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right text-[10px] text-muted-foreground italic">
                     {msg.scheduled_at ? (
@@ -864,7 +919,7 @@ export function MessagesTable() {
         open={!!selectedMessage}
         onOpenChange={(open) => !open && setSelectedMessage(null)}
       >
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[680px]">
           <DialogHeader>
             <DialogTitle>Message Details</DialogTitle>
             <DialogDescription>
@@ -920,6 +975,81 @@ export function MessagesTable() {
                 </span>
               </div>
             )}
+            {(selectedMessage?.last_error ||
+              selectedMessage?.last_error_code ||
+              selectedMessage?.failure_category) && (
+              <div className="rounded-md border border-destructive/20 bg-destructive/5 p-3">
+                <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-destructive">
+                  <AlertTriangle className="size-4" />
+                  Why it failed
+                </div>
+                <div className="grid gap-2 text-sm">
+                  <div className="flex justify-between gap-4">
+                    <span className="text-muted-foreground">Code</span>
+                    <span className="font-mono text-xs">
+                      {selectedMessage?.last_error_code || "unknown"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-4">
+                    <span className="text-muted-foreground">Category</span>
+                    <Badge variant="outline">
+                      {selectedMessage?.failure_category || "unknown"}
+                    </Badge>
+                  </div>
+                  <div className="text-muted-foreground">
+                    {selectedMessage?.last_error || "No device error message was reported."}
+                  </div>
+                </div>
+              </div>
+            )}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <ListTree className="size-4" />
+                Timeline
+              </div>
+              <div className="max-h-[220px] space-y-2 overflow-y-auto rounded-md border bg-muted/20 p-3">
+                {loadingEvents ? (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Loader2 className="size-3 animate-spin" />
+                    Loading events
+                  </div>
+                ) : selectedEvents.length === 0 ? (
+                  <div className="text-xs text-muted-foreground">
+                    No diagnostic events recorded yet.
+                  </div>
+                ) : (
+                  selectedEvents.map((event) => (
+                    <div
+                      key={event.id}
+                      className="grid grid-cols-[120px_1fr] gap-3 rounded border bg-background/80 p-2 text-xs"
+                    >
+                      <div className="text-muted-foreground">
+                        {new Date(event.created_at).toLocaleString()}
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-semibold">{event.event_type}</span>
+                          <Badge variant="outline" className="text-[10px]">
+                            {event.source}
+                          </Badge>
+                          <span className="text-muted-foreground">
+                            attempt {event.attempt}
+                          </span>
+                        </div>
+                        {(event.reason_code || event.reason_message) && (
+                          <div className="text-muted-foreground">
+                            {event.reason_code && (
+                              <span className="font-mono">{event.reason_code}: </span>
+                            )}
+                            {event.reason_message}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
             <div className="space-y-2 pt-2">
               <span className="text-sm font-medium text-muted-foreground">
                 Message Body

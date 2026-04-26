@@ -6,6 +6,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/zenderock/simly-backend/internal/core"
+	"github.com/zenderock/simly-backend/internal/store"
 )
 
 type contextKey string
@@ -80,4 +81,24 @@ func AuthMiddleware(jwtSecret []byte, apiKeyService *core.APIKeyService) func(ht
 func GetUserID(ctx context.Context) int {
 	id, _ := ctx.Value(userIDKey).(int)
 	return id
+}
+
+func PlatformAdminMiddleware(db *store.Store) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			userID := GetUserID(r.Context())
+			if userID == 0 {
+				http.Error(w, "Unauthorized: user token required", http.StatusUnauthorized)
+				return
+			}
+
+			isAdmin, err := db.IsPlatformAdmin(r.Context(), userID)
+			if err != nil || !isAdmin {
+				http.Error(w, "Forbidden: platform admin required", http.StatusForbidden)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
 }

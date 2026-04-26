@@ -111,6 +111,20 @@ func (h *MessageHandler) ListMessages(w http.ResponseWriter, r *http.Request) {
 			filter.CampaignID = &cid
 		}
 	}
+	if didStr := r.URL.Query().Get("device_id"); didStr != "" {
+		if did, err := strconv.Atoi(didStr); err == nil {
+			filter.DeviceID = &did
+		}
+	}
+	if status := r.URL.Query().Get("status"); status != "" && status != "all" {
+		filter.Status = &status
+	}
+	if category := r.URL.Query().Get("failure_category"); category != "" && category != "all" {
+		filter.FailureCategory = &category
+	}
+	if search := r.URL.Query().Get("search"); search != "" {
+		filter.Search = &search
+	}
 	if sdStr := r.URL.Query().Get("start_date"); sdStr != "" {
 		if t, err := time.Parse(time.RFC3339, sdStr); err == nil {
 			filter.StartDate = &t
@@ -127,6 +141,19 @@ func (h *MessageHandler) ListMessages(w http.ResponseWriter, r *http.Request) {
 			filter.EndDate = &eod
 		}
 	}
+	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
+		if limit, err := strconv.Atoi(limitStr); err == nil && limit > 0 {
+			if limit > 500 {
+				limit = 500
+			}
+			filter.Limit = limit
+		}
+	}
+	if offsetStr := r.URL.Query().Get("offset"); offsetStr != "" {
+		if offset, err := strconv.Atoi(offsetStr); err == nil && offset >= 0 {
+			filter.Offset = offset
+		}
+	}
 
 	log.Printf("[ListMessages] Fetching messages for org=%d filter=%+v", orgID, filter)
 
@@ -140,6 +167,52 @@ func (h *MessageHandler) ListMessages(w http.ResponseWriter, r *http.Request) {
 	log.Printf("[ListMessages] Successfully fetched %d messages", len(messages))
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(messages)
+}
+
+func (h *MessageHandler) GetMessage(w http.ResponseWriter, r *http.Request) {
+	orgID, err := GetActiveOrgID(r, h.orgService)
+	if err != nil {
+		http.Error(w, "Organization required", http.StatusForbidden)
+		return
+	}
+
+	msgID, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, "Invalid message ID", http.StatusBadRequest)
+		return
+	}
+
+	msg, err := h.service.GetMessage(r.Context(), msgID)
+	if err != nil || msg.OrganizationID != orgID {
+		http.Error(w, "Message not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(msg)
+}
+
+func (h *MessageHandler) GetMessageEvents(w http.ResponseWriter, r *http.Request) {
+	orgID, err := GetActiveOrgID(r, h.orgService)
+	if err != nil {
+		http.Error(w, "Organization required", http.StatusForbidden)
+		return
+	}
+
+	msgID, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, "Invalid message ID", http.StatusBadRequest)
+		return
+	}
+
+	events, err := h.service.ListMessageEvents(r.Context(), orgID, msgID)
+	if err != nil {
+		http.Error(w, "Message not found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(events)
 }
 
 func (h *MessageHandler) RequeueMessages(w http.ResponseWriter, r *http.Request) {
@@ -203,6 +276,7 @@ func (h *MessageHandler) RequeueMessages(w http.ResponseWriter, r *http.Request)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(result)
 }
+
 // RequeueOne re-enqueues a single message by ID. Only works if status is "queued".
 func (h *MessageHandler) RequeueOne(w http.ResponseWriter, r *http.Request) {
 	msgIDStr := chi.URLParam(r, "id")

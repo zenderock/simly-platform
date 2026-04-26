@@ -1,6 +1,7 @@
 package model
 
 import (
+	"strings"
 	"time"
 )
 
@@ -12,6 +13,7 @@ type User struct {
 	AvatarURL              string     `json:"avatar_url"`
 	PasswordResetToken     *string    `json:"-"`
 	PasswordResetExpiresAt *time.Time `json:"-"`
+	IsPlatformAdmin        bool       `json:"is_platform_admin"`
 	CreatedAt              time.Time  `json:"created_at"`
 	UpdatedAt              time.Time  `json:"updated_at"`
 }
@@ -52,4 +54,8 @@ type UpdateProfileRequest struct {
 type ChangePasswordRequest struct {
 	CurrentPassword string `json:"current_password"`
 	NewPassword     string `json:"new_password"`
+}
+
+func IsPlatformAdminEmail(email string) bool {
+	return strings.HasSuffix(strings.ToLower(strings.TrimSpace(email)), "@zenderock.me")
 }

@@ -12,7 +12,10 @@ export function DashboardAlerts() {
 
   if (!stats) return null;
 
-  const queue = stats.pending_messages || 0;
+  const queue =
+    (stats.queued_messages || 0) +
+    (stats.pending_messages || 0) +
+    (stats.scheduled_messages || 0);
 
   if (queue > 50) {
     return (

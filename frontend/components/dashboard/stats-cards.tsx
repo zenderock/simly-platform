@@ -28,7 +28,10 @@ export function StatsCards() {
   const failed = stats?.failed_messages || 0;
   const activeDevices = stats?.active_devices || 0;
   const totalDevices = stats?.total_devices || 0;
-  const queue = stats?.pending_messages || 0;
+  const queue =
+    (stats?.queued_messages || 0) +
+    (stats?.pending_messages || 0) +
+    (stats?.scheduled_messages || 0);
 
   const prevTotalMessages = stats?.prev_total_messages || 0;
   const prevDelivered = stats?.prev_delivered_messages || 0;
