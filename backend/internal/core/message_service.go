@@ -14,6 +14,14 @@ import (
 	"github.com/zenderock/simly-backend/internal/store"
 )
 
+// smsDeliveryTaskID returns a stable Asynq task ID for a given message.
+// Asynq rejects duplicate enqueues with the same ID while the task is
+// pending/scheduled, preventing the watchdog and retry paths from ever
+// adding two tasks for the same message.
+func smsDeliveryTaskID(msgID int) string {
+	return fmt.Sprintf("sms:deliver:%d", msgID)
+}
+
 const (
 	TypeSMSDelivery = "sms:deliver"
 )
@@ -410,6 +418,9 @@ func (s *MessageService) EnqueueSMSDelivery(ctx context.Context, msg *model.Mess
 	opts := []asynq.Option{
 		asynq.Queue(queueName),
 		asynq.MaxRetry(msg.MaxRetries),
+		// Stable task ID prevents watchdog and retry paths from enqueuing
+		// a second task while one is already pending/scheduled for this message.
+		asynq.TaskID(smsDeliveryTaskID(msg.ID)),
 	}
 
 	// ProcessAt for scheduled messages
@@ -420,6 +431,10 @@ func (s *MessageService) EnqueueSMSDelivery(ctx context.Context, msg *model.Mess
 	task := asynq.NewTask(TypeSMSDelivery, payload, opts...)
 	info, err := s.taskClient.Enqueue(task)
 	if err != nil {
+		if errors.Is(err, asynq.ErrTaskIDConflict) {
+			log.Printf("[Enqueue] Task for message %d already in queue — skipping duplicate", msg.ID)
+			return nil
+		}
 		return err
 	}
 	log.Printf("Enqueued task: %s, queue: %s", info.ID, info.Queue)

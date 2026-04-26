@@ -114,6 +114,14 @@ func (w *RedisWorker) HandleSMSDeliveryTask(ctx context.Context, t *asynq.Task) 
 		return nil
 	}
 
+	// Belt-and-suspenders: if all delivery retries are exhausted, mark terminal.
+	// Normally UpdateStatus handles this, but a stale Asynq task could arrive late.
+	if msg.RetryCount > 0 && msg.RetryCount >= msg.MaxRetries {
+		log.Printf("[Worker] Message %d exhausted retries (%d/%d), marking failed", msgID, msg.RetryCount, msg.MaxRetries)
+		_ = w.store.UpdateMessageStatus(ctx, msg.ID, model.MessageStatusFailed, "max retries exhausted")
+		return nil
+	}
+
 	// Check send window
 	withinWindow, err := w.windowManager.IsWithinWindow(ctx, msg.OrganizationID, msg.CampaignID)
 	if err != nil {
@@ -224,17 +232,26 @@ func (w *RedisWorker) HandleSMSDeliveryTask(ctx context.Context, t *asynq.Task) 
 }
 
 func (w *RedisWorker) dispatchMessage(ctx context.Context, msg *model.Message, device *model.Device, slotIndex int) error {
-	// Update message with device assignment, sim slot and change status to pending
-	if err := w.store.UpdateMessageDispatchInfo(ctx, msg.ID, device.ID, slotIndex, model.MessageStatusPending); err != nil {
-		return fmt.Errorf("failed to update message device/slot: %w", err)
+	// Atomically claim the message: only transitions queued → pending.
+	// If another worker or the watchdog already claimed it, n == 0.
+	n, err := w.store.UpdateMessageDispatchInfo(ctx, msg.ID, device.ID, slotIndex, model.MessageStatusPending)
+	if err != nil {
+		return fmt.Errorf("failed to claim message: %w", err)
+	}
+	if n == 0 {
+		log.Printf("[Worker] Message %d already claimed or in terminal state — skipping", msg.ID)
+		return fmt.Errorf("message %d already claimed: %w", msg.ID, asynq.SkipRetry)
 	}
 
-	// Notify via MessageService (uses FCM)
 	msg.DeviceID = &device.ID
 	msg.SimSlot = &slotIndex
 	msg.Status = model.MessageStatusPending
 
 	if err := w.messageService.NotifyDevice(ctx, msg); err != nil {
+		// Release back to queued so Asynq retry or watchdog can re-dispatch cleanly.
+		if resetErr := w.store.UpdateMessageStatus(ctx, msg.ID, "queued", err.Error()); resetErr != nil {
+			log.Printf("[Worker] Failed to reset message %d to queued after FCM failure: %v", msg.ID, resetErr)
+		}
 		return fmt.Errorf("failed to notify device: %w", err)
 	}
 

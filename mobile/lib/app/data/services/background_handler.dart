@@ -78,6 +78,10 @@ class BackgroundHandler {
     await GetStorage.init();
     final storage = GetStorage();
 
+    // Restore any message IDs that were sent to the radio before a previous
+    // service restart but never ACK'd to the backend.
+    _loadPendingAckIds(storage);
+
     final dio = Dio(
       BaseOptions(
         baseUrl: Config.baseUrl.endsWith('/')
@@ -120,7 +124,26 @@ class BackgroundHandler {
     // Handled by the background service if running
   }
 
+  // In-flight guard: messages being processed in the current cycle.
+  // Lost on service restart — intentional, it's a short-lived lock.
   static final Set<int> _processingMessages = {};
+
+  // Persistent guard: message IDs whose SMS was already sent to the radio
+  // but whose ACK (POST /status) has not yet reached the backend.
+  // Survives service restarts so we never send the same SMS twice.
+  static const _pendingAckKey = 'sms_pending_ack_ids';
+  static Set<int> _pendingAckIds = {};
+
+  static void _loadPendingAckIds(GetStorage storage) {
+    final raw = storage.read<List>(_pendingAckKey);
+    if (raw != null) {
+      _pendingAckIds = raw.whereType<int>().toSet();
+    }
+  }
+
+  static Future<void> _savePendingAckIds(GetStorage storage) async {
+    await storage.write(_pendingAckKey, _pendingAckIds.toList());
+  }
 
   /// Polls pending messages from the backend and sends them directly via the
   /// Pigeon [SmsGatewayHostApi], then reports the real network-level result
@@ -144,6 +167,10 @@ class BackgroundHandler {
     _isPolling = true;
 
     try {
+      // First, retry ACKs for messages already sent to the radio but not yet
+      // confirmed to the backend (e.g. network loss between send and ACK).
+      await _retryPendingAcks(dio, storage, deviceToken);
+
       final response = await dio.get(
         'devices/$deviceId/pending-messages',
         options: Options(headers: {'Authorization': 'Bearer $deviceToken'}),
@@ -152,9 +179,7 @@ class BackgroundHandler {
       if (response.statusCode == 200 && response.data != null) {
         final List messages = response.data is List ? response.data : [];
         for (var msg in messages) {
-          if (msg is! Map) {
-            continue;
-          }
+          if (msg is! Map) continue;
 
           final data = Map<String, dynamic>.from(msg.cast<dynamic, dynamic>());
           final rawId = data['id'];
@@ -173,42 +198,41 @@ class BackgroundHandler {
             continue;
           }
 
-          // Skip if already processing this message
+          // Already in-flight this cycle — skip.
           if (_processingMessages.contains(msgId)) {
             debugPrint('Message $msgId already being processed, skipping');
             continue;
           }
 
-          // Mark as processing locally
+          // SMS was already sent to the radio before a service restart but the
+          // ACK never reached the backend. Retry the ACK only — do NOT re-send.
+          if (_pendingAckIds.contains(msgId)) {
+            debugPrint('Message $msgId already sent to radio, retrying ACK only');
+            await _ackSent(dio, storage, deviceToken, msgId);
+            continue;
+          }
+
           _processingMessages.add(msgId);
           debugPrint('Processing message $msgId to $to');
 
-          // Send SMS directly via Pigeon native API
           try {
             final result = await smsApi.sendSms(to, body, simSlot);
 
             if (result.success) {
               debugPrint('SMS sent successfully to $to (confirmed by network)');
 
-              // Log to UI
+              // Persist before the ACK so a restart between send and ACK
+              // never causes a re-send.
+              _pendingAckIds.add(msgId);
+              await _savePendingAckIds(storage);
+
               service.invoke('onLog', {
                 'to': to,
                 'status': 'sent',
                 'time': DateTime.now().toIso8601String(),
               });
 
-              // Update backend status
-              try {
-                await dio.post(
-                  'messages/$msgId/status',
-                  data: {'status': 'sent'},
-                  options: Options(
-                    headers: {'Authorization': 'Bearer $deviceToken'},
-                  ),
-                );
-              } catch (e) {
-                debugPrint('Failed to update message status: $e');
-              }
+              await _ackSent(dio, storage, deviceToken, msgId);
             } else {
               debugPrint('SMS failed: ${result.errorCode} - ${result.errorMessage}');
 
@@ -231,11 +255,11 @@ class BackgroundHandler {
                   ),
                 );
               } catch (e) {
-                debugPrint('Failed to update message status: $e');
+                debugPrint('Failed to report failure for message $msgId: $e');
               }
             }
           } catch (e) {
-            debugPrint('SMS exception: $e');
+            debugPrint('SMS exception for message $msgId: $e');
             service.invoke('onLog', {
               'to': to,
               'status': 'error',
@@ -244,16 +268,12 @@ class BackgroundHandler {
             try {
               await dio.post(
                 'messages/$msgId/status',
-                data: {
-                  'status': 'failed',
-                  'error_message': e.toString(),
-                },
+                data: {'status': 'failed', 'error_message': e.toString()},
                 options: Options(
-                  headers: {'Authorization': 'Bearer $deviceToken'},
-                ),
+                    headers: {'Authorization': 'Bearer $deviceToken'}),
               );
             } catch (e) {
-              debugPrint('Failed to update message status: $e');
+              debugPrint('Failed to report exception for message $msgId: $e');
             }
           } finally {
             _processingMessages.remove(msgId);
@@ -264,6 +284,44 @@ class BackgroundHandler {
       debugPrint('Poll failed: $e');
     } finally {
       _isPolling = false;
+    }
+  }
+
+  /// Sends the "sent" ACK to the backend and clears the local pending-ack record
+  /// on success. Safe to call multiple times — idempotent from the caller's view.
+  static Future<void> _ackSent(
+    Dio dio,
+    GetStorage storage,
+    String deviceToken,
+    int msgId,
+  ) async {
+    try {
+      await dio.post(
+        'messages/$msgId/status',
+        data: {'status': 'sent'},
+        options: Options(headers: {'Authorization': 'Bearer $deviceToken'}),
+      );
+      _pendingAckIds.remove(msgId);
+      await _savePendingAckIds(storage);
+      debugPrint('ACK confirmed for message $msgId');
+    } catch (e) {
+      // ACK failed — keep in _pendingAckIds so the next poll retries it.
+      debugPrint('ACK failed for message $msgId, will retry next poll: $e');
+    }
+  }
+
+  /// On each poll cycle, retry ACKs for any messages whose SMS was already
+  /// delivered to the radio but whose status update is still pending.
+  static Future<void> _retryPendingAcks(
+    Dio dio,
+    GetStorage storage,
+    String deviceToken,
+  ) async {
+    if (_pendingAckIds.isEmpty) return;
+    // Copy to avoid concurrent modification during iteration.
+    final ids = Set<int>.from(_pendingAckIds);
+    for (final msgId in ids) {
+      await _ackSent(dio, storage, deviceToken, msgId);
     }
   }
 }

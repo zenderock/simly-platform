@@ -332,8 +332,8 @@ func (s *Store) UpdateMessageDeviceAndSlot(ctx context.Context, msgID int, devic
 
 func (s *Store) RequeueMessagesByDeviceID(ctx context.Context, deviceID int) (int64, error) {
 	query := `
-		UPDATE messages 
-		SET status = 'pending', device_id = NULL, updated_at = NOW() 
+		UPDATE messages
+		SET status = 'queued', device_id = NULL, updated_at = NOW()
 		WHERE device_id = $1 AND status = 'pending'
 	`
 	result, err := s.db.Exec(ctx, query, deviceID)
@@ -544,11 +544,17 @@ func (s *Store) GetQueuedMessagesByOrganization(ctx context.Context, orgID int, 
 	return messages, nil
 }
 
-// UpdateMessageDispatchInfo updates the device assignment, sim slot, and status for a message
-func (s *Store) UpdateMessageDispatchInfo(ctx context.Context, msgID int, deviceID int, simSlot int, status string) error {
-	query := `UPDATE messages SET device_id = $1, sim_slot = $2, status = $3, updated_at = NOW() WHERE id = $4`
-	_, err := s.db.Exec(ctx, query, deviceID, simSlot, status, msgID)
-	return err
+// UpdateMessageDispatchInfo atomically claims a queued message for dispatch.
+// Returns (1, nil) on success. Returns (0, nil) if the message was already
+// claimed by another worker or reached a terminal state — the caller must
+// treat 0 rows as a no-op and skip the FCM push.
+func (s *Store) UpdateMessageDispatchInfo(ctx context.Context, msgID int, deviceID int, simSlot int, status string) (int64, error) {
+	query := `UPDATE messages SET device_id = $1, sim_slot = $2, status = $3, updated_at = NOW() WHERE id = $4 AND status = 'queued'`
+	result, err := s.db.Exec(ctx, query, deviceID, simSlot, status, msgID)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }
 
 // UpdateMessageFromNumber updates the from_number field for a message
