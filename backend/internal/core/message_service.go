@@ -442,7 +442,7 @@ func (s *MessageService) NotifyDeviceWithExclusion(ctx context.Context, msg *mod
 		// Use DevicePoolManager if available, otherwise fallback to old method
 		if s.devicePoolManager != nil {
 			var slotIndex int
-			device, slotIndex, err = s.devicePoolManager.GetNextAvailableDevice(ctx, msg.OrganizationID, msg.RequiredTags)
+			device, slotIndex, err = s.devicePoolManager.GetNextAvailableDevice(ctx, msg.OrganizationID, msg.RequiredTags, msg.SimSlot)
 			if err == nil && slotIndex != -1 {
 				msg.SimSlot = &slotIndex
 			}

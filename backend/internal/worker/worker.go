@@ -145,7 +145,7 @@ func (w *RedisWorker) HandleSMSDeliveryTask(ctx context.Context, t *asynq.Task) 
 	}
 
 	// Get available device
-	device, slotIndex, err := w.devicePool.GetNextAvailableDevice(ctx, msg.OrganizationID, msg.RequiredTags)
+	device, slotIndex, err := w.devicePool.GetNextAvailableDevice(ctx, msg.OrganizationID, msg.RequiredTags, msg.SimSlot)
 	if err != nil {
 		if err == core.ErrDailyQuotaReached {
 			// Check if campaign supports auto-reschedule

@@ -293,7 +293,7 @@ func (p *DevicePoolManager) IsDeviceAvailable(deviceID int, throttleRateSeconds 
 }
 
 // GetNextAvailableDevice selects the next available device and SIM slot using round-robin
-func (p *DevicePoolManager) GetNextAvailableDevice(ctx context.Context, orgID int, requiredTags []string) (*model.Device, int, error) {
+func (p *DevicePoolManager) GetNextAvailableDevice(ctx context.Context, orgID int, requiredTags []string, preferredSimSlot *int) (*model.Device, int, error) {
 	// Get all devices for the organization
 	devices, err := p.store.GetDevicesByOrganizationID(ctx, orgID)
 	if err != nil {
@@ -359,6 +359,11 @@ func (p *DevicePoolManager) GetNextAvailableDevice(ctx context.Context, orgID in
 			if !sim.IsActive {
 				continue
 			}
+
+			if preferredSimSlot != nil && sim.SlotIndex != *preferredSimSlot {
+				continue
+			}
+
 			hasActiveSims = true
 
 			// Check daily limit for this SIM
