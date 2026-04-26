@@ -4,7 +4,7 @@ import 'package:pigeon/pigeon.dart';
 @ConfigurePigeon(PigeonOptions(
   dartOut: 'lib/app/data/pigeon/sms_gateway.g.dart',
   kotlinOut:
-      'local_plugins/sms_gateway/android/src/main/kotlin/com/simly/gateway/SmsGatewayApi.g.kt',
+      'local_plugins/sms_gateway/android/src/main/kotlin/com/simly/gateway/plugin/SmsGatewayApi.g.kt',
   kotlinOptions: KotlinOptions(package: 'com.simly.gateway.plugin'),
   dartPackageName: 'mobile',
 ))
