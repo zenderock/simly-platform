@@ -33,7 +33,6 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        // Register the Pigeon-based SmsGatewayPlugin
-        flutterEngine.plugins.add(SmsGatewayPlugin())
+        // Plugins are automatically registered.
     }
 }

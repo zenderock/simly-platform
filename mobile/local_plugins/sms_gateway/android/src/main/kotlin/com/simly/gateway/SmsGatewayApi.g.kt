@@ -2,7 +2,7 @@
 // See also: https://pub.dev/packages/pigeon
 @file:Suppress("UNCHECKED_CAST", "ArrayInDataClass")
 
-package com.simly.gateway
+package com.simly.gateway.plugin
 
 import android.util.Log
 import io.flutter.plugin.common.BasicMessageChannel

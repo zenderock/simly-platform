@@ -32,7 +32,7 @@ void main() async {
         'Firebase initialization failed: $e. Make sure google-services.json is present.',
       );
     }
-
+ 
     await GetStorage.init();
     await BackgroundHandler.initializeService();
 

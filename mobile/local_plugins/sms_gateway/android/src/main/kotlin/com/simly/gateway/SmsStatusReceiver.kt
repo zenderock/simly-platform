@@ -1,4 +1,4 @@
-package com.simly.gateway
+package com.simly.gateway.plugin
 
 import android.content.BroadcastReceiver
 import android.content.Context
