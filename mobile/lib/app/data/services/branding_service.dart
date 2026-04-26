@@ -18,11 +18,6 @@ class BrandingService extends GetxService with WidgetsBindingObserver {
   Future<BrandingService> init() async {
     WidgetsBinding.instance.addObserver(this);
     _loadFromCache();
-
-    final token = _storage.read('device_token');
-    if (token != null) {
-      await _syncBranding();
-    }
     return this;
   }
 

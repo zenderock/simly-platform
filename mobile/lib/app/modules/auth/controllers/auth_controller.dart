@@ -78,7 +78,7 @@ class AuthController extends GetxController {
         await _authService.login(deviceId, deviceToken);
         await _brandingService.reloadBranding();
 
-        Get.offAllNamed(Routes.HOME);
+        Get.offAllNamed(Routes.SPLASH);
       } else {
         Get.snackbar(
           'Error',
