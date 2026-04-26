@@ -1,0 +1,63 @@
+workflows:
+  android-release-apk:
+    name: Android release APK
+    working_directory: mobile
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      java: 17
+    cache:
+      cache_paths:
+        - ~/.pub-cache
+        - ~/.gradle/caches
+    scripts:
+      - name: Set up Firebase config
+        script: |
+          if [ -n "$GOOGLE_SERVICES_JSON_BASE64" ]; then
+            echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > android/app/google-services.json
+          elif [ ! -f android/app/google-services.json ]; then
+            echo "Missing android/app/google-services.json. Add GOOGLE_SERVICES_JSON_BASE64 in Codemagic environment variables."
+            exit 1
+          fi
+      - name: Set up Android local properties
+        script: |
+          echo "flutter.sdk=$HOME/programs/flutter" > android/local.properties
+      - name: Set up Android release signing
+        script: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.p12
+            : "${KEYSTORE_PASSWORD:?Missing KEYSTORE_PASSWORD}"
+            : "${KEY_ALIAS:?Missing KEY_ALIAS}"
+            : "${KEY_PASSWORD:?Missing KEY_PASSWORD}"
+          else
+            echo "KEYSTORE_BASE64 not set. Generating a temporary release keystore for this build."
+            KEYSTORE_PASSWORD="${KEYSTORE_PASSWORD:-temporary-release-password}"
+            KEY_ALIAS="${KEY_ALIAS:-temporary-release-key}"
+            KEY_PASSWORD="${KEY_PASSWORD:-temporary-release-password}"
+            keytool -genkeypair \
+              -v \
+              -storetype PKCS12 \
+              -keystore android/app/upload-keystore.p12 \
+              -storepass "$KEYSTORE_PASSWORD" \
+              -alias "$KEY_ALIAS" \
+              -keypass "$KEY_PASSWORD" \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=Simly Gateway, OU=Mobile, O=Simly, L=Douala, S=Littoral, C=CM"
+          fi
+
+          printf '%s\n' \
+            "storePassword=$KEYSTORE_PASSWORD" \
+            "keyPassword=$KEY_PASSWORD" \
+            "keyAlias=$KEY_ALIAS" \
+            "storeFile=app/upload-keystore.p12" \
+            > android/key.properties
+      - name: Get Flutter packages
+        script: flutter pub get
+      - name: Build release APK
+        script: flutter build apk --release
+    artifacts:
+      - build/app/outputs/flutter-apk/*.apk
+      - build/**/outputs/**/*.apk
