@@ -3,9 +3,11 @@ package core
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
+	"github.com/redis/go-redis/v9"
 	"github.com/zenderock/simly-backend/internal/model"
 	"github.com/zenderock/simly-backend/internal/store"
 )
@@ -43,6 +45,7 @@ type CircuitBreakerState struct {
 // DevicePoolManager manages device state, throttling, and selection
 type DevicePoolManager struct {
 	store           *store.Store
+	redis           *redis.Client
 	throttleState   map[int]*DeviceThrottleState // key: deviceID
 	circuitBreaker  map[int]*CircuitBreakerState // key: deviceID
 	lastDeviceIndex map[int]int                  // key: orgID, value: last used device index for round-robin
@@ -50,12 +53,95 @@ type DevicePoolManager struct {
 }
 
 // NewDevicePoolManager creates a new DevicePoolManager instance
-func NewDevicePoolManager(store *store.Store) *DevicePoolManager {
+func NewDevicePoolManager(store *store.Store, redisClient ...*redis.Client) *DevicePoolManager {
+	var client *redis.Client
+	if len(redisClient) > 0 {
+		client = redisClient[0]
+	}
 	return &DevicePoolManager{
 		store:           store,
+		redis:           client,
 		throttleState:   make(map[int]*DeviceThrottleState),
 		circuitBreaker:  make(map[int]*CircuitBreakerState),
 		lastDeviceIndex: make(map[int]int),
+	}
+}
+
+func devicePoolCooldownKey(deviceID int) string {
+	return fmt.Sprintf("device_pool:device:%d:cooldown_until", deviceID)
+}
+
+func devicePoolSuspensionKey(deviceID int) string {
+	return fmt.Sprintf("device_pool:device:%d:suspended_until", deviceID)
+}
+
+func (p *DevicePoolManager) redisContext() (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.Background(), 500*time.Millisecond)
+}
+
+func (p *DevicePoolManager) setRedisDeadline(key string, deadline time.Time) {
+	if p.redis == nil {
+		return
+	}
+	ttl := time.Until(deadline)
+	ctx, cancel := p.redisContext()
+	defer cancel()
+	if ttl <= 0 {
+		_ = p.redis.Del(ctx, key).Err()
+		return
+	}
+	_ = p.redis.Set(ctx, key, deadline.UTC().Format(time.RFC3339Nano), ttl).Err()
+}
+
+func (p *DevicePoolManager) getRedisDeadline(key string) (*time.Time, bool) {
+	if p.redis == nil {
+		return nil, false
+	}
+	ctx, cancel := p.redisContext()
+	defer cancel()
+	value, err := p.redis.Get(ctx, key).Result()
+	if err != nil {
+		return nil, false
+	}
+	deadline, err := time.Parse(time.RFC3339Nano, value)
+	if err != nil {
+		_ = p.redis.Del(ctx, key).Err()
+		return nil, false
+	}
+	now := time.Now()
+	if !deadline.After(now) {
+		_ = p.redis.Del(ctx, key).Err()
+		return nil, false
+	}
+	return &deadline, true
+}
+
+func (p *DevicePoolManager) deleteRedisKeys(keys ...string) {
+	if p.redis == nil || len(keys) == 0 {
+		return
+	}
+	ctx, cancel := p.redisContext()
+	defer cancel()
+	_ = p.redis.Del(ctx, keys...).Err()
+}
+
+func (p *DevicePoolManager) deleteAllRedisDevicePoolKeys() {
+	if p.redis == nil {
+		return
+	}
+	ctx, cancel := p.redisContext()
+	defer cancel()
+	iter := p.redis.Scan(ctx, 0, "device_pool:device:*", 0).Iterator()
+	keys := make([]string, 0, 100)
+	for iter.Next(ctx) {
+		keys = append(keys, iter.Val())
+		if len(keys) == 100 {
+			_ = p.redis.Del(ctx, keys...).Err()
+			keys = keys[:0]
+		}
+	}
+	if len(keys) > 0 {
+		_ = p.redis.Del(ctx, keys...).Err()
 	}
 }
 
@@ -83,8 +169,9 @@ func (p *DevicePoolManager) getOrCreateCircuitBreakerState(deviceID int) *Circui
 
 // RecordSend updates throttle state after a successful send
 func (p *DevicePoolManager) RecordSend(deviceID int) {
+	var cooldownEnd *time.Time
+
 	p.mu.Lock()
-	defer p.mu.Unlock()
 
 	state := p.getOrCreateThrottleState(deviceID)
 	now := time.Now()
@@ -100,16 +187,27 @@ func (p *DevicePoolManager) RecordSend(deviceID int) {
 
 	// Check if cooldown should be triggered (100 messages in 10-min window)
 	if state.SendCount10Min >= CooldownThreshold {
-		cooldownEnd := now.Add(CooldownPeriod)
-		state.CooldownUntil = &cooldownEnd
+		cooldown := now.Add(CooldownPeriod)
+		state.CooldownUntil = &cooldown
+		cooldownEnd = &cooldown
 		// Reset counter for next window after cooldown
 		state.SendCount10Min = 0
-		state.WindowStart = cooldownEnd
+		state.WindowStart = cooldown
+	}
+
+	p.mu.Unlock()
+
+	if cooldownEnd != nil {
+		p.setRedisDeadline(devicePoolCooldownKey(deviceID), *cooldownEnd)
 	}
 }
 
 // GetDeviceDelay returns the remaining delay before next send is allowed
 func (p *DevicePoolManager) GetDeviceDelay(deviceID int, throttleRateSeconds int) time.Duration {
+	if cooldownUntil, ok := p.getRedisDeadline(devicePoolCooldownKey(deviceID)); ok {
+		return time.Until(*cooldownUntil)
+	}
+
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
@@ -142,6 +240,10 @@ func (p *DevicePoolManager) GetDeviceDelay(deviceID int, throttleRateSeconds int
 
 // IsInCooldown checks if a device is currently in cooldown period
 func (p *DevicePoolManager) IsInCooldown(deviceID int) bool {
+	if _, ok := p.getRedisDeadline(devicePoolCooldownKey(deviceID)); ok {
+		return true
+	}
+
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
@@ -159,6 +261,10 @@ func (p *DevicePoolManager) IsInCooldown(deviceID int) bool {
 
 // GetCooldownRemaining returns the remaining cooldown time for a device
 func (p *DevicePoolManager) GetCooldownRemaining(deviceID int) time.Duration {
+	if cooldownUntil, ok := p.getRedisDeadline(devicePoolCooldownKey(deviceID)); ok {
+		return time.Until(*cooldownUntil)
+	}
+
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
@@ -195,8 +301,9 @@ func (p *DevicePoolManager) GetSendCount10Min(deviceID int) int {
 // RecordFailure increments failure counter and opens circuit if threshold reached
 // Returns true if circuit was opened (device suspended)
 func (p *DevicePoolManager) RecordFailure(deviceID int) bool {
+	var suspendedUntil *time.Time
+
 	p.mu.Lock()
-	defer p.mu.Unlock()
 
 	state := p.getOrCreateCircuitBreakerState(deviceID)
 	now := time.Now()
@@ -206,8 +313,15 @@ func (p *DevicePoolManager) RecordFailure(deviceID int) bool {
 
 	// Check if circuit should open
 	if state.ConsecutiveFailures >= CircuitBreakerThreshold {
-		suspendedUntil := now.Add(CircuitBreakerSuspension)
-		state.SuspendedUntil = &suspendedUntil
+		suspended := now.Add(CircuitBreakerSuspension)
+		state.SuspendedUntil = &suspended
+		suspendedUntil = &suspended
+	}
+
+	p.mu.Unlock()
+
+	if suspendedUntil != nil {
+		p.setRedisDeadline(devicePoolSuspensionKey(deviceID), *suspendedUntil)
 		return true
 	}
 
@@ -217,15 +331,22 @@ func (p *DevicePoolManager) RecordFailure(deviceID int) bool {
 // RecordSuccess resets the failure counter after a successful send
 func (p *DevicePoolManager) RecordSuccess(deviceID int) {
 	p.mu.Lock()
-	defer p.mu.Unlock()
 
 	state := p.getOrCreateCircuitBreakerState(deviceID)
 	state.ConsecutiveFailures = 0
 	state.SuspendedUntil = nil
+
+	p.mu.Unlock()
+
+	p.deleteRedisKeys(devicePoolSuspensionKey(deviceID))
 }
 
 // IsDeviceSuspended checks if a device is suspended by circuit breaker
 func (p *DevicePoolManager) IsDeviceSuspended(deviceID int) bool {
+	if _, ok := p.getRedisDeadline(devicePoolSuspensionKey(deviceID)); ok {
+		return true
+	}
+
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
@@ -243,6 +364,10 @@ func (p *DevicePoolManager) IsDeviceSuspended(deviceID int) bool {
 
 // GetSuspensionRemaining returns the remaining suspension time for a device
 func (p *DevicePoolManager) GetSuspensionRemaining(deviceID int) time.Duration {
+	if suspendedUntil, ok := p.getRedisDeadline(devicePoolSuspensionKey(deviceID)); ok {
+		return time.Until(*suspendedUntil)
+	}
+
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 
@@ -496,18 +621,24 @@ func hasAllTagsForPool(deviceTags, requiredTags []string) bool {
 // ResetDeviceState clears all state for a device (useful for testing)
 func (p *DevicePoolManager) ResetDeviceState(deviceID int) {
 	p.mu.Lock()
-	defer p.mu.Unlock()
 
 	delete(p.throttleState, deviceID)
 	delete(p.circuitBreaker, deviceID)
+
+	p.mu.Unlock()
+
+	p.deleteRedisKeys(devicePoolCooldownKey(deviceID), devicePoolSuspensionKey(deviceID))
 }
 
 // ResetAllState clears all state (useful for testing)
 func (p *DevicePoolManager) ResetAllState() {
 	p.mu.Lock()
-	defer p.mu.Unlock()
 
 	p.throttleState = make(map[int]*DeviceThrottleState)
 	p.circuitBreaker = make(map[int]*CircuitBreakerState)
 	p.lastDeviceIndex = make(map[int]int)
+
+	p.mu.Unlock()
+
+	p.deleteAllRedisDevicePoolKeys()
 }

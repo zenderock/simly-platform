@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/hibiken/asynq"
+	"github.com/redis/go-redis/v9"
 	"github.com/zenderock/simly-backend/internal/api"
 	"github.com/zenderock/simly-backend/internal/config"
 	"github.com/zenderock/simly-backend/internal/core"
@@ -24,6 +25,7 @@ type Server struct {
 	DB          *store.Store
 	Router      chi.Router
 	RedisWorker *worker.RedisWorker
+	RedisClient *redis.Client
 	// Dispatcher is a watchdog-only service: it does NOT dispatch messages itself.
 	// It periodically re-enqueues stuck 'queued' messages back into Redis so that
 	// RedisWorker can pick them up. The two services are complementary, not competing.
@@ -80,6 +82,9 @@ func (s *Server) Close() {
 	if s.RedisWorker != nil {
 		s.RedisWorker.Stop()
 	}
+	if s.RedisClient != nil {
+		_ = s.RedisClient.Close()
+	}
 	s.DB.Close()
 }
 
@@ -94,6 +99,12 @@ func (s *Server) setupRoutes(opts Options) {
 	}
 	// Initialize Asynq Client
 	taskClient := asynq.NewClient(redisConnOpt)
+	redisOptions, err := redis.ParseURL(s.Config.RedisURL)
+	if err != nil {
+		log.Printf("Invalid Redis URL for DevicePoolManager: %v", err)
+		return
+	}
+	s.RedisClient = redis.NewClient(redisOptions)
 
 	// Dependency Injection
 	var notificationProvider core.NotificationProvider = &core.LogNotificationProvider{}
@@ -141,7 +152,7 @@ func (s *Server) setupRoutes(opts Options) {
 	emailValidator := core.NewEmailValidator()
 
 	// Initialize DevicePoolManager early so it can be used by MessageService
-	devicePoolManager := core.NewDevicePoolManager(s.DB)
+	devicePoolManager := core.NewDevicePoolManager(s.DB, s.RedisClient)
 
 	// Initialize AppDIDService for DID/Virtual Number resolution
 	appDIDService := core.NewAppDIDService(s.DB)
