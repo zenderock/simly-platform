@@ -109,16 +109,18 @@ func (w *RedisWorker) HandleSMSDeliveryTask(ctx context.Context, t *asynq.Task) 
 	w.messageService.RecordWorkerEvent(ctx, msg, core.MessageEventWorkerStarted, nil, nil)
 
 	// Check if message is already in a terminal state (avoid double processing)
-	if msg.Status == model.MessageStatusSent || msg.Status == model.MessageStatusFailed {
+	if msg.Status == model.MessageStatusSent || msg.Status == model.MessageStatusDelivered || msg.Status == model.MessageStatusFailed {
 		log.Printf("[Worker] Message %d already in terminal state: %s", msgID, msg.Status)
 		return nil
 	}
 
 	// Belt-and-suspenders: if all delivery retries are exhausted, mark terminal.
 	// Normally UpdateStatus handles this, but a stale Asynq task could arrive late.
-	if msg.RetryCount > 0 && msg.RetryCount >= msg.MaxRetries {
+	if msg.RetryCount >= msg.MaxRetries {
 		log.Printf("[Worker] Message %d exhausted retries (%d/%d), marking failed", msgID, msg.RetryCount, msg.MaxRetries)
-		_ = w.store.UpdateMessageStatus(ctx, msg.ID, model.MessageStatusFailed, "max retries exhausted")
+		code := "max_retries_exhausted"
+		category := "retry_exhausted"
+		_, _ = w.store.UpdateMessageStatusWithDiagnostics(ctx, msg.ID, model.MessageStatusFailed, "max retries exhausted", &code, &category)
 		return nil
 	}
 

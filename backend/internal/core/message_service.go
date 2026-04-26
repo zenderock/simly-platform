@@ -253,13 +253,17 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 			if req.To == s.sandboxFailureNumber {
 				fakeStatus = "failed"
 			}
+			createStatus := fakeStatus
+			if fakeStatus == "failed" {
+				createStatus = model.MessageStatusQueued
+			}
 
 			msg := &model.Message{
 				OrganizationID: orgID,
 				ApplicationID:  req.ApplicationID,
 				ToNumber:       req.To,
 				Body:           body,
-				Status:         fakeStatus,
+				Status:         createStatus,
 				Direction:      "outbound",
 				Priority:       req.Priority,
 				RequiredTags:   req.Tags,
@@ -277,9 +281,10 @@ func (s *MessageService) SendSMS(ctx context.Context, orgID int, req model.SendM
 				category := "sms_provider"
 				reasonCode = &code
 				reasonMessage = &message
-				if err := s.store.UpdateMessageStatusWithDiagnostics(ctx, msg.ID, fakeStatus, message, reasonCode, &category); err != nil {
+				if _, err := s.store.UpdateMessageStatusWithDiagnostics(ctx, msg.ID, fakeStatus, message, reasonCode, &category); err != nil {
 					return nil, err
 				}
+				msg.Status = fakeStatus
 				msg.LastError = &message
 				msg.LastErrorCode = reasonCode
 				msg.FailureCategory = &category
@@ -498,7 +503,7 @@ func (s *MessageService) NotifyDeviceWithExclusion(ctx context.Context, msg *mod
 		code := "device_selection_failed"
 		category := normalizeFailureCategory(code, err.Error())
 		message := err.Error()
-		_ = s.store.UpdateMessageStatusWithDiagnostics(ctx, msg.ID, msg.Status, message, &code, &category)
+		_, _ = s.store.UpdateMessageStatusWithDiagnostics(ctx, msg.ID, msg.Status, message, &code, &category)
 		s.recordMessageEvent(ctx, msg, MessageEventPushFailed, "worker", &code, &message, map[string]any{"failure_category": category})
 		return fmt.Errorf("failed to find device for notification: %w", err)
 	}
@@ -511,7 +516,7 @@ func (s *MessageService) NotifyDeviceWithExclusion(ctx context.Context, msg *mod
 		code := "missing_fcm_token"
 		category := normalizeFailureCategory(code, "device has no valid push token")
 		message := "device has no valid push token"
-		_ = s.store.UpdateMessageStatusWithDiagnostics(ctx, msg.ID, msg.Status, message, &code, &category)
+		_, _ = s.store.UpdateMessageStatusWithDiagnostics(ctx, msg.ID, msg.Status, message, &code, &category)
 		s.recordMessageEvent(ctx, msg, MessageEventPushFailed, "worker", &code, &message, map[string]any{"failure_category": category})
 		return errors.New("device has no valid push token")
 	}
@@ -544,7 +549,7 @@ func (s *MessageService) NotifyDeviceWithExclusion(ctx context.Context, msg *mod
 		code := "push_failed"
 		category := normalizeFailureCategory(code, pushErr.Error())
 		message := pushErr.Error()
-		_ = s.store.UpdateMessageStatusWithDiagnostics(ctx, msg.ID, msg.Status, message, &code, &category)
+		_, _ = s.store.UpdateMessageStatusWithDiagnostics(ctx, msg.ID, msg.Status, message, &code, &category)
 		s.recordMessageEvent(ctx, msg, MessageEventPushFailed, "worker", &code, &message, map[string]any{"failure_category": category})
 	} else {
 		s.recordMessageEvent(ctx, msg, MessageEventPushSent, "worker", nil, nil, map[string]any{"device_id": device.ID})
@@ -618,8 +623,13 @@ func (s *MessageService) UpdateStatus(ctx context.Context, msgID int, status str
 		categoryPtr = &category
 	}
 
-	if err := s.store.UpdateMessageStatusWithDiagnostics(ctx, msgID, status, fullError, codePtr, categoryPtr); err != nil {
+	updated, err := s.store.UpdateMessageStatusWithDiagnostics(ctx, msgID, status, fullError, codePtr, categoryPtr)
+	if err != nil {
 		return err
+	}
+	if !updated {
+		log.Printf("Message %d status already terminal; skipping duplicate status side effects for %s", msgID, status)
+		return nil
 	}
 	msg.Status = status
 	msg.LastError = stringPtrOrNil(fullError)

@@ -256,7 +256,12 @@ func (s *Store) UpdateMessageStatus(ctx context.Context, msgID int, status strin
 	return err
 }
 
-func (s *Store) UpdateMessageStatusWithDiagnostics(ctx context.Context, msgID int, status string, lastError string, lastErrorCode *string, failureCategory *string) error {
+// UpdateMessageStatusWithDiagnostics transitions a message to the given status.
+// It never overwrites an already-terminal status (sent, delivered, failed), so
+// two concurrent ACKs for the same message cannot double-count campaign stats.
+// Returns (true, nil) when the row was updated, (false, nil) when it was already
+// in a terminal state (caller must skip side-effects like campaign stat increments).
+func (s *Store) UpdateMessageStatusWithDiagnostics(ctx context.Context, msgID int, status string, lastError string, lastErrorCode *string, failureCategory *string) (bool, error) {
 	query := `
 		UPDATE messages
 		SET status = $1,
@@ -267,9 +272,13 @@ func (s *Store) UpdateMessageStatusWithDiagnostics(ctx context.Context, msgID in
 			last_attempted_at = NOW(),
 			updated_at = NOW()
 		WHERE id = $5
+		  AND status NOT IN ('sent', 'delivered', 'failed')
 	`
-	_, err := s.db.Exec(ctx, query, status, lastError, lastErrorCode, failureCategory, msgID, status)
-	return err
+	result, err := s.db.Exec(ctx, query, status, lastError, lastErrorCode, failureCategory, msgID, status)
+	if err != nil {
+		return false, err
+	}
+	return result.RowsAffected() > 0, nil
 }
 
 func (s *Store) GetMessageByID(ctx context.Context, msgID int) (*model.Message, error) {
