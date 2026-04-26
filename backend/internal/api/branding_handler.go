@@ -25,6 +25,21 @@ func (h *BrandingHandler) GetBranding(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.writeBranding(w, r, orgID)
+}
+
+// GetAuthenticatedBranding handles GET /api/branding for linked mobile devices.
+func (h *BrandingHandler) GetAuthenticatedBranding(w http.ResponseWriter, r *http.Request) {
+	orgID, err := GetActiveOrgID(r, h.orgService)
+	if err != nil {
+		http.Error(w, "Organization required", http.StatusForbidden)
+		return
+	}
+
+	h.writeBranding(w, r, orgID)
+}
+
+func (h *BrandingHandler) writeBranding(w http.ResponseWriter, r *http.Request, orgID int) {
 	org, err := h.orgService.GetOrganizationByID(r.Context(), orgID)
 	if err != nil || !org.IsWhiteLabel {
 		http.Error(w, `{"error":"white-label plan required"}`, http.StatusForbidden)

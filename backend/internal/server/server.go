@@ -349,6 +349,9 @@ func (s *Server) setupRoutes(opts Options) {
 			r.Get("/traffic", dashboardHandler.GetTrafficStats)
 		})
 
+		// Branding for linked mobile devices.
+		r.Get("/api/branding", brandingHandler.GetAuthenticatedBranding)
+
 		// Organization Management
 		r.Route("/api/organizations", func(r chi.Router) {
 			r.Get("/", orgHandler.ListOrganizations)

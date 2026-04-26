@@ -3,7 +3,11 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:mobile/app/data/providers/api_provider.dart';
 
-class BrandingService extends GetxService {
+class BrandingService extends GetxService with WidgetsBindingObserver {
+  static const _appNameKey = 'branding_app_name';
+  static const _logoUrlKey = 'branding_logo_url';
+  static const _primaryColorKey = 'branding_primary_color';
+
   final _api = ApiClient();
   final _storage = GetStorage();
 
@@ -12,35 +16,78 @@ class BrandingService extends GetxService {
   final primaryColor = const Color(0xFF8c52ff).obs;
 
   Future<BrandingService> init() async {
-    // Only fetch branding if the device is already linked (has a token).
-    // At first launch the device isn't linked yet, so the API call would
-    // fail with 401/403 — skip it and keep the defaults.
+    WidgetsBinding.instance.addObserver(this);
+    _loadFromCache();
+
     final token = _storage.read('device_token');
     if (token != null) {
-      await _loadBranding();
+      await _syncBranding();
     }
     return this;
   }
 
-  Future<void> reloadBranding() => _loadBranding();
+  @override
+  void onClose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.onClose();
+  }
 
-  Future<void> _loadBranding() async {
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed &&
+        _storage.read('device_token') != null) {
+      _syncBranding();
+    }
+  }
+
+  Future<void> reloadBranding() => _syncBranding();
+
+  void _loadFromCache() {
+    final cachedAppName = _storage.read(_appNameKey);
+    if (cachedAppName is String && cachedAppName.isNotEmpty) {
+      appName.value = cachedAppName;
+    }
+
+    final cachedLogoUrl = _storage.read(_logoUrlKey);
+    if (cachedLogoUrl is String) {
+      logoUrl.value = cachedLogoUrl;
+    }
+
+    final cachedPrimaryColor = _storage.read(_primaryColorKey);
+    if (cachedPrimaryColor is String) {
+      final parsedColor = _parseHexColor(cachedPrimaryColor);
+      if (parsedColor != null) {
+        primaryColor.value = parsedColor;
+      }
+    }
+  }
+
+  Future<void> _syncBranding() async {
     try {
       final data = await _api.getBranding();
-      if (data['app_name'] != null) {
-        appName.value = data['app_name'] as String;
+      final nextAppName = data['app_name']?.toString() ?? 'Simly Gateway';
+      final nextLogoUrl = data['logo_url']?.toString() ?? '';
+      final nextPrimaryColor = data['primary_color']?.toString() ?? '#8c52ff';
+
+      final unchanged = _storage.read(_appNameKey) == nextAppName &&
+          _storage.read(_logoUrlKey) == nextLogoUrl &&
+          _storage.read(_primaryColorKey) == nextPrimaryColor;
+
+      if (unchanged) return;
+
+      await _storage.write(_appNameKey, nextAppName);
+      await _storage.write(_logoUrlKey, nextLogoUrl);
+      await _storage.write(_primaryColorKey, nextPrimaryColor);
+
+      appName.value = nextAppName;
+      logoUrl.value = nextLogoUrl;
+
+      final parsedColor = _parseHexColor(nextPrimaryColor);
+      if (parsedColor != null) {
+        primaryColor.value = parsedColor;
       }
-      if (data['logo_url'] != null) {
-        logoUrl.value = data['logo_url'] as String;
-      }
-      if (data['primary_color'] != null) {
-        final parsedColor = _parseHexColor(data['primary_color'] as String);
-        if (parsedColor != null) {
-          primaryColor.value = parsedColor;
-        }
-      }
-    } catch (_) {
-      // Fallback to default Simly/Gateway branding — silently ignored
+    } catch (e) {
+      debugPrint('Failed to sync branding: $e');
     }
   }
 
