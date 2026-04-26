@@ -263,7 +263,7 @@ func (s *Store) UpdateMessageStatusWithDiagnostics(ctx context.Context, msgID in
 			last_error = $2,
 			last_error_code = $3,
 			failure_category = $4,
-			failed_at = CASE WHEN $1 = 'failed' THEN NOW() ELSE NULL END,
+			failed_at = CASE WHEN $1::text = 'failed' THEN NOW() ELSE NULL END,
 			last_attempted_at = NOW(),
 			updated_at = NOW()
 		WHERE id = $5
