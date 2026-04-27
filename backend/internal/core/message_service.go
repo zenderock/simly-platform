@@ -859,6 +859,8 @@ func normalizeFailureCategory(errorCode string, errorMessage string) string {
 		return "quota_reached"
 	case strings.Contains(value, "window"):
 		return "send_window"
+	case strings.Contains(value, "timeout"):
+		return "device_offline"
 	case strings.Contains(value, "device_selection") || strings.Contains(value, "no gateways") || strings.Contains(value, "no device"):
 		return "no_device"
 	case strings.Contains(value, "offline") || strings.Contains(value, "missing_fcm_token") || strings.Contains(value, "fcm token"):

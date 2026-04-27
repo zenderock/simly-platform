@@ -13,6 +13,7 @@ import 'package:mobile/app/data/pigeon/sms_gateway.g.dart';
 @pragma('vm:entry-point')
 class BackgroundHandler {
   static bool _isPolling = false;
+  static const Duration _smsSendTimeout = Duration(seconds: 45);
 
   static Future<void> initializeService() async {
     // Request notification permission on Android 13+
@@ -216,7 +217,9 @@ class BackgroundHandler {
           debugPrint('Processing message $msgId to $to');
 
           try {
-            final result = await smsApi.sendSms(to, body, simSlot);
+            final result = await smsApi
+                .sendSms(to, body, simSlot)
+                .timeout(_smsSendTimeout);
 
             if (result.success) {
               debugPrint('SMS sent successfully to $to (confirmed by network)');
@@ -257,6 +260,30 @@ class BackgroundHandler {
               } catch (e) {
                 debugPrint('Failed to report failure for message $msgId: $e');
               }
+            }
+          } on TimeoutException catch (_) {
+            final timeoutMessage =
+                'SMS send timed out after ${_smsSendTimeout.inSeconds}s';
+            debugPrint('SMS timeout for message $msgId: $timeoutMessage');
+            service.invoke('onLog', {
+              'to': to,
+              'status': 'timeout',
+              'time': DateTime.now().toIso8601String(),
+            });
+            try {
+              await dio.post(
+                'messages/$msgId/status',
+                data: {
+                  'status': 'failed',
+                  'error_code': 'SEND_TIMEOUT',
+                  'error_message': timeoutMessage,
+                },
+                options: Options(
+                  headers: {'Authorization': 'Bearer $deviceToken'},
+                ),
+              );
+            } catch (e) {
+              debugPrint('Failed to report timeout for message $msgId: $e');
             }
           } catch (e) {
             debugPrint('SMS exception for message $msgId: $e');
