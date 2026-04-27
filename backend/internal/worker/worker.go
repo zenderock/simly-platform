@@ -154,8 +154,25 @@ func (w *RedisWorker) HandleSMSDeliveryTask(ctx context.Context, t *asynq.Task) 
 		return retryErr
 	}
 
+	// Resolve auto SIM preference from recent successful sends to the same recipient.
+	// If it is unavailable now, we transparently fall back to normal auto selection.
+	preferredSimSlot := msg.SimSlot
+	autoPreferredSim := false
+	if msg.SimSlot == nil {
+		lastSuccessfulSimSlot, lookupErr := w.store.GetLastSuccessfulSimSlotForRecipient(ctx, msg.OrganizationID, msg.ToNumber)
+		if lookupErr != nil {
+			log.Printf("[Worker] Failed to resolve last successful sim slot for message %d: %v", msgID, lookupErr)
+		} else if lastSuccessfulSimSlot != nil {
+			preferredSimSlot = lastSuccessfulSimSlot
+			autoPreferredSim = true
+		}
+	}
+
 	// Get available device
-	device, slotIndex, err := w.devicePool.GetNextAvailableDevice(ctx, msg.OrganizationID, msg.RequiredTags, msg.SimSlot)
+	device, slotIndex, err := w.devicePool.GetNextAvailableDevice(ctx, msg.OrganizationID, msg.RequiredTags, preferredSimSlot)
+	if err == nil && device == nil && autoPreferredSim {
+		device, slotIndex, err = w.devicePool.GetNextAvailableDevice(ctx, msg.OrganizationID, msg.RequiredTags, nil)
+	}
 	if err != nil {
 		if err == core.ErrDailyQuotaReached {
 			// Check if campaign supports auto-reschedule

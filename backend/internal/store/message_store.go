@@ -2,9 +2,11 @@ package store
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/zenderock/simly-backend/internal/model"
 )
 
@@ -551,6 +553,34 @@ func (s *Store) GetQueuedMessagesByOrganization(ctx context.Context, orgID int, 
 		messages = append(messages, m)
 	}
 	return messages, nil
+}
+
+// GetLastSuccessfulSimSlotForRecipient returns the most recent SIM slot used
+// by a successfully delivered outbound message to the same recipient.
+func (s *Store) GetLastSuccessfulSimSlotForRecipient(ctx context.Context, orgID int, toNumber string) (*int, error) {
+	query := `
+		SELECT sim_slot
+		FROM messages
+		WHERE organization_id = $1
+			AND to_number = $2
+			AND direction = 'outbound'
+			AND status IN ('sent', 'delivered')
+			AND sim_slot IS NOT NULL
+		ORDER BY updated_at DESC, id DESC
+		LIMIT 1
+	`
+
+	var simSlot int
+	err := s.db.QueryRow(ctx, query, orgID, toNumber).Scan(&simSlot)
+	if err != nil {
+		// Not found is expected when this recipient has no successful history yet.
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to fetch last successful sim slot: %w", err)
+	}
+
+	return &simSlot, nil
 }
 
 // UpdateMessageDispatchInfo atomically claims a queued message for dispatch.
