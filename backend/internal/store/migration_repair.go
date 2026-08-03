@@ -118,31 +118,42 @@ var repairableAdditiveColumnMigrations = map[uint]additiveColumnMigration{
 				ADD COLUMN IF NOT EXISTS failed_at TIMESTAMP WITH TIME ZONE,
 				ADD COLUMN IF NOT EXISTS last_attempted_at TIMESTAMP WITH TIME ZONE`,
 			`DO $$
+			DECLARE
+				target_table text;
+				has_bad_ids boolean;
 			BEGIN
-				IF NOT EXISTS (
-					SELECT 1
-					FROM pg_constraint c
-					JOIN pg_class t ON t.oid = c.conrelid
-					JOIN pg_namespace n ON n.oid = t.relnamespace
-					JOIN unnest(c.conkey) WITH ORDINALITY AS keys(attnum, ord) ON TRUE
-					JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = keys.attnum
-					WHERE n.nspname = current_schema()
-					  AND t.relname = 'messages'
-					  AND c.contype IN ('p', 'u')
-					GROUP BY c.oid
-					HAVING array_agg(a.attname ORDER BY keys.ord) = ARRAY['id'::name]
-				) THEN
-					IF EXISTS (SELECT 1 FROM messages WHERE id IS NULL) THEN
-						RAISE EXCEPTION 'cannot add unique constraint on messages.id because NULL ids exist';
-					END IF;
+				FOREACH target_table IN ARRAY ARRAY['messages', 'organizations', 'applications', 'devices'] LOOP
+					IF NOT EXISTS (
+						SELECT 1
+						FROM pg_constraint c
+						JOIN pg_class t ON t.oid = c.conrelid
+						JOIN pg_namespace n ON n.oid = t.relnamespace
+						JOIN unnest(c.conkey) WITH ORDINALITY AS keys(attnum, ord) ON TRUE
+						JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = keys.attnum
+						WHERE n.nspname = current_schema()
+						  AND t.relname = target_table
+						  AND c.contype IN ('p', 'u')
+						GROUP BY c.oid
+						HAVING array_agg(a.attname ORDER BY keys.ord) = ARRAY['id'::name]
+					) THEN
+						EXECUTE format('SELECT EXISTS (SELECT 1 FROM %I WHERE id IS NULL)', target_table) INTO has_bad_ids;
+						IF has_bad_ids THEN
+							RAISE EXCEPTION 'cannot add unique constraint on %.id because NULL ids exist', target_table;
+						END IF;
 
-					IF EXISTS (SELECT 1 FROM messages GROUP BY id HAVING COUNT(*) > 1) THEN
-						RAISE EXCEPTION 'cannot add unique constraint on messages.id because duplicate ids exist';
-					END IF;
+						EXECUTE format('SELECT EXISTS (SELECT 1 FROM %I GROUP BY id HAVING COUNT(*) > 1)', target_table) INTO has_bad_ids;
+						IF has_bad_ids THEN
+							RAISE EXCEPTION 'cannot add unique constraint on %.id because duplicate ids exist', target_table;
+						END IF;
 
-					ALTER TABLE messages ALTER COLUMN id SET NOT NULL;
-					ALTER TABLE messages ADD CONSTRAINT messages_id_unique_for_message_events UNIQUE (id);
-				END IF;
+						EXECUTE format('ALTER TABLE %I ALTER COLUMN id SET NOT NULL', target_table);
+						EXECUTE format(
+							'ALTER TABLE %I ADD CONSTRAINT %I UNIQUE (id)',
+							target_table,
+							target_table || '_id_unique_for_message_events'
+						);
+					END IF;
+				END LOOP;
 			END $$`,
 			`CREATE TABLE IF NOT EXISTS message_events (
 				id SERIAL PRIMARY KEY,
