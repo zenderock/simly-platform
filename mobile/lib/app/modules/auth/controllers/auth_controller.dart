@@ -35,6 +35,11 @@ class AuthController extends GetxController {
       if (token.isEmpty) {
         throw const FormatException('QR code invalide: token manquant.');
       }
+      if (token.startsWith('http://') || token.startsWith('https://')) {
+        throw const FormatException(
+          'QR code invalide: scanne le code de liaison, pas le QR de telechargement.',
+        );
+      }
 
       final deviceInfo = DeviceInfoPlugin();
       final androidInfo = await deviceInfo.androidInfo;
