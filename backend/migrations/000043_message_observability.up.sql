@@ -7,6 +7,34 @@ ALTER TABLE messages
     ADD COLUMN IF NOT EXISTS failed_at TIMESTAMP WITH TIME ZONE,
     ADD COLUMN IF NOT EXISTS last_attempted_at TIMESTAMP WITH TIME ZONE;
 
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint c
+        JOIN pg_class t ON t.oid = c.conrelid
+        JOIN pg_namespace n ON n.oid = t.relnamespace
+        JOIN unnest(c.conkey) WITH ORDINALITY AS keys(attnum, ord) ON TRUE
+        JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = keys.attnum
+        WHERE n.nspname = current_schema()
+          AND t.relname = 'messages'
+          AND c.contype IN ('p', 'u')
+        GROUP BY c.oid
+        HAVING array_agg(a.attname ORDER BY keys.ord) = ARRAY['id'::name]
+    ) THEN
+        IF EXISTS (SELECT 1 FROM messages WHERE id IS NULL) THEN
+            RAISE EXCEPTION 'cannot add unique constraint on messages.id because NULL ids exist';
+        END IF;
+
+        IF EXISTS (SELECT 1 FROM messages GROUP BY id HAVING COUNT(*) > 1) THEN
+            RAISE EXCEPTION 'cannot add unique constraint on messages.id because duplicate ids exist';
+        END IF;
+
+        ALTER TABLE messages ALTER COLUMN id SET NOT NULL;
+        ALTER TABLE messages ADD CONSTRAINT messages_id_unique_for_message_events UNIQUE (id);
+    END IF;
+END $$;
+
 CREATE TABLE IF NOT EXISTS message_events (
     id SERIAL PRIMARY KEY,
     message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
