@@ -1,0 +1,2 @@
+-- Intentionally left blank.
+-- This migration repairs missing id defaults and id uniqueness on known Simly tables.
