@@ -12,9 +12,10 @@ import (
 )
 
 type additiveColumnMigration struct {
-	version uint
-	checks  []columnCheck
-	indexes []indexCheck
+	version   uint
+	repairSQL []string
+	checks    []columnCheck
+	indexes   []indexCheck
 }
 
 type columnCheck struct {
@@ -106,6 +107,64 @@ var repairableAdditiveColumnMigrations = map[uint]additiveColumnMigration{
 			{table: "users", columns: []string{"password_reset_token", "password_reset_expires_at"}},
 		},
 	},
+	43: {
+		version: 43,
+		repairSQL: []string{
+			`ALTER TABLE users
+				ADD COLUMN IF NOT EXISTS is_platform_admin BOOLEAN NOT NULL DEFAULT FALSE`,
+			`ALTER TABLE messages
+				ADD COLUMN IF NOT EXISTS last_error_code VARCHAR(100),
+				ADD COLUMN IF NOT EXISTS failure_category VARCHAR(50),
+				ADD COLUMN IF NOT EXISTS failed_at TIMESTAMP WITH TIME ZONE,
+				ADD COLUMN IF NOT EXISTS last_attempted_at TIMESTAMP WITH TIME ZONE`,
+			`CREATE TABLE IF NOT EXISTS message_events (
+				id SERIAL PRIMARY KEY,
+				message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+				organization_id INTEGER NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+				application_id INTEGER REFERENCES applications(id) ON DELETE SET NULL,
+				device_id INTEGER REFERENCES devices(id) ON DELETE SET NULL,
+				sim_slot INTEGER,
+				event_type VARCHAR(50) NOT NULL,
+				status VARCHAR(20),
+				attempt INTEGER NOT NULL DEFAULT 0,
+				source VARCHAR(50) NOT NULL,
+				reason_code VARCHAR(100),
+				reason_message TEXT,
+				metadata JSONB NOT NULL DEFAULT '{}',
+				created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+			)`,
+		},
+		checks: []columnCheck{
+			{table: "users", columns: []string{"is_platform_admin"}},
+			{table: "messages", columns: []string{"last_error_code", "failure_category", "failed_at", "last_attempted_at"}},
+			{table: "message_events", columns: []string{
+				"id",
+				"message_id",
+				"organization_id",
+				"application_id",
+				"device_id",
+				"sim_slot",
+				"event_type",
+				"status",
+				"attempt",
+				"source",
+				"reason_code",
+				"reason_message",
+				"metadata",
+				"created_at",
+			}},
+		},
+		indexes: []indexCheck{
+			{name: "idx_message_events_message_created", createSQL: "CREATE INDEX IF NOT EXISTS idx_message_events_message_created ON message_events(message_id, created_at ASC)"},
+			{name: "idx_message_events_org_created", createSQL: "CREATE INDEX IF NOT EXISTS idx_message_events_org_created ON message_events(organization_id, created_at DESC)"},
+			{name: "idx_message_events_event_type", createSQL: "CREATE INDEX IF NOT EXISTS idx_message_events_event_type ON message_events(event_type)"},
+			{name: "idx_messages_org_status_created", createSQL: "CREATE INDEX IF NOT EXISTS idx_messages_org_status_created ON messages(organization_id, status, created_at DESC)"},
+			{name: "idx_messages_org_failure_created", createSQL: "CREATE INDEX IF NOT EXISTS idx_messages_org_failure_created ON messages(organization_id, failure_category, created_at DESC) WHERE failure_category IS NOT NULL"},
+			{name: "idx_messages_org_error_code_created", createSQL: "CREATE INDEX IF NOT EXISTS idx_messages_org_error_code_created ON messages(organization_id, last_error_code, created_at DESC) WHERE last_error_code IS NOT NULL"},
+			{name: "idx_messages_org_to_number_created", createSQL: "CREATE INDEX IF NOT EXISTS idx_messages_org_to_number_created ON messages(organization_id, to_number, created_at DESC)"},
+			{name: "idx_messages_support_created", createSQL: "CREATE INDEX IF NOT EXISTS idx_messages_support_created ON messages(created_at DESC)"},
+		},
+	},
 }
 
 // PrepareDatabaseForMigrations clears known-safe dirty migration states before
@@ -165,6 +224,12 @@ func repairAdditiveColumnMigration(databaseURL string, spec additiveColumnMigrat
 		return false, fmt.Errorf("failed to open database for repair: %w", err)
 	}
 	defer pool.Close()
+
+	for _, stmt := range spec.repairSQL {
+		if _, err := pool.Exec(context.Background(), stmt); err != nil {
+			return false, fmt.Errorf("failed to apply repair SQL for migration %d: %w", spec.version, err)
+		}
+	}
 
 	for _, check := range spec.checks {
 		existingColumns, err := countExistingColumns(context.Background(), pool, check.table, check.columns)
