@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 
 	"github.com/zenderock/simly-backend/internal/core"
@@ -48,6 +49,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 			RespondWithError(w, http.StatusConflict, "An account with this email already exists. Try signing in or resetting your password.")
 			return
 		}
+		log.Printf("Registration failed for %q: %v", req.Email, err)
 		RespondWithError(w, http.StatusInternalServerError, "Registration failed")
 		return
 	}

@@ -1,0 +1,2 @@
+-- Intentionally left blank.
+-- This migration repairs missing id defaults and uniqueness constraints on legacy/restored databases.
