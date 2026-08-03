@@ -1,0 +1,2 @@
+-- Intentionally left blank.
+-- This migration repairs the missing device_link_tokens.id default on legacy/restored databases.
